@@ -525,6 +525,25 @@ function cabeza(g, especie = 'zorro') {
   if (b.marcas) b.marcas(g);
 }
 
+// La boca de la rana, mas ancha que la de los demas: la boca que haya puesto
+// el gesto (sonrisa, abierta, triste...) se estira dos pixeles por cada lado.
+// La mitad izquierda se corre a la izquierda, la derecha a la derecha, y el
+// hueco del medio se rellena.
+function bocaDeRana(g) {
+  for (let y = 15; y <= 18; y++) {
+    const fila0 = g[y].slice();
+    const esBoca = (x) => fila0[x] === 'o' || fila0[x] === 't';
+    if (![...Array(12).keys()].some((i) => esBoca(8 + i))) continue;
+    const fondo = y === 18 ? 'm' : 'l';
+    for (let x = 8; x <= 19; x++) if (esBoca(x)) g[y][x] = fondo;
+    for (let x = 8; x <= 19; x++) {
+      if (!esBoca(x)) continue;
+      px(g, x <= 13 ? x - 2 : x + 2, y, fila0[x]);
+    }
+    if (esBoca(13) && esBoca(14)) fila(g, y, 12, 15, fila0[13]);
+  }
+}
+
 // Lo que va POR ENCIMA del gesto, porque sustituye a la nariz o a la boca:
 // el pico del pato y del búho, y el bocón de la rana.
 function rasgos(g, especie) {
@@ -540,6 +559,7 @@ function rasgos(g, especie) {
   } else if (especie === 'rana') {
     // Naricita sutil de dos motitas tiernas de ranita
     fila(g, 12, 13, 14, 'd');
+    bocaDeRana(g);
   } else if (especie === 'conejo') {
     // Naricita pequeña y suave rosada
     fila(g, 13, 13, 14, 'r');
