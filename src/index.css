@@ -7780,19 +7780,16 @@ body[data-juego] .fox-difuminado-suelo[class*='fox-difuminado-']:not(.fox-difumi
    iba a tirones. Ya tiene su sombra en el suelo (::after). */
 .fox-hero-personaje { filter: none; }
 
-/* El paisaje comprado, detras de Felix en la tarjeta de la portada: ocupa la
-   tarjeta entera pero se funde hacia la derecha, asi el zorro tiene su
-   escenario y el bocadillo sigue sobre el fondo de siempre. */
+/* El paisaje comprado, de fondo de toda la tarjeta de la portada. El
+   bocadillo y la caja de contestar ya son blancos; los enlaces de abajo van
+   en una pastilla clara para que se lean sobre cualquier paisaje. */
 .fox-card-paisaje {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background-size: cover; background-position: left bottom; background-repeat: no-repeat;
-  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 20%, rgba(0, 0, 0, 0.4) 30%, transparent 42%);
-  mask-image: linear-gradient(90deg, #000 0%, #000 20%, rgba(0, 0, 0, 0.4) 30%, transparent 42%);
+  background-size: cover; background-position: center bottom; background-repeat: no-repeat;
+}
+.fox-card.con-paisaje .fox-card-pie {
+  align-self: flex-start; width: fit-content;
+  padding: 2px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
 }
 .fox-card > :not(.fox-card-paisaje) { position: relative; z-index: 1; }
-@media (max-width: 720px) {
-  .fox-card-paisaje {
-    -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 30%, rgba(0, 0, 0, 0.5) 50%, transparent 75%);
-    mask-image: linear-gradient(90deg, #000 0%, #000 30%, rgba(0, 0, 0, 0.5) 50%, transparent 75%);
-  }
-}

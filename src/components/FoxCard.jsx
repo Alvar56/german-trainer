@@ -40,9 +40,8 @@ export default function FoxCard({ onAbrir, onCambio }) {
   }
 
   return (
-    <div className={'fox-card' + (SIN_IA ? ' fox-card-corta' : '')}>
-      {/* El paisaje que le has comprado, detras de el y fundiendose hacia la
-          derecha para que el bocadillo se siga leyendo. */}
+    <div className={'fox-card' + (SIN_IA ? ' fox-card-corta' : '') + (fuchs.fondo && fuchs.fondo !== 'nadaFondo' ? ' con-paisaje' : '')}>
+      {/* El paisaje que le has comprado, de lado a lado de la tarjeta. */}
       {fuchs.fondo && fuchs.fondo !== 'nadaFondo' && (
         <div className={'fox-card-paisaje fox-escena-' + fuchs.fondo} aria-hidden="true" />
       )}
