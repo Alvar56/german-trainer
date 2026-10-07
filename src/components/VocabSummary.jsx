@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { conSimbolo } from './IconoJuego.jsx';
 import { t, pick } from '../lib/i18n.js';
 import { deckStats, getDeck } from '../lib/vocab.js';
 import { getLektion } from '../lib/kursbuch/index.js';
@@ -84,13 +85,13 @@ export default function VocabSummary({ data, onRepeat, onRepetirFallos, onDeck, 
       {isNotebook && puedeRepetirFallos && (
         <button className="btn-primary resumen-retry" onClick={onRepetirFallos}>
           <span className="op-tecla atajo-final">Enter</span>
-          {t('sum.retryFails', { n: missed.length })}
+          {conSimbolo(t('sum.retryFails', { n: missed.length }))}
         </button>
       )}
       {!isNotebook && !cierreConCorona && puedeRepetirFallos && (
         <button className="btn-primary resumen-retry" onClick={onRepetirFallos}>
           <span className="op-tecla atajo-final">Enter</span>
-          {t('sum.retryFails', { n: missed.length })}
+          {conSimbolo(t('sum.retryFails', { n: missed.length }))}
         </button>
       )}
       {!isNotebook && !cierreConCorona && !isCrossword && (

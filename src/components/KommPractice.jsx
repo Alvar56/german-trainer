@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { conSimbolo } from './IconoJuego.jsx';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
 import { recordKommPracticed, recordKommQuestion, kommFailedQuestions, bumpSessions, KOMM_APROBADO, kommMastery, kommPuntosQueFaltan } from '../lib/progress.js';
@@ -772,7 +773,7 @@ export default function KommPractice({
           {fallos.length > 0 && (
             <button className="btn-primary resumen-retry" onClick={repetirFallos}>
               <span className="op-tecla atajo-final">Enter</span>
-              {t('sum.retryFails', { n: fallos.length })}
+              {conSimbolo(t('sum.retryFails', { n: fallos.length }))}
             </button>
           )}
           <button className={'resumen-otra ' + (fallos.length > 0 ? 'btn-ghost' : 'btn-primary')} onClick={otraVez}>

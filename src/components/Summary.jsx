@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { conSimbolo } from './IconoJuego.jsx';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
 import TextoAleman from './TextoAleman.jsx';
@@ -99,7 +100,7 @@ export default function Summary({ data, onRepeat, onRepetirFallos, onHome, onTem
         {puedeRepetirFallos && (
           <button className="btn-primary resumen-retry" onClick={onRepetirFallos}>
             <span className="op-tecla atajo-final">Enter</span>
-            {t('sum.retryFails', { n: fallos.length })}
+            {conSimbolo(t('sum.retryFails', { n: fallos.length }))}
           </button>
         )}
         {!coronaFinishTopic && (

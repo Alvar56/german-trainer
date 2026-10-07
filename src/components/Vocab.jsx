@@ -674,7 +674,10 @@ function VocabTableRow({ c, deckId, lektionId, onConjugate, loadingVerb }) {
   const computedColor = colorState !== 'transparent' ? colorState : (colorVisible(c.de) || 'transparent');
 
   return (
-    <tr>
+    <tr
+      className={computedColor !== 'transparent' ? 'wt-coloreada' : undefined}
+      style={computedColor !== 'transparent' ? { '--wt-color': computedColor } : undefined}
+    >
       <td className="wt-de">
         {c.de}
       </td>

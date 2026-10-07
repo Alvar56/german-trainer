@@ -7674,3 +7674,43 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 [data-theme='dark'] .gametype:has(.gt-sim) {
   background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 14%, var(--surface-2)) 0%, var(--surface-2) 55%);
 }
+
+/* La fila de una palabra marcada lleva un degradado de su color que sale de
+   la derecha, desde el punto, y se pierde hacia la izquierda. */
+.woerter-tabla tr.wt-coloreada {
+  background: linear-gradient(270deg, color-mix(in srgb, var(--wt-color) 20%, transparent) 0%, transparent 50%);
+}
+[data-theme='dark'] .woerter-tabla tr.wt-coloreada {
+  background: linear-gradient(270deg, color-mix(in srgb, var(--wt-color) 22%, transparent) 0%, transparent 50%);
+}
+
+/* «Repetir mis fallos» al final de una partida: el boton principal con un
+   degradado del azul de la app hacia uno mas claro, para que destaque como
+   la siguiente cosa que hacer. */
+.btn-primary.resumen-retry {
+  background: linear-gradient(120deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 62%, #6fa8e8) 100%);
+  border-color: transparent;
+}
+.btn-primary.resumen-retry:hover:not(:disabled) {
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 88%, #000) 0%, color-mix(in srgb, var(--accent) 55%, #6fa8e8) 100%);
+}
+.btn-primary.resumen-retry .sim-suelto { opacity: 1; }
+
+/* Cambiar de tabla: la raya de la pestaña se desliza hasta la nueva y la
+   tabla entra desde el lado de su pestaña. */
+.tv-pestanas.con-raya { position: relative; }
+.tv-pestanas.con-raya .tv-pestana.on { border-bottom-color: transparent; }
+.tv-raya {
+  position: absolute; bottom: 0; height: 2.5px; border-radius: 2px;
+  background: var(--accent);
+  transition: left 280ms cubic-bezier(.2,.7,.25,1), width 280ms cubic-bezier(.2,.7,.25,1);
+}
+.tv-pestana { transition: color 200ms ease; }
+.tabla-captura.tv-entra-adelante { animation: tv-entra-adelante 300ms cubic-bezier(.2,.7,.25,1) both; }
+.tabla-captura.tv-entra-atras { animation: tv-entra-atras 300ms cubic-bezier(.2,.7,.25,1) both; }
+@keyframes tv-entra-adelante { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes tv-entra-atras { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .tv-raya { transition: none; }
+  .tabla-captura.tv-entra-adelante, .tabla-captura.tv-entra-atras { animation: none; }
+}
