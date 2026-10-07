@@ -7948,13 +7948,17 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
 }
 .fox-modal .fox-face .fox-cola { animation: fox-menea-descanso 5s ease-in-out infinite; }
 
-/* En el ordenador, con la tarjeta muy ancha, el paisaje se difumina hacia la
-   derecha y la tarjeta acaba en su color de siempre. Solo con raton
-   (pointer: fine) y pantalla ancha: en el movil y la tablet, en vertical o
-   girados, el paisaje sigue llegando hasta el final. */
+/* En el ordenador, con la tarjeta muy ancha: el paisaje entero, con sus
+   proporciones (800x300 ajustado al alto de la tarjeta, sin recortar ni
+   estirar), pegado a la izquierda, y donde se acaba se funde con el color de
+   la tarjeta. Solo con raton (pointer: fine) y pantalla ancha: en el movil y
+   la tablet, en vertical o girados, el paisaje sigue ocupando la tarjeta. */
 @media (min-width: 1200px) and (pointer: fine) {
-  .fox-card-paisaje {
-    -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 45%, rgba(0, 0, 0, 0.35) 75%, transparent 96%);
-    mask-image: linear-gradient(90deg, #000 0%, #000 45%, rgba(0, 0, 0, 0.35) 75%, transparent 96%);
+  .fox-card .fox-card-paisaje,
+  .fox-card .fox-card-paisaje[class*='fox-escena-'] {
+    right: auto; width: auto; height: 100%; aspect-ratio: 800 / 300;
+    background-size: 100% 100%; background-position: left bottom;
+    -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 62%, rgba(0, 0, 0, 0.4) 84%, transparent 100%);
+    mask-image: linear-gradient(90deg, #000 0%, #000 62%, rgba(0, 0, 0, 0.4) 84%, transparent 100%);
   }
 }
