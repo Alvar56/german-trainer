@@ -13,6 +13,10 @@ Deutsch Trainer.html
 # lo demas. Son 550 KB de datos personales.
 .dtrainer-sync.json
 *.dtrainer-sync.json
+# Y sus copias de seguridad (.dtrainer-sync.antes-de-algo.json) y el temporal
+# de la escritura atomica del servidor.
+.dtrainer-sync*.json
+.dtrainer-sync*.json.tmp
 
 # Exportaciones de progreso, por si alguna cae en la carpeta.
 dtrainer-*.json
