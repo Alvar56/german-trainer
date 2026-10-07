@@ -85,7 +85,7 @@ export default function Diary({ onOpen }) {
           {t('tb.new')}
         </button>
         <button className="tb-tablas" onClick={() => setTablas(true)}>
-          📋 {pick('Tablas de gramática', 'Grammar tables')}
+          📋 {pick('Tablas de teoría', 'Theory tables')}
         </button>
       </div>
 
