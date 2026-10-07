@@ -7916,3 +7916,13 @@ body[data-juego] .fox-difuminado-suelo[class*='fox-difuminado-']:not(.fox-difumi
 /* Felix en su propia capa: al moverse (cola, saltitos) el navegador ya no
    tiene que repintar el paisaje de debajo en cada fotograma. */
 .fox-hero-personaje, .fox-card-cara { will-change: transform; }
+
+/* Con paisaje, Felix proyecta su sombra en el suelo de la tarjeta (en el
+   espacio no: alli flota). */
+.fox-card.con-paisaje .fox-card-cara::after {
+  content: ''; position: absolute; left: 50%; bottom: 2px; z-index: -1;
+  width: 70%; height: 12px; transform: translateX(-50%); border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0.14) 45%, rgba(0, 0, 0, 0) 72%);
+  pointer-events: none;
+}
+.fox-card.con-paisaje:has(.fox-escena-weltraum) .fox-card-cara::after { display: none; }
