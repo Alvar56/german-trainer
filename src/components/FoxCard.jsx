@@ -41,6 +41,11 @@ export default function FoxCard({ onAbrir, onCambio }) {
 
   return (
     <div className={'fox-card' + (SIN_IA ? ' fox-card-corta' : '')}>
+      {/* El paisaje que le has comprado, detras de el y fundiendose hacia la
+          derecha para que el bocadillo se siga leyendo. */}
+      {fuchs.fondo && fuchs.fondo !== 'nadaFondo' && (
+        <div className={'fox-card-paisaje fox-escena-' + fuchs.fondo} aria-hidden="true" />
+      )}
       <button
         className={'fox-card-cara fox-aura-wrap fox-aura-' + (fuchs.fondo || 'nadaFondo')}
         // Tocarlo le hace saltar. La tienda se abre con "Personalizar a
@@ -57,9 +62,6 @@ export default function FoxCard({ onAbrir, onCambio }) {
             el viewBox y el zorro se dibujaba encogido para caber, asi que el
             160 de verdad se veia como 134. Al quitar ese margen aparecio a su
             tamano real y se comia la tarjeta. */}
-        {/* Sin paisaje aqui: en la portada el zorro va suelto sobre la
-            tarjeta. El fondo comprado se ve en su pantalla, no metido en un
-            recuadro dentro de otro recuadro. */}
         <SaltosFelix saltos={saltos} espacio={fuchs.fondo === 'weltraum'}>
           <FoxFace fuchs={fuchs} gesto={saltos.saltando ? 'feliz' : 'normal'} size={SIN_IA ? 138 : 136} conCuerpo className="flota" />
         </SaltosFelix>

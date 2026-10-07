@@ -1104,50 +1104,59 @@ const EXTRAS = {
     ], 21, 20.5)
   },
   sonnenblume: {
-    // Girasol: corona de petalos amarillos, centro de pipas y tallo con hoja.
-    k: '#4a3410', y: '#ffd23f', o: '#f2a516', m: '#6b3e1a', n: '#8a5a2b', g: '#3f9b4a', h: '#2a6e33',
-    escala: 1.25, medio: true,
+    // Girasol: seis petalos con punta, en dos amarillos, el centro de pipas
+    // y el tallo con una hoja.
+    k: '#5a3c0c', y: '#ffd23f', o: '#f2a516', m: '#5a3317', n: '#8a5a2b', g: '#3f9b4a', h: '#2a6e33',
+    escala: 1.2, medio: true,
     px: spriteMedio([
-      '...kk.kk....',
-      '..kyykyyk...',
-      '.kkyyyyykk..',
-      'kyykmnmnkyyk',
-      'kyykmmnmkyyk',
-      '.kykmnmmkyk.',
-      'kyykmmmnkyyk',
-      '.kkyyyyykk..',
-      '..kyokyok...',
-      '...kkgkk....',
-      '.....gk.....',
-      '..kk.gk.....',
-      '.kggkgk.....',
-      '..kghgk.....',
-      '....kgk.....',
-      '.....gk.....',
-      '.....gk.....',
-      '.....hk.....'
-    ], 20.5, 19.5)
+      '....k......k....',
+      '...kyk.kk.kyk...',
+      '...kyykookyyk...',
+      '...kyyyooyyyk...',
+      '...koyynmyyok...',
+      '..koomnnnmnook..',
+      '.kkoonmnnnmookk.',
+      'kyyynnnmnnnmyyyk',
+      'kyyymnnnmnnnyyyk',
+      '.kkoomnnnmnookk.',
+      '..koonmnnnmook..',
+      '...koyymnyyok...',
+      '...kyyyooyyyk...',
+      '...kyykookyyk...',
+      '...kyk.kgk.kyk..'.slice(0, 16),
+      '....k..kgk..k...',
+      '.......kgk......',
+      '..kkk..kgk......',
+      '.kgghk.kgk......',
+      '..kkgghkgk......',
+      '.....kkghk......',
+      '.......kgk......'
+    ], 19.8, 18.5)
   },
   laterne: {
-    // Farolillo de papel de San Martin: palito, arco y una lampara redonda
-    // con su vela encendida dentro.
-    k: '#3a2410', s: '#8a5a2b', a: '#ff8c42', b: '#e0602a', l: '#ffd56b', w: '#fff6d0', r: '#d62839',
+    // Farolillo de San Martin en su palito: tapa oscura, globo de papel
+    // naranja con rayas rojas y la luz de la vela por dentro.
+    k: '#5a2a10', d: '#6b4a2b', a: '#ff9a4d', h: '#ffc58f', b: '#e0602a', r: '#d63a3a', l: '#ffe08a', w: '#fffbe6', s: '#a0703f',
     escala: 1.25, medio: true,
     px: spriteMedio([
-      'kkkkkkk....',
-      '.....ks....',
-      '.....ks....',
-      '....kkkk...',
-      '...k....k..',
-      '..kkkkkkkk.',
-      '.kaaarrrabk',
-      'kaallwllabk',
-      'kalwwwwlabk',
-      'kalwwwwlabk',
-      'kaallllaabk',
-      '.kaarrrabk.',
-      '..kkkkkkk..'
-    ], 21, 21.5)
+      '....kkkkk....',
+      '...kdddddk...',
+      '..kkkkkkkkk..',
+      '.khaarrrraak.',
+      'khallwwwllabk',
+      'krallwwwllark',
+      'khaallwllaabk',
+      'kraaallllaark',
+      '.khaarrrrabk.',
+      '..kkkkkkkkk..',
+      '....kdddk....',
+      '.....ksk.....',
+      '.....ksk.....',
+      '.....ksk.....',
+      '.....ksk.....',
+      '.....ksk.....',
+      '.....kkk.....'
+    ], 20.5, 20)
   },
   // --- de rey (se gana con coronas) ---
   capa: {
@@ -1790,71 +1799,68 @@ const EXTRAS = {
 
   // --- objetos que se compran, en la manita derecha ---
   libro: {
-    // Libro de tapa dura de pie: lomo oscuro, cantos de las hojas a la
-    // derecha, titulo dorado, la bandera alemana en la tapa y la cinta del
-    // marcapaginas colgando.
-    k: '#2b1838', a: '#8e44ad', b: '#6c3483', p: '#f6efdc', q: '#d9cdb0', y: '#f4c430', n: '#1d1d1d', r: '#dd2a2a',
+    // Libro de tapa dura: esquinas redondeadas, brillo arriba y a la
+    // izquierda, sombra abajo y a la derecha, cantos de las hojas, placa
+    // dorada del titulo y la bandera alemana en la tapa.
+    k: '#4a2266', a: '#9b59b6', h: '#c79bdc', b: '#74359a', p: '#fff8e7', q: '#e3d5b5', y: '#f7d774', n: '#2b2b2b', r: '#e0393e',
     escala: 1.25, medio: true,
     px: spriteMedio([
-      '.kkkkkkkkkk.',
-      'kbaaaaaaaakq',
-      'kbaaaaaaaakp',
-      'kbayyyyyyakp',
-      'kbayaaaayakq',
-      'kbayyyyyyakp',
-      'kbaaaaaaaakp',
-      'kbannnnnnakq',
-      'kbarrrrrrakp',
-      'kbayyyyyyakp',
-      'kbaaaaaaaakq',
-      'kbaaaaaaaakp',
-      'kbaaaaaaaakp',
-      'kbaaaaaaaakq',
-      '.kkkkkkkkkkk',
-      '...kr.......',
-      '...r........'
-    ], 20.5, 20)
+      '.kkkkkkkkk...',
+      'khhhhhhhhakk.',
+      'khaaaaaaabkqk',
+      'khayyyyyabkpk',
+      'khayyyyyabkpk',
+      'khaaaaaaabkqk',
+      'khannnnnabkpk',
+      'kharrrrrabkpk',
+      'khayyyyyabkqk',
+      'khaaaaaaabkpk',
+      'khaaaaaaabkpk',
+      'khaaaaaaabkqk',
+      'kbbbbbbbbbkpk',
+      '.kkkkkkkkkkk.'
+    ], 20.5, 21.5)
   },
   taza: {
-    // Taza blanca con asa, cafe dentro, un corazon rojo y su vapor.
-    k: '#3a3a44', w: '#ffffff', g: '#cfd4da', c: '#6b3e26', h: '#a0623a', r: '#e74c3c', s: '#c9d3dd',
+    // Taza blanca y redondita, con su asa, el cafe con un reflejo, un
+    // corazon rojo y dos hilos de vapor.
+    k: '#5b6470', w: '#f4f6fa', h: '#ffffff', g: '#cdd5df', c: '#7b4a2e', o: '#b07a52', r: '#ef4f5a', s: '#e6edf5',
     escala: 1.25, medio: true,
     px: spriteMedio([
-      '...s...s.....',
-      '....s...s....',
-      '...s...s.....',
-      'kkkkkkkkkk...',
-      'kcchccccck...',
-      'kwwwwwwwgkkk.',
-      'kwwrrwrrgk.gk',
-      'kwrrrrrrgk.gk',
-      'kwwrrrrwgk.gk',
-      'kwwwrrwwgkkk.',
-      'kwwwwwwwgk...',
-      'kwwwwwwwgk...',
-      '.kkkkkkkk....'
+      '...s....s.....',
+      '..s....s......',
+      '...s....s.....',
+      '.kkkkkkkkk....',
+      'kccoccccccck..'.slice(0, 11),
+      'khwwwwwwwgkkk.',
+      'khwrrwrrwgk.gk',
+      'khrrrrrrrgk.gk',
+      'khwrrrrrwgk.gk',
+      'khwwrrrwwgkkk.',
+      'khwwwrwwwgk...',
+      '.kgggggggk....',
+      '..kkkkkkk.....'
     ], 20.5, 22)
   },
   brezel: {
-    // Brezel de verdad: dos lazos arriba, el cruce en el centro, la panza
-    // de abajo y granos de sal gorda.
-    k: '#4a2410', a: '#b8692e', b: '#8a4a1c', h: '#e0a066', s: '#ffffff',
-    escala: 1.25, medio: true,
+    // Brezel: dos lazos arriba que se cruzan en el centro y bajan hasta la
+    // panza, con brillo arriba, sombra abajo y granos de sal gorda.
+    k: '#5a2c0e', a: '#c27a3a', h: '#e8a868', b: '#93531f', s: '#ffffff',
+    escala: 1.1, medio: true,
     px: spriteMedio([
-      '..kkkk..kkkk..',
-      '.khaabkkhaabk.',
-      'kha..kbbk..abk',
-      'kas..kaak..sak',
-      'ka...kaak...ak',
-      'kab.kaabbk.bak',
-      '.kakab..bakak.',
-      '..kab.s..bak..',
-      '.kab......bak.',
-      'kab..s..s..bak',
-      'khaaaaaaaaaabk',
-      '.kbbbbbbbbbbk.',
-      '..kkkkkkkkkk..'
-    ], 20.5, 22)
+      '..kkkk...kkkk..',
+      '.khshak.khshak.',
+      'kha..kakak..abk',
+      'kha...kak...abk',
+      'ksa..kakak..ask',
+      '.khakak.kakabk.',
+      '..khak...kabk..',
+      '.kha.......abk.',
+      'kha.........abk',
+      'khhaasaaasaaabk',
+      '.kbbbbbbbbbbbk.',
+      '..kkkkkkkkkkk..'
+    ], 20.5, 23)
   },
   globo: {
     // Globo ovalado con brillo, nudo y cuerda ondulada hasta la mano.
@@ -1874,13 +1880,13 @@ const EXTRAS = {
       '....kbk....',
       '....kkk....',
       '.....s.....',
-      '....s......',
-      '....s......',
       '.....s.....',
       '......s....',
+      '......s....',
+      '......s....',
       '.....s.....',
-      '....s......',
-      '....s......'
+      '.....s.....',
+      '.....s.....'
     ], 21, 18.5)
   },
   cascoAstronauta: {
