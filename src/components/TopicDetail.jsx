@@ -1,4 +1,5 @@
 import React, { useLayoutEffect, useState } from 'react';
+import IconoJuego, { conSimbolo } from './IconoJuego.jsx';
 import { t, pick } from '../lib/i18n.js';
 import { getStarredItems, useStars } from '../lib/stars.js';
 import { SIN_IA, PORTABLE } from '../lib/modo.js';
@@ -276,14 +277,14 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
 
       <Tabs>
         <button className={'tab' + (tab === 'teoria' ? ' active' : '')} onClick={() => setTab('teoria')}>
-          {t('gr.theory')}
+          {conSimbolo(t('gr.theory'))}
         </button>
         <button className={'tab' + (tab === 'ejercicios' ? ' active' : '')} onClick={() => setTab('ejercicios')}>
-          {t('gr.exercises')}
+          {conSimbolo(t('gr.exercises'))}
         </button>
         {!PORTABLE && (
           <button className={'tab' + (tab === 'fotos' ? ' active' : '')} onClick={() => setTab('fotos')}>
-            📸 {pick('Fotos', 'Photos')}
+            {conSimbolo('📸 ' + pick('Fotos', 'Photos'))}
           </button>
         )}
       </Tabs>
@@ -414,14 +415,14 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                   siempre el ultimo y el test el primero. */}
               <div className="gametype-grid">
                 <button className="gametype" onClick={() => onStart(topic.id, 'mixed', 'mc')}>
-                  <span className="gt-ico">✅</span>
+                  <IconoJuego e="✅" />
                   <span className="gt-txt">
                     <span>{t('home.gTest')}</span>
                     <small>{t('home.gTestSub')}</small>
                   </span>
                 </button>
                 <button className="gametype" onClick={() => onStart(topic.id, 'mixed', 'judge')}>
-                  <span className="gt-ico">⚖️</span>
+                  <IconoJuego e="⚖️" />
                   <span className="gt-txt">
                     <span>{t('home.gJudge')}</span>
                     <small>{t('home.gJudgeSub')}</small>
@@ -431,28 +432,28 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                     juegos enteros, los mismos que Vocabulario, con las frases
                     de hueco de esta leccion. Por eso no llaman a onStart. */}
                 <button className="gametype" onClick={() => setJuego('match')}>
-                  <span className="gt-ico">🧩</span>
+                  <IconoJuego e="🧩" />
                   <span className="gt-txt">
                     <span>{pick('Emparejar', 'Match')}</span>
                     <small>{pick('Seis huecos con su solución', 'Six gaps with their answer')}</small>
                   </span>
                 </button>
                 <button className="gametype" onClick={() => setJuego('blitz')}>
-                  <span className="gt-ico">⚡</span>
+                  <IconoJuego e="⚡" />
                   <span className="gt-txt">
                     <span>Blitz</span>
                     <small>{pick('Diez aciertos en 40 segundos', 'Ten right in 40 seconds')}</small>
                   </span>
                 </button>
                 <button className="gametype" onClick={() => onStart(topic.id, 'mixed', 'order')}>
-                  <span className="gt-ico">🔀</span>
+                  <IconoJuego e="🔀" />
                   <span className="gt-txt">
                     <span>{t('home.gOrder')}</span>
                     <small>{t('home.gOrderSub')}</small>
                   </span>
                 </button>
                 <button className="gametype" onClick={() => onStart(topic.id, 'mixed', 'write')}>
-                  <span className="gt-ico">⌨️</span>
+                  <IconoJuego e="⌨️" />
                   <span className="gt-txt">
                     <span>{t('gr.gWrite')}</span>
                     <small>{t('gr.gWriteSub')}</small>
@@ -472,7 +473,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                     className="btn-ghost btn-sm"
                     onClick={() => onStart(topic.id, 'mixed', 'mixed', starred, null, 'marked')}
                   >
-                    {t('star.review', { n: starred.length })}
+                    {conSimbolo(t('star.review', { n: starred.length }))}
                   </button>
                 )}
                 {weakItems.length > 0 && (
@@ -481,7 +482,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                     onClick={() => onStart(topic.id, 'weak', 'mixed', weakItems)}
                     title={t('gr.reviewWeakHint')}
                   >
-                    {t('gr.reviewWeakN', { n: weakItems.length })}
+                    {conSimbolo(t('gr.reviewWeakN', { n: weakItems.length }))}
                   </button>
                 )}
                 {/* Solo del 70% para arriba. Debajo de eso falta casi todo y
@@ -494,8 +495,8 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                     title={m.pct < UMBRAL_TERMINAR ? t('voc.finishLockedHint', { p: UMBRAL_TERMINAR }) : t('voc.finishHint')}
                   >
                     {m.pct < UMBRAL_TERMINAR
-                      ? t('voc.finishLocked', { p: UMBRAL_TERMINAR })
-                      : t('voc.finish', { n: aciertosPendientes })}
+                      ? conSimbolo(t('voc.finishLocked', { p: UMBRAL_TERMINAR }))
+                      : conSimbolo(t('voc.finish', { n: aciertosPendientes }))}
                   </button>
                 )}
                 {aiOn && (
@@ -504,7 +505,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                     onClick={() => onStart(topic.id, 'ai', 'mixed')}
                     title={t('gr.aiChallengeHint')}
                   >
-                    {t('gr.aiChallenge')}
+                    {conSimbolo(t('gr.aiChallenge'))}
                   </button>
                 )}
               </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import IconoJuego from './IconoJuego.jsx';
 import { t } from '../lib/i18n.js';
 import { BAENDE } from '../lib/kursbuch/index.js';
 import { mazosParaMezclar } from '../lib/vocab.js';
@@ -49,7 +50,7 @@ export default function MezclaVocab({ onStart }) {
         className="btn-primary home-todo"
         onClick={iniciarMezcla}
       >
-        <span className="gt-ico">🎲</span>
+        <IconoJuego e="🎲" />
         <span className="gt-txt">{t('voc.combiAll')}</span>
       </button>
 

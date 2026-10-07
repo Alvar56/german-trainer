@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import IconoJuego, { conSimbolo } from './IconoJuego.jsx';
 import { conjugar } from '../lib/conjugador.js';
 import { SIN_IA, PORTABLE } from '../lib/modo.js';
 import { deckStats, deleteUserDeck, vocabModes, cartasFalladas, cartasQueFaltan, getCardColor, setCardColor, colorVisible, esVerbo } from '../lib/vocab.js';
@@ -81,17 +82,17 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
 
       <Tabs>
         <button className={'tab' + (tab === 'teoria' ? ' active' : '')} onClick={() => setTab('teoria')}>
-          {t('gr.theory')}
+          {conSimbolo(t('gr.theory'))}
         </button>
         <button
           className={'tab' + (tab === 'ejercicios' ? ' active' : '')}
           onClick={() => setTab('ejercicios')}
         >
-          {t('gr.exercises')}
+          {conSimbolo(t('gr.exercises'))}
         </button>
         {!PORTABLE && (
           <button className={'tab' + (tab === 'fotos' ? ' active' : '')} onClick={() => setTab('fotos')}>
-            📸 {pick('Fotos', 'Photos')}
+            {conSimbolo('📸 ' + pick('Fotos', 'Photos'))}
           </button>
         )}
       </Tabs>
@@ -136,11 +137,11 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
             <h2 style={{ margin: '0 0 14px' }}>{t('voc.cards')}</h2>
             <div className="row" style={{ gap: 8 }}>
               <button className="gametype" style={{ flex: 1 }} onClick={() => onStart(deck.id, 'flashcards', false, 'de-es')}>
-                <span className="gt-ico">🃏</span>
+                <IconoJuego e="🃏" />
                 <span className="gt-txt"><span>{t('voc.deToEs')}</span></span>
               </button>
               <button className="gametype" style={{ flex: 1 }} onClick={() => onStart(deck.id, 'flashcards', false, 'es-de')}>
-                <span className="gt-ico">🃏</span>
+                <IconoJuego e="🃏" />
                 <span className="gt-txt"><span>{t('voc.esToDe')}</span></span>
               </button>
             </div>
@@ -184,7 +185,7 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
             <div className="gametype-grid">
               {vocabModes().filter(m => m.id !== 'flashcards').map((m) => (
                 <button className="gametype" key={m.id} onClick={() => onStart(deck.id, m.id)}>
-                  <span className="gt-ico">{m.emoji}</span>
+                  <IconoJuego e={m.emoji} />
                   <span className="gt-txt">
                     <span>{m.label}</span>
                     <small>{m.hint}</small>
@@ -205,7 +206,7 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
                     key="starred-vocab"
                     onClick={() => onStart(deck.id, group.mode, false, group.dir, group.items, null, 'marked')}
                   >
-                    {t('star.review', { n: group.items.length })}
+                    {conSimbolo(t('star.review', { n: group.items.length }))}
                   </button>
                 );
               })}
@@ -215,7 +216,7 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
                   onClick={() => onStart(deck.id, 'quiz', true)}
                   title={t('gr.reviewWeakHint')}
                 >
-                  {t('gr.reviewWeakN', { n: fallos.length })}
+                  {conSimbolo(t('gr.reviewWeakN', { n: fallos.length }))}
                 </button>
               )}
               {tarjetasPendientes.length > 0 && (
@@ -226,8 +227,8 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
                   title={st.pct < UMBRAL_TERMINAR ? t('voc.finishLockedHint', { p: UMBRAL_TERMINAR }) : t('voc.finishHint')}
                 >
                   {st.pct < UMBRAL_TERMINAR
-                    ? t('voc.finishLocked', { p: UMBRAL_TERMINAR })
-                    : t('voc.finish', { n: tarjetasPendientes.length })}
+                    ? conSimbolo(t('voc.finishLocked', { p: UMBRAL_TERMINAR }))
+                    : conSimbolo(t('voc.finish', { n: tarjetasPendientes.length }))}
                 </button>
               )}
               {/* El crucigrama se abre al dominar todas las palabras del tema. */}
@@ -242,12 +243,12 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
                     : t('voc.crosswordHint')}
               >
                 {crucigramaBloqueado
-                  ? t('voc.crosswordLocked', { p: UMBRAL_CRUCIGRAMA_VOCAB })
-                  : t('voc.crosswordProgress', { n: crucigramasHechos, total: MAX_CRUCIGRAMAS_VOCAB })}
+                  ? conSimbolo(t('voc.crosswordLocked', { p: UMBRAL_CRUCIGRAMA_VOCAB }))
+                  : conSimbolo(t('voc.crosswordProgress', { n: crucigramasHechos, total: MAX_CRUCIGRAMAS_VOCAB }))}
               </button>
               {aiOn && (
                 <button className="btn-ghost btn-sm" onClick={() => onReto(deck.id)}>
-                  {t('gr.aiChallenge')}
+                  {conSimbolo(t('gr.aiChallenge'))}
                 </button>
               )}
             </div>

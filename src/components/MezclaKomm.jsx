@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import IconoJuego from './IconoJuego.jsx';
 import { t } from '../lib/i18n.js';
 import { BAENDE, getLektion, lektionKommunikation } from '../lib/kursbuch/index.js';
 import MezclaFiltros, { alternarFiltroSeleccionado } from './MezclaFiltros.jsx';
@@ -52,7 +53,7 @@ export default function MezclaKomm({ onMezcla }) {
       </p>
 
       <button className="btn-primary home-todo" onClick={iniciarMezcla}>
-        <span className="gt-ico">🎲</span>
+        <IconoJuego e="🎲" />
         <span className="gt-txt">{t('komm.mixAll')}</span>
       </button>
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import IconoJuego, { conSimbolo } from './IconoJuego.jsx';
 import { tc } from '../lib/contenido/index.js';
 import { hablarSeguido, pararVoz, hayVozAlemana, alCargarVoces } from '../lib/audio.js';
 import { respuestaEnCadena, conversacionDe, seguimientoDe } from '../lib/kursbuch/respuestas.js';
@@ -753,14 +754,14 @@ function KommDetail({
 
       <Tabs>
         <button className={'tab' + (tab === 'teoria' ? ' active' : '')} onClick={() => setTab('teoria')}>
-          {t('gr.theory')}
+          {conSimbolo(t('gr.theory'))}
         </button>
         <button className={'tab' + (tab === 'ejercicios' ? ' active' : '')} onClick={() => setTab('ejercicios')}>
-          {t('gr.exercises')}
+          {conSimbolo(t('gr.exercises'))}
         </button>
         {!PORTABLE && (
           <button className={'tab' + (tab === 'fotos' ? ' active' : '')} onClick={() => setTab('fotos')}>
-            📸 {pick('Fotos', 'Photos')}
+            {conSimbolo('📸 ' + pick('Fotos', 'Photos'))}
           </button>
         )}
       </Tabs>
@@ -976,7 +977,7 @@ function KommDetail({
                   ? abrirJuego(j.juego)
                   : abrirPractica({ funktion: todaLaLeccion, tipos: j.tipos, gameId: `komm:${j.id}`, mezcla: true, volverA: 'ejercicios' })}
               >
-                <span className="gt-ico">{j.emoji}</span>
+                <IconoJuego e={j.emoji} />
                 <span className="gt-txt">
                   <span>{pick(j.es, j.en)}</span>
                   <small>{pick(j.subEs, j.subEn)}</small>
@@ -1006,7 +1007,7 @@ function KommDetail({
                   })
                 }
               >
-                {t('star.review', { n: starredKomm.length })}
+                {conSimbolo(t('star.review', { n: starredKomm.length }))}
               </button>
             )}
             {cantidadFallosRepasables > 0 && (
@@ -1024,7 +1025,7 @@ function KommDetail({
                 }
                 title={t('gr.reviewWeakHint')}
               >
-                {t('gr.reviewWeakN', { n: cantidadFallosRepasables })}
+                {conSimbolo(t('gr.reviewWeakN', { n: cantidadFallosRepasables }))}
               </button>
             )}
             {kFaltan.length > 0 && (
@@ -1044,8 +1045,8 @@ function KommDetail({
                   : t('voc.finishHint')}
               >
                 {(km?.pct || 0) < UMBRAL_TERMINAR
-                  ? t('voc.finishLocked', { p: UMBRAL_TERMINAR })
-                  : t('voc.finish', { n: kFaltan.length })}
+                  ? conSimbolo(t('voc.finishLocked', { p: UMBRAL_TERMINAR }))
+                  : conSimbolo(t('voc.finish', { n: kFaltan.length }))}
               </button>
             )}
 
@@ -1054,7 +1055,7 @@ function KommDetail({
                 ejercicios aparte") pero el boton no estaba en ningun sitio. */}
             {aiOn && onReto && (
               <button className="btn-ghost btn-sm" onClick={() => onReto(lektionId)}>
-                {t('gr.aiChallenge')}
+                {conSimbolo(t('gr.aiChallenge'))}
               </button>
             )}
           </div>

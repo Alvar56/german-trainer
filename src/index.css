@@ -7607,3 +7607,43 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 @media (prefers-reduced-motion: reduce) {
   .en-espacio.saltando > .fox-saludo, .en-espacio.saltando > .fox-polvo { animation: none; }
 }
+
+/* Iconos de los juegos (IconoJuego.jsx): simbolo oscuro en un circulo pastel,
+   como los del menu, un color por juego. Van al final para ganar a las reglas
+   de .gt-ico del movil, que le ponian un cuadrado blanco con borde. */
+.gt-ico.gt-sim {
+  width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; border: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--gj-bg, #e3e3e3); font-size: 0;
+}
+.gt-ico.gt-sim svg { width: 17px; height: 17px; fill: var(--gj-fg, #3c3c3c); }
+@media (max-width: 720px) {
+  .gametype .gt-ico.gt-sim,
+  .home-todo .gt-ico.gt-sim,
+  .home-ai-repaso .gt-ico.gt-sim,
+  .home-diary-new .gt-ico.gt-sim { width: 36px; height: 36px; flex-basis: 36px; border: none; border-radius: 50%; background: var(--gj-bg, #e3e3e3); }
+  .gt-ico.gt-sim svg { width: 19px; height: 19px; }
+}
+.gj-test    { --gj-bg: #c4eed0; --gj-fg: #0d652d; }
+.gj-judge   { --gj-bg: #ffe8a3; --gj-fg: #7a4f01; }
+.gj-match   { --gj-bg: #e8def8; --gj-fg: #4a2a8a; }
+.gj-blitz   { --gj-bg: #ffd8c2; --gj-fg: #8c3a0b; }
+.gj-order   { --gj-bg: #c2e7ff; --gj-fg: #004a77; }
+.gj-write   { --gj-bg: #dde3ea; --gj-fg: #2f3b48; }
+.gj-cards   { --gj-bg: #ffd8e4; --gj-fg: #8c1d4a; }
+.gj-random  { --gj-bg: #c2e7ff; --gj-fg: #004a77; }
+.gj-diary   { --gj-bg: #ffdbcc; --gj-fg: #8a3a12; }
+.gj-ai      { --gj-bg: #e8def8; --gj-fg: #4a2a8a; }
+.gj-reply   { --gj-bg: #b8ece6; --gj-fg: #00504a; }
+.gj-gap     { --gj-bg: #d6dcff; --gj-fg: #27358f; }
+.gj-letters { --gj-bg: #c0ecf5; --gj-fg: #00526a; }
+.gj-hangman { --gj-bg: #ffdad6; --gj-fg: #8c1d18; }
+[data-theme='dark'] .gt-ico.gt-sim { background: color-mix(in srgb, var(--gj-fg) 55%, #111); }
+[data-theme='dark'] .gt-ico.gt-sim svg { fill: var(--gj-bg); }
+
+/* Simbolo pequeño delante del texto en las pestañas y los botones de repaso
+   (conSimbolo en IconoJuego.jsx). Toma el color del texto del boton. */
+.sim-suelto {
+  width: 1.05em; height: 1.05em; fill: currentColor; flex: 0 0 auto;
+  vertical-align: -0.17em; margin-right: 0.4em; opacity: 0.85;
+}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import IconoJuego from './IconoJuego.jsx';
 import { t } from '../lib/i18n.js';
 import { bandasConGramatica } from '../topics/index.js';
 import MezclaFiltros, { alternarFiltroSeleccionado } from './MezclaFiltros.jsx';
@@ -36,7 +37,7 @@ export default function MezclaGramatica({ onStart }) {
         className="btn-primary home-todo"
         onClick={iniciarMezcla}
       >
-        <span className="gt-ico">🎲</span>
+        <IconoJuego e="🎲" />
         <span className="gt-txt">{t('gr.mixAll')}</span>
       </button>
 

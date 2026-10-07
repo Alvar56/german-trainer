@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import IconoJuego from './IconoJuego.jsx';
 import { liveStreak, getLevel, monthCalendar } from '../lib/streak.js';
 import { aiAvailable } from '../lib/settings.js';
 import { allRuns } from '../lib/leaderboard.js';
@@ -122,7 +123,7 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
             {/* El emoji, aparte del texto, para que en el movil entre en la
                 misma pastilla que el resto de opciones. En el escritorio se
                 pinta igual que cuando iba dentro de la cadena traducida. */}
-            <span className="gt-ico">🎲</span>
+            <IconoJuego e="🎲" />
             <span className="gt-txt">{t('home.random')}</span>
           </button>
           {/* La portada se queda con tres cosas y ninguna mas: la tanda mixta,
@@ -136,13 +137,13 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
               aqui se viene a pulsar, no a leer. */}
           <div className="gametype-grid" style={{ marginBottom: 12 }}>
             <button className="gametype gt-centro" onClick={() => onFlashcards('de-es')}>
-              <span className="gt-ico">🃏</span>
+              <IconoJuego e="🃏" />
               <span className="gt-txt">
                 <span>{t('voc.deToEs')}</span>
               </span>
             </button>
             <button className="gametype gt-centro" onClick={() => onFlashcards('es-de')}>
-              <span className="gt-ico">🃏</span>
+              <IconoJuego e="🃏" />
               <span className="gt-txt">
                 <span>{t('voc.esToDe')}</span>
               </span>
@@ -154,7 +155,7 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
               como esta. */}
           {PORTABLE ? (
             <button className="btn-ghost btn-sm home-ai-repaso home-diary-new" onClick={() => onDiaryNew?.()}>
-              <span className="gt-ico">✍️</span>
+              <IconoJuego e="✍️" />
               <span className="gt-txt">{t('home.newDiaryEntry')}</span>
             </button>
           ) : aiOn && (
@@ -163,7 +164,7 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
                   misma pastilla que los iconos de las tarjetas de arriba. En
                   el escritorio se pinta igual que cuando iba dentro de la
                   cadena traducida. */}
-              <span className="gt-ico">✨</span>
+              <IconoJuego e="✨" />
               <span className="gt-txt">{t('home.aiReview')}</span>
             </button>
           )}
