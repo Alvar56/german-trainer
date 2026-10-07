@@ -9,6 +9,10 @@ import React, { useRef, useLayoutEffect, useEffect } from 'react';
 export default function Tabs({ children, className = '' }) {
   const containerRef = useRef(null);
   const sliderRef = useRef(null);
+  // La primera vez la linea se coloca sin deslizarse. Si no, al entrar en un
+  // tema que se habia dejado en Ejercicios la linea venia desde Teoria, como
+  // si se hubiera cambiado de pestaña (y segun la seccion se notaba o no).
+  const colocada = useRef(false);
 
   const animarContenido = (event) => {
     const boton = event.target.closest?.('.tab');
@@ -34,10 +38,20 @@ export default function Tabs({ children, className = '' }) {
     if (!containerRef.current || !sliderRef.current) return;
     const activeBtn = containerRef.current.querySelector('.tab.active');
     const slider = sliderRef.current;
+    // Aun sin medidas (la seccion entra con su animacion y la caja esta
+    // oculta): se espera. El ResizeObserver vuelve a llamar al aparecer.
+    if (activeBtn && !activeBtn.offsetWidth) return;
     if (activeBtn) {
+      const primera = !colocada.current;
+      if (primera) slider.style.transition = 'none';
       slider.style.left = `${activeBtn.offsetLeft}px`;
       slider.style.width = `${activeBtn.offsetWidth}px`;
       slider.style.opacity = '1';
+      if (primera) {
+        colocada.current = true;
+        void slider.offsetWidth;
+        slider.style.transition = '';
+      }
     } else {
       slider.style.opacity = '0';
     }
