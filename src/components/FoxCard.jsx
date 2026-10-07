@@ -12,7 +12,9 @@ import { SIN_IA } from '../lib/modo.js';
 let yaSaludo = false;
 
 
-export default function FoxCard({ onAbrir }) {
+// onCambio avisa a la portada cuando cambias a Felix en la tienda: su brillo
+// de abajo va con el color del fondo y se quedaba con el del fondo anterior.
+export default function FoxCard({ onAbrir, onCambio }) {
   // En estado, no leído a pelo: al personalizarlo desde aquí, la tarjeta tiene
   // que repintarse con el zorro nuevo sin recargar la página.
   const [fuchs, setFuchsLocal] = useState(getFuchs);
@@ -153,6 +155,7 @@ export default function FoxCard({ onAbrir }) {
           }}
           onChange={(f) => {
             setFuchsLocal(f);
+            onCambio?.(f);
             setNuevos(nuevosDesbloqueos());
           }}
         />

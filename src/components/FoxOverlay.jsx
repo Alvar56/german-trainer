@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import FoxFace, { EMPIEZA } from './FoxFace.jsx';
 import { getFuchs } from '../lib/fuchs.js';
 import { useExerciseActive } from '../lib/teclas.js';
+import SaltosFelix, { useSaltos } from './SaltosFelix.jsx';
 
 // La mascota que acompaña en los ejercicios, abajo a la derecha.
 //
@@ -68,6 +69,20 @@ const FALLA = [
 ];
 
 const AL_EMPEZAR = 'Los geht’s!';
+
+// Lo que dice cuando lo tocas a mitad de un ejercicio (y da sus saltitos).
+const TOQUE = [
+  'Hihi, das kitzelt!',
+  'Hey, ich arbeite hier!',
+  'Konzentrier dich lieber!',
+  'Huch!',
+  'Hoppla!',
+  'Ja, ich bin noch da!',
+  'Nicht kitzeln!',
+  'Zurück zur Aufgabe!',
+  'Juhu!',
+  'Spring mit mir!'
+];
 
 // Una al azar, pero nunca la misma dos veces seguidas: repetir es justo lo que
 // hace que se note que son cuatro frases contadas.
@@ -156,10 +171,23 @@ export function useFox() {
 // premian algo en vez de estar puestas siempre.
 export default function FoxOverlay({ fox, mudo = false, racha = 0, className = '', fondoFeedback = false }) {
   const activa = useExerciseActive();
+  // Tocarlo: da sus saltitos (SaltosFelix) y dice otra cosa. Lo que dice al
+  // tocarlo dura hasta que el ejercicio le hace hablar de nuevo.
+  const saltos = useSaltos(false);
+  const [dicho, setDicho] = useState(null);
+  const ultimoToque = useRef(null);
+  useEffect(() => setDicho(null), [fox.msg]);
   if (!activa) return null;
 
   const f = getFuchs();
   const fondo = f.fondo || 'nadaFondo';
+
+  function tocar() {
+    saltos.saltar();
+    ultimoToque.current = otra(TOQUE, ultimoToque.current);
+    setDicho(ultimoToque.current);
+  }
+  const mensaje = dicho || fox.msg;
 
   const overlay = (
     <>
@@ -170,8 +198,9 @@ export default function FoxOverlay({ fox, mudo = false, racha = 0, className = '
         className={'fox-overlay' + (fondoFeedback ? ' fox-overlay-feedback' : '') + (className ? ' ' + className : '')}
         style={{ transform: fox.salta ? 'translateY(-15px)' : 'none' }}
       >
-        {fox.msg && <div className={'fox-burbuja-dice' + (mudo ? ' estorba' : '')}>{fox.msg}</div>}
-        <div className="fox-overlay-cara" style={{ pointerEvents: 'auto' }}>
+        {mensaje && <div className={'fox-burbuja-dice' + (mudo && !dicho ? ' estorba' : '')}>{mensaje}</div>}
+        <div className="fox-overlay-cara" style={{ pointerEvents: 'auto' }} onClick={tocar}>
+          <SaltosFelix saltos={saltos} espacio={fondo === 'weltraum'}>
           <FoxFace
             fuchs={f}
             gesto={fox.gesto}
@@ -181,6 +210,7 @@ export default function FoxOverlay({ fox, mudo = false, racha = 0, className = '
             racha={racha}
             className="flota"
           />
+          </SaltosFelix>
         </div>
       </div>
     </>

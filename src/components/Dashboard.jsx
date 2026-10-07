@@ -33,7 +33,9 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
   const last10 = recentRunsStats(10);
   const aiOn = aiAvailable();
   const WD = pick(WD_ES, WD_EN);
-  const fondoFelix = getFuchs().fondo || 'nadaFondo';
+  // En estado y no leido al pintar: si cambias el fondo de Felix en la tienda,
+  // el brillo de abajo tiene que cambiar ya, no al volver a la portada.
+  const [fondoFelix, setFondoFelix] = useState(() => getFuchs().fondo || 'nadaFondo');
 
   const recordSeguidas = bestStreak();
 
@@ -44,7 +46,7 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
         <p>{t('home.sub')}</p>
       </div>
 
-      {onFox && <FoxCard onAbrir={onFox} />}
+      {onFox && <FoxCard onAbrir={onFox} onCambio={(f) => setFondoFelix(f.fondo || 'nadaFondo')} />}
 
       <div className="statcards statcards-inicio">
         {/* La de nivel es la que ocupa la fila entera en el movil: va marcada
