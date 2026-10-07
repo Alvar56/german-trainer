@@ -18,7 +18,6 @@ import {
   PRECIO_NOMBRE
 } from '../lib/fuchs.js';
 import { saldo } from '../lib/monedas.js';
-import { ganar } from '../lib/monedas.js';
 import { storage } from '../lib/storage.js';
 import { useTeclas } from '../lib/teclas.js';
 
@@ -38,6 +37,36 @@ const RANURAS = [
   { id: 'fondo', de: 'Hintergrund', ico: '🏞️' }
 ];
 
+// El Felix grande de la tienda, con su propia cara cambiante. Va aparte para
+// que cada cambio de gesto solo vuelva a pintar a Felix y no toda la tienda.
+// Antes estaba fijo en «feliz», con los ojos cerrados todo el rato.
+const RONDA_GESTOS = ['normal', 'feliz', 'normal', 'guino', 'normal', 'pensando', 'normal', 'sorpresa'];
+function FelixConGestos({ reaccionRef, ...props }) {
+  const [gesto, setGesto] = useState('normal');
+  const hasta = useRef(0);
+  const vuelta = useRef(null);
+  useEffect(() => {
+    let i = 0;
+    const id = setInterval(() => {
+      if (Date.now() < hasta.current) return;
+      i = (i + 1) % RONDA_GESTOS.length;
+      setGesto(RONDA_GESTOS[i]);
+    }, 2600);
+    reaccionRef.current = (g, ms = 1800) => {
+      hasta.current = Date.now() + ms;
+      setGesto(g);
+      clearTimeout(vuelta.current);
+      vuelta.current = setTimeout(() => setGesto('normal'), ms);
+    };
+    return () => {
+      clearInterval(id);
+      clearTimeout(vuelta.current);
+      reaccionRef.current = null;
+    };
+  }, [reaccionRef]);
+  return <FoxFace {...props} gesto={gesto} />;
+}
+
 // Un bloque de la tienda: lo que se compra arriba y lo que se gana debajo,
 // separado. Mezclados, un trofeo que no esta en venta parecia lo mas caro de
 // la lista.
@@ -46,20 +75,6 @@ const RANURAS = [
 function Ficha({ cosa, puesta, monedas, onPoner, onComprar, dot = null }) {
   const trofeo = !!cosa.req;
   const puedes = monedas >= cosa.precio;
-
-  // Los objetos se pueden probar y equipar directamente: ya no se desbloquean
-  // con monedas, así que la ficha no debe insinuar que existe un coste.
-  if (cosa.vistaPrevia) {
-    return (
-      <button className={'fox-item bloqueado comprable' + (puesta ? ' on' : '')} onClick={onPoner}>
-        <span className="fci-fila">
-          {dot}
-          <span>{cosa.de}</span>
-        </span>
-        <small>Anprobieren</small>
-      </button>
-    );
-  }
 
   if (cosa.abierto) {
     return (
@@ -165,6 +180,11 @@ export default function FoxAjustes({ onClose, onChange }) {
   const [abierta, setAbierta] = useState(null);
   const [nombreLibre, setNombreLibre] = useState(puedeCambiarNombre);
   const [l, setLogros] = useState(logros);
+  // Felix va cambiando de cara mientras miras la tienda (FelixConGestos).
+  // Aqui solo se le avisa de lo que pasa: se alegra al ponerle algo y se
+  // pone triste si no llegan las monedas.
+  const reaccionRef = useRef(null);
+  const reaccionar = (g, ms) => reaccionRef.current?.(g, ms);
   const timerRef = useRef(null);
   const efectoPreviewTimer = useRef(null);
   const efectoFadeTimer = useRef(null);
@@ -173,21 +193,6 @@ export default function FoxAjustes({ onClose, onChange }) {
   const onChangeRef = useRef(onChange);
   useEffect(() => onCoronasListo(() => setLogros(logros())), []);
   useEffect(() => {
-    // Compensa una sola vez las compras de objetos ya guardadas: ahora se
-    // pueden probar todos sin coste y sus compras previas no deben dejarte
-    // con menos monedas. Se conservan los objetos que ya tenías.
-    const claveCompensacion = 'fox:compensacion-vista-previa-objetos-v1';
-    if (!storage.get(claveCompensacion, false)) {
-      const idsComprados = new Set(f.comprado || []);
-      const reembolso = complementosDe('objeto', f, l)
-        .filter((c) => !c.req && c.precio > 0 && idsComprados.has(c.id))
-        .reduce((total, c) => total + c.precio, 0);
-      storage.set(claveCompensacion, true);
-      if (reembolso > 0) {
-        ganar(reembolso);
-        setMonedas(saldo());
-      }
-    }
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.add('fox-modal-abierto');
     }
@@ -241,6 +246,7 @@ export default function FoxAjustes({ onClose, onChange }) {
   function cambiar(patch) {
     const next = setFuchs(patch);
     setF(next);
+    reaccionar('muyfeliz');
     if (Object.prototype.hasOwnProperty.call(patch, 'particulas')) {
       mostrarPrevisualizacionEfecto(patch.particulas);
     }
@@ -251,6 +257,7 @@ export default function FoxAjustes({ onClose, onChange }) {
   }
 
   function sinMonedas() {
+    reaccionar('triste');
     setAviso('Du hast nicht genug Münzen.');
     setTimeout(() => setAviso(''), 2500);
   }
@@ -300,9 +307,9 @@ export default function FoxAjustes({ onClose, onChange }) {
           {/* Como en la portada: salta al abrir la tienda y cada vez que lo tocas. */}
           <div className="fox-hero-personaje" onClick={saltos.saltar}>
             <SaltosFelix saltos={saltos} espacio={f.fondo === 'weltraum'}>
-            <FoxFace
+            <FelixConGestos
+              reaccionRef={reaccionRef}
               fuchs={f}
-              gesto="feliz"
               size={152}
               conCuerpo
               separarObjetos
@@ -406,7 +413,6 @@ export default function FoxAjustes({ onClose, onChange }) {
                 if (siguiente === 'particulas') mostrarPrevisualizacionEfecto(f.particulas);
               }}
               cosas={complementosDe(r.id, f, l)
-                .map((c) => ({ ...c, vistaPrevia: r.id === 'objeto' && !c.abierto && !c.req }))
                 .sort((a, b) => r.id === 'objeto' ? (a.precio ?? Infinity) - (b.precio ?? Infinity) : 0)}
               esPuesta={(c) => f[r.id] === c.id}
               monedas={monedas}

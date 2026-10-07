@@ -7773,3 +7773,9 @@ body[data-juego] .fox-difuminado-suelo[class*='fox-difuminado-']:not(.fox-difumi
 }
 /* El simbolo de la etiqueta del juego, en el color oscuro de ese juego. */
 .sim-juego { fill: var(--gj-fg, currentColor); opacity: 1; }
+
+/* Felix grande de la tienda sin la sombra difuminada (drop-shadow de 14px):
+   la cola se menea, parpadea, salta y cambia de gesto, asi que el navegador
+   tenia que volver a calcular ese difuminado en cada fotograma y la tienda
+   iba a tirones. Ya tiene su sombra en el suelo (::after). */
+.fox-hero-personaje { filter: none; }

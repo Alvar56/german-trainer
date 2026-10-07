@@ -769,6 +769,78 @@ function mapaSpriteFino(filas, x0, y0, tonos = {}, conservarMayusculas = false) 
   }));
   return px;
 }
+// Un dibujo a medio pixel: cada caracter es un cuadradito de 0,5 x 0,5. Para
+// los objetos de la mano, que a pixel entero eran un manchurron de cuatro
+// colores y no se distinguia una camara de un libro.
+function spriteMedio(filas, x0, y0) {
+  const px = [];
+  filas.forEach((fila, dy) => [...fila].forEach((k, dx) => {
+    if (k !== '.') px.push([x0 + dx * .5, y0 + dy * .5, k]);
+  }));
+  return px;
+}
+// Una fila del sprite en tramos del mismo color: [{ x, ancho, k }]. Con un
+// <rect> por pixel el zorro eran ~660 piezas, y la cola se mueve sin parar,
+// asi que el navegador las redibujaba todas en cada fotograma (la tienda,
+// con el zorro grande y saltando, iba a tirones). Juntando los pixeles
+// seguidos de cada fila el dibujo es identico con muchas menos.
+function tiras(fila) {
+  const out = [];
+  fila.forEach((k, x) => {
+    if (k === '.') return;
+    const previo = out[out.length - 1];
+    if (previo && previo.k === k && previo.x + previo.ancho === x) previo.ancho += 1;
+    else out.push({ x, ancho: 1, k });
+  });
+  return out;
+}
+// Los zapatos de la rana: sus pies son mas anchos que los del resto, asi que
+// la suela se alarga por fuera (dos pixeles abajo, uno en la fila de arriba)
+// con el color del borde de cada zapato. Si no, los dedos asomaban por los
+// lados como si el zapato le quedara pequeño.
+function ensancharPies(px) {
+  const extra = [];
+  const filas = new Map();
+  px.forEach(([x, y, k]) => {
+    if (y < 27 || !Number.isInteger(x)) return;
+    const f = filas.get(y) || { izq: null, der: null };
+    if (x < 14 && (!f.izq || x < f.izq[0])) f.izq = [x, k];
+    if (x >= 14 && (!f.der || x > f.der[0])) f.der = [x, k];
+    filas.set(y, f);
+  });
+  filas.forEach(({ izq, der }, y) => {
+    const n = y >= 28 ? 2 : 1;
+    for (let i = 1; i <= n; i++) {
+      if (izq) extra.push([izq[0] - i, y, izq[1]]);
+      if (der) extra.push([der[0] + i, y, der[1]]);
+    }
+  });
+  return [...px, ...extra];
+}
+// Lo mismo que tiras() pero para la ropa y los objetos, que llegan como lista
+// de [x, y, color]: ~450 cuadraditos con la ropa y un objeto puestos, que la
+// tienda (con Felix grande y moviendose) redibujaba sin parar. Se junta cada
+// tramo seguido del mismo color en un solo rectangulo: [x, y, color, ancho].
+// Solo si todo cae en su rejilla; si algo va a medio paso, se deja tal cual.
+function juntarPixeles(lista, paso, anima) {
+  const enRejilla = (v) => Math.abs(v / paso - Math.round(v / paso)) < 1e-6;
+  if (!lista.every(([x, y]) => enRejilla(x) && enRejilla(y))) return lista.map((q) => [q[0], q[1], q[2], paso]);
+  // El ultimo que pinta una casilla es el que se ve.
+  const casillas = new Map();
+  lista.forEach(([x, y, k]) => casillas.set(`${x},${y}`, [x, y, k]));
+  const orden = [...casillas.values()].sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  const out = [];
+  orden.forEach(([x, y, k]) => {
+    const previo = out[out.length - 1];
+    const mueve = anima ? !!anima(x, y) : false;
+    if (previo && previo[1] === y && previo[2] === k && previo[4] === mueve && Math.abs(previo[0] + previo[3] - x) < 1e-6) {
+      previo[3] += paso;
+    } else {
+      out.push([x, y, k, paso, mueve]);
+    }
+  });
+  return out;
+}
 function doblarResolucion(filas) {
   return filas.flatMap((fila) => {
     const doble = [...fila].map((k) => k + k).join('');
@@ -946,12 +1018,25 @@ const EXTRAS = {
   },
   // --- objetos: se sostienen con la pata derecha ---
   trofeo: {
-    a: '#f2c230', b: '#a87c12', c: '#fff0bc',
-    px: [
-      ...rect(21, 21, 24, 24, 'a'), ...rect(20, 22, 20, 23, 'b'), ...rect(25, 22, 25, 23, 'b'),
-      ...rect(22, 21, 23, 22, 'c'),
-      ...rect(22, 25, 23, 26, 'b'), ...rect(20, 27, 25, 28, 'a'), ...rect(20, 28, 25, 28, 'b')
-    ]
+    // Copa dorada con dos asas, brillo, estrella grabada y peana oscura.
+    k: '#5c3d06', a: '#f2c230', b: '#c8960f', c: '#fff3bf', s: '#7a4a12', w: '#ffffff',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '..kkkkkkkkk..',
+      'kkacaaaaabkkk',
+      'kakcaaaaabk.k',
+      'kakcaawaabk.k',
+      'kakaawwwabk.k',
+      '.kkaaawaabkk.',
+      '..kaaaaabbk..',
+      '...kaaabbk...',
+      '....kaabk....',
+      '.....kbk.....',
+      '....kabbk....',
+      '..kkkkkkkkk..',
+      '..kssssssskk.',
+      '..kkkkkkkkk..'
+    ], 20.5, 22)
   },
   baston: {
     a: '#6d4c2b', b: '#422a14', c: '#d4af37',
@@ -965,12 +1050,104 @@ const EXTRAS = {
     ]
   },
   bastonrey: {
-    a: '#f2c230', b: '#e8558f', c: '#a87c12',
-    px: [
-      ...rect(22, 20, 23, 21, 'a'), [21, 21, 'a'], [24, 21, 'a'], [22, 19, 'a'], [23, 19, 'a'],
-      [22, 20, 'b'], [23, 20, 'b'],
-      ...rect(22, 22, 23, 28, 'c')
-    ]
+    // Cetro: coronita con tres puntas y una joya rosa, bola dorada y vara
+    // con anillos, acabada en un pomo.
+    k: '#5c3d06', a: '#f2c230', b: '#c8960f', c: '#fff3bf', r: '#e8558f', w: '#ffffff',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '.k..k..k.',
+      'kak.kak.kak'.slice(0, 9),
+      'kaakaakaak'.slice(0, 9),
+      'kaaarwaak',
+      'kaarrraak',
+      '.kkkkkkk.',
+      '..kcaab..',
+      '..kaaab..',
+      '...kbk...',
+      '...kak...',
+      '..kkkkk..',
+      '...kak...',
+      '...kab...',
+      '...kab...',
+      '...kab...',
+      '..kkkkk..',
+      '...kab...',
+      '...kab...',
+      '...kab...',
+      '..kaabk..',
+      '..kkkkk..'
+    ], 21, 18)
+  },
+  eistuete: {
+    // Cucurucho con dos bolas (fresa y vainilla), un barquillo a cuadros y
+    // una guinda.
+    k: '#4a2a14', r: '#f28aa8', p: '#d65b82', v: '#fff3d6', u: '#e8d3a8', c: '#e0a85a', d: '#b07a35', g: '#d62839', w: '#ffffff',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '....kk....',
+      '...kggk...',
+      '..kkwgkk..',
+      '.krrrrrpk.',
+      'krwrrrrrpk',
+      'krrrrrrppk',
+      '.kvvvvvuk.',
+      'kvwvvvvvuk',
+      'kvvvvvvuuk',
+      'kkkkkkkkkk',
+      '.kcdccdck.',
+      '.kdccdcck.',
+      '..kcdcck..',
+      '..kccdck..',
+      '...kcdk...',
+      '...kdck...',
+      '....kk....'
+    ], 21, 20.5)
+  },
+  sonnenblume: {
+    // Girasol: corona de petalos amarillos, centro de pipas y tallo con hoja.
+    k: '#4a3410', y: '#ffd23f', o: '#f2a516', m: '#6b3e1a', n: '#8a5a2b', g: '#3f9b4a', h: '#2a6e33',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '...kk.kk....',
+      '..kyykyyk...',
+      '.kkyyyyykk..',
+      'kyykmnmnkyyk',
+      'kyykmmnmkyyk',
+      '.kykmnmmkyk.',
+      'kyykmmmnkyyk',
+      '.kkyyyyykk..',
+      '..kyokyok...',
+      '...kkgkk....',
+      '.....gk.....',
+      '..kk.gk.....',
+      '.kggkgk.....',
+      '..kghgk.....',
+      '....kgk.....',
+      '.....gk.....',
+      '.....gk.....',
+      '.....hk.....'
+    ], 20.5, 19.5)
+  },
+  laterne: {
+    // Farolillo de papel de San Martin: palito, arco y una lampara redonda
+    // con su vela encendida dentro.
+    k: '#3a2410', s: '#8a5a2b', a: '#ff8c42', b: '#e0602a', l: '#ffd56b', w: '#fff6d0', r: '#d62839',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      'kkkkkkk....',
+      '.....ks....',
+      '.....ks....',
+      '....kkkk...',
+      '...k....k..',
+      '..kkkkkkkk.',
+      '.kaaarrrabk',
+      'kaallwllabk',
+      'kalwwwwlabk',
+      'kalwwwwlabk',
+      'kaallllaabk',
+      '.kaarrrabk.',
+      '..kkkkkkk..'
+    ], 21, 21.5)
   },
   // --- de rey (se gana con coronas) ---
   capa: {
@@ -1152,13 +1329,24 @@ const EXTRAS = {
   },
   // El orbe: la bola con la cruz, en la manita.
   orbe: {
-    a: '#e8e8f0', b: '#a9a9bb', c: '#e8558f',
-    px: [
-      ...rect(21, 23, 25, 27, 'a'),
-      ...rect(21, 26, 25, 27, 'b'), [22, 24, 'c'], [24, 25, 'c'],
-      ...rect(22, 25, 24, 25, 'b'),
-      ...rect(23, 20, 23, 22, 'a'), ...rect(22, 21, 24, 21, 'a'), [23, 19, 'c']
-    ]
+    // Orbe de reina: bola de plata con banda dorada, joyas y una cruz arriba.
+    k: '#3a3a52', a: '#eef0f8', b: '#b4b6c8', g: '#f2c230', h: '#c8960f', r: '#e8558f', w: '#ffffff',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '.....kkk.....',
+      '....kgggk....',
+      '...kkghgkk...',
+      '....kgggk....',
+      '...kkkgkkk...',
+      '..kaaagaaak..',
+      '.kawaaagaaabk',
+      'kawaaaagaaabk',
+      'kgggrgggrgghk',
+      'kaaaaagaaabbk',
+      '.kaaaagaabbk.',
+      '..kbbbgbbbk..',
+      '...kkkkkkk...'
+    ], 20.5, 22)
   },
   // --- cabeza (añadidos) ---
   paja: {
@@ -1340,11 +1528,23 @@ const EXTRAS = {
 
   // --- objetos (añadidos) ---
   camara: {
-    a: '#33333f', b: '#1b1b22', c: '#7bd8ff',
-    px: [
-      ...rect(20, 22, 25, 27, 'a'), ...rect(22, 23, 24, 26, 'c'),
-      [23, 24, 'b'], [23, 25, 'b'], ...rect(21, 21, 23, 21, 'b')
-    ]
+    // Camara de fotos: cuerpo oscuro con banda metalica, objetivo redondo
+    // con su reflejo, flash amarillo y el boton rojo de disparar.
+    k: '#16161c', a: '#3b3b48', b: '#2a2a33', g: '#a7b0ba', l: '#4b5563', c: '#7bd8ff', d: '#2f7fb0', w: '#ffffff', y: '#f6d365', r: '#e74c3c',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '.kkkk.....kkk.',
+      '.kyyk.....krk.',
+      'kkkkkkkkkkkkkk',
+      'kggggkkkkggggk',
+      'kaaakllllkaaak',
+      'kaaklcwccdlkak',
+      'kaaklwccddlkak',
+      'kaaklccdddlkak',
+      'kaaakllllkaaak',
+      'kbbbbkkkkbbbbk',
+      '.kkkkkkkkkkkk.'
+    ], 20, 23)
   },
   guitarra: {
     a: '#d58a4e', b: '#a85c32', c: '#f1cc7b', d: '#422b24', e: '#fff1c6', escala: 1.34,
@@ -1590,43 +1790,98 @@ const EXTRAS = {
 
   // --- objetos que se compran, en la manita derecha ---
   libro: {
-    a: '#8e44ad', b: '#5b2c6f', c: '#f4f6f7',
-    px: [
-      ...rect(21, 22, 25, 28, 'a'),
-      ...rect(21, 23, 22, 27, 'c'),
-      ...rect(24, 22, 25, 28, 'b'), [23, 24, 'b'], [23, 25, 'b']
-    ]
+    // Libro de tapa dura de pie: lomo oscuro, cantos de las hojas a la
+    // derecha, titulo dorado, la bandera alemana en la tapa y la cinta del
+    // marcapaginas colgando.
+    k: '#2b1838', a: '#8e44ad', b: '#6c3483', p: '#f6efdc', q: '#d9cdb0', y: '#f4c430', n: '#1d1d1d', r: '#dd2a2a',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '.kkkkkkkkkk.',
+      'kbaaaaaaaakq',
+      'kbaaaaaaaakp',
+      'kbayyyyyyakp',
+      'kbayaaaayakq',
+      'kbayyyyyyakp',
+      'kbaaaaaaaakp',
+      'kbannnnnnakq',
+      'kbarrrrrrakp',
+      'kbayyyyyyakp',
+      'kbaaaaaaaakq',
+      'kbaaaaaaaakp',
+      'kbaaaaaaaakp',
+      'kbaaaaaaaakq',
+      '.kkkkkkkkkkk',
+      '...kr.......',
+      '...r........'
+    ], 20.5, 20)
   },
   taza: {
-    a: '#f4f6f7', b: '#aeb6bf', c: '#6b3e26',
-    px: [
-      ...rect(21, 23, 24, 28, 'a'),
-      ...rect(21, 23, 24, 23, 'c'),
-      ...rect(24, 24, 24, 28, 'b'),
-      [25, 24, 'b'], [26, 25, 'b'], [26, 26, 'b'], [25, 27, 'b']
-    ]
+    // Taza blanca con asa, cafe dentro, un corazon rojo y su vapor.
+    k: '#3a3a44', w: '#ffffff', g: '#cfd4da', c: '#6b3e26', h: '#a0623a', r: '#e74c3c', s: '#c9d3dd',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '...s...s.....',
+      '....s...s....',
+      '...s...s.....',
+      'kkkkkkkkkk...',
+      'kcchccccck...',
+      'kwwwwwwwgkkk.',
+      'kwwrrwrrgk.gk',
+      'kwrrrrrrgk.gk',
+      'kwwrrrrwgk.gk',
+      'kwwwrrwwgkkk.',
+      'kwwwwwwwgk...',
+      'kwwwwwwwgk...',
+      '.kkkkkkkk....'
+    ], 20.5, 22)
   },
   brezel: {
-    a: '#a9662d', b: '#7a4519', c: '#f4f4f4',
-    px: [
-      ...rect(21, 22, 24, 22, 'a'),
-      [20, 23, 'a'], [25, 23, 'a'], [22, 23, 'a'], [23, 23, 'a'],
-      [20, 24, 'a'], [25, 24, 'a'], [21, 24, 'a'], [24, 24, 'a'],
-      ...rect(21, 25, 24, 25, 'a'),
-      [22, 26, 'a'], [23, 26, 'a'],
-      ...rect(21, 27, 24, 27, 'a'),
-      [20, 25, 'b'], [25, 25, 'b'],
-      [22, 22, 'c'], [24, 25, 'c'], [22, 27, 'c']
-    ]
+    // Brezel de verdad: dos lazos arriba, el cruce en el centro, la panza
+    // de abajo y granos de sal gorda.
+    k: '#4a2410', a: '#b8692e', b: '#8a4a1c', h: '#e0a066', s: '#ffffff',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '..kkkk..kkkk..',
+      '.khaabkkhaabk.',
+      'kha..kbbk..abk',
+      'kas..kaak..sak',
+      'ka...kaak...ak',
+      'kab.kaabbk.bak',
+      '.kakab..bakak.',
+      '..kab.s..bak..',
+      '.kab......bak.',
+      'kab..s..s..bak',
+      'khaaaaaaaaaabk',
+      '.kbbbbbbbbbbk.',
+      '..kkkkkkkkkk..'
+    ], 20.5, 22)
   },
   globo: {
-    a: '#e74c3c', b: '#b03a2e', c: '#ffffff',
-    px: [
-      ...rect(22, 16, 24, 16, 'a'), ...rect(21, 17, 25, 21, 'a'),
-      ...rect(24, 18, 25, 21, 'b'),
-      [22, 18, 'c'],
-      [23, 22, 'b'], ...rect(23, 23, 23, 28, 'b')
-    ]
+    // Globo ovalado con brillo, nudo y cuerda ondulada hasta la mano.
+    k: '#7a1a12', a: '#e74c3c', b: '#b03a2e', w: '#ffffff', h: '#f7a9a0', s: '#5b5b66',
+    escala: 1.25, medio: true,
+    px: spriteMedio([
+      '...kkkkk...',
+      '..kaaaaak..',
+      '.kawwaaabk.',
+      'kawhaaaaabk',
+      'kahaaaaaabk',
+      'kaaaaaaaabk',
+      'kaaaaaaabbk',
+      '.kaaaaaabk.',
+      '..kaaaabk..',
+      '...kabbk...',
+      '....kbk....',
+      '....kkk....',
+      '.....s.....',
+      '....s......',
+      '....s......',
+      '.....s.....',
+      '......s....',
+      '.....s.....',
+      '....s......',
+      '....s......'
+    ], 21, 18.5)
   },
   cascoAstronauta: {
     a: '#f1f5f9', b: '#cbd5e1', c: '#475569', d: 'rgba(56, 189, 248, 0.75)',
@@ -1976,7 +2231,8 @@ export default function FoxFace({
     conCuerpo ? fuchs?.objeto : null
   ]
     .map((id, i) => {
-      const ex = EXTRAS[id];
+      const base = EXTRAS[id];
+      const ex = base && i === 4 && especie === 'rana' ? { ...base, px: ensancharPies(base.px) } : base;
       // El objeto de la mano se dibuja algo mas grande que el resto: a tamaño
       // de rejilla se quedaba en un manchurron de cinco pixeles y no se
       // distinguia un libro de una taza. Crece desde su base, que es donde lo
@@ -2169,28 +2425,24 @@ export default function FoxFace({
       {celdasCola && (
         <g className="fox-cola">
           {celdasCola.map((f, y) =>
-            f.map((k, x) =>
-              k === '.' ? null : (
-                <rect key={`c${y}-${x}`} x={x} y={y} width="1" height="1" fill={col[k]} />
-              )
-            )
+            tiras(f).map(({ x, ancho, k }) => (
+              <rect key={`c${y}-${x}`} x={x} y={y} width={ancho} height="1" fill={col[k]} />
+            ))
           )}
         </g>
       )}
       <g className="fox-cuerpo">
         {celdas.slice(0, alto).map((f, y) =>
-          f.map((k, x) =>
-            k === '.' ? null : (
-              <rect key={`${y}-${x}`} x={x} y={y} width="1" height="1" fill={col[k]} />
-            )
-          )
+          tiras(f).map(({ x, ancho, k }) => (
+            <rect key={`${y}-${x}`} x={x} y={y} width={ancho} height="1" fill={col[k]} />
+          ))
         )}
         {extras.map(({ id, ex, escala, esObjeto }, i) => {
           const vis = ex.px.filter(([, y]) => y < alto);
           const pixelStep = ex.pixelStep ?? 1;
           const pixelesRender = [
             ...vis.flatMap(([x, y, color]) => {
-              if (pixelStep === 1) return [[x, y, color]];
+              if (pixelStep === 1 || ex.medio) return [[x, y, color]];
               const celdas = [];
               for (let py = 0; py < 1; py += pixelStep) {
                 for (let px = 0; px < 1; px += pixelStep) celdas.push([x + px, y + py, color]);
@@ -2246,14 +2498,14 @@ export default function FoxFace({
               {id === 'peluche' && <title>Toca dos veces para darle un abrazo</title>}
               {id === 'cocheRC' && <title>Toca tres veces para hacerlo correr</title>}
               {id === 'robot' && <title>Toca dos veces para activarlo</title>}
-              {pixelesRender.map(([x, y, k], j) => (
+              {juntarPixeles(pixelesRender, ex.medio ? .5 : pixelStep, ex.anima).map(([x, y, k, ancho], j) => (
                 <rect
                   key={j}
                   className={ex.anima && ex.anima(x, y) ? 'fox-px-mueve' : undefined}
                   x={(escala === 1 ? x : cx + (x - cx) * escala) + ajuste + separacionX}
                   y={escala === 1 ? y : cy + (y - cy) * escala + ajusteY}
-                  width={pixelStep * escala}
-                  height={pixelStep * escala}
+                  width={ancho * escala}
+                  height={(ex.medio ? .5 : pixelStep) * escala}
                   fill={k === 'a' ? ex.a : k === 'b' ? ex.b : k === 'c' ? ex.c : k === 'd' ? ex.d : (typeof k === 'string' && (k.startsWith('#') || k.startsWith('rgba') || k.startsWith('rgb'))) ? k : (ex[k] || ex.c)}
                 />
               ))}

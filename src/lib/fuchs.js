@@ -166,6 +166,9 @@ export const COMPLEMENTOS = [
   { id: 'peluche', de: 'Kuscheltier', ranura: 'objeto', es: 'Peluche', en: 'Teddy bear', precio: 260 },
   { id: 'cocheRC', de: 'Ferngesteuertes Auto', ranura: 'objeto', es: 'Coche teledirigido', en: 'Remote-control car', precio: 400 },
   { id: 'robot', de: 'Roboter', ranura: 'objeto', es: 'Robot', en: 'Robot', precio: 800 },
+  { id: 'eistuete', de: 'Eistüte', ranura: 'objeto', es: 'Helado', en: 'Ice cream cone', precio: 240 },
+  { id: 'sonnenblume', de: 'Sonnenblume', ranura: 'objeto', es: 'Girasol', en: 'Sunflower', precio: 300 },
+  { id: 'laterne', de: 'Laterne', ranura: 'objeto', es: 'Farolillo de San Martín', en: 'St Martin lantern', precio: 420 },
   { id: 'trofeo', de: 'Goldpokal', ranura: 'objeto', es: '🏆 Trofeo de oro', en: '🏆 Gold trophy', req: { tipo: 'dias', n: 365 } },
   { id: 'orbe', de: 'Reichsapfel', ranura: 'objeto', es: '👑 Orbe de reina', en: '👑 Queen orb', req: { tipo: 'coronas', n: 18 } },
   { id: 'bastonrey', de: 'Zepter', ranura: 'objeto', es: '👑 Bastón de rey', en: '👑 Royal sceptre', req: { tipo: 'coronas', n: 20 } }
@@ -252,6 +255,12 @@ export function getFuchs() {
   if (objetosRetirados.includes(f.objeto)) f.objeto = DEFAULT.objeto;
   f.comprado = Array.isArray(f.comprado) ? f.comprado.filter((id) => !objetosRetirados.includes(id)) : [];
   f.visto = Array.isArray(f.visto) ? f.visto.filter((id) => !objetosRetirados.includes(id)) : [];
+  // Los objetos vuelven a costar monedas (hubo una temporada en que se podian
+  // probar gratis). Si el que lleva puesto no lo ha comprado, se le quita.
+  const objetoPuesto = COMPLEMENTOS.find((c) => c.id === f.objeto);
+  if (objetoPuesto && !objetoPuesto.req && objetoPuesto.precio > 0 && !f.comprado.includes(objetoPuesto.id)) {
+    f.objeto = DEFAULT.objeto;
+  }
   // Si una especie deja de estar disponible, recuperar el animal gratuito.
   if (!ANIMALES.some((a) => a.id === f.especie)) f.especie = DEFAULT.especie;
   const col = COLORES.find((c) => c.id === f.color);
