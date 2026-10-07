@@ -11,6 +11,7 @@ import { getLevel, getStreak } from './streak.js';
 import { bestStreak } from './rachas.js';
 import { saldo, gastar } from './monedas.js';
 import { tc } from './contenido/index.js';
+import { getLang } from './i18n.js';
 
 const KEY = 'fuchs';
 
@@ -225,7 +226,14 @@ const FONDOS = [
   // Aquí estaban 'schloss', 'cafe', 'wald', 'berge' y 'stadt'. Se retiraron.
   // Quien los tuviera puestos vuelve al fondo por defecto (ver getFuchs).
   { id: 'klasse', de: 'Klassenzimmer', ranura: 'fondo', es: 'Clase', en: 'Classroom', precio: 450 },
-  { id: 'weltraum', de: 'Weltraum', ranura: 'fondo', es: 'Espacio', en: 'Outer space', precio: 550 }
+  { id: 'weltraum', de: 'Weltraum', ranura: 'fondo', es: 'Espacio', en: 'Outer space', precio: 550 },
+  { id: 'vulkan', de: 'Vulkan', ranura: 'fondo', es: 'Volcán', en: 'Volcano', precio: 600 },
+  { id: 'himmel', de: 'Himmel', ranura: 'fondo', es: 'Cielo', en: 'Sky', precio: 400 },
+  { id: 'dschungel', de: 'Dschungel', ranura: 'fondo', es: 'Jungla', en: 'Jungle', precio: 450 },
+  { id: 'unterwasser', de: 'Unterwasser', ranura: 'fondo', es: 'Bajo el mar', en: 'Under the sea', precio: 500 },
+  { id: 'alpen', de: 'Alpen', ranura: 'fondo', es: 'Montaña', en: 'Mountains', precio: 400 },
+  { id: 'herbstwald', de: 'Herbstwald', ranura: 'fondo', es: 'Bosque en otoño', en: 'Autumn forest', precio: 350 },
+  { id: 'grossstadt', de: 'Großstadt', ranura: 'fondo', es: 'Ciudad', en: 'City', precio: 500 }
 ];
 
 COMPLEMENTOS.push(...FONDOS);
@@ -564,6 +572,29 @@ function repertorio() {
   return SIN_IA ? FRASES : [...PREGUNTAS, ...FRASES];
 }
 
+// Easter eggs de la portada: en algunos dias señalados (y de madrugada)
+// Felix no saca una frase cualquiera, sino una de la ocasion. Llevan su
+// propia traduccion inglesa porque no estan en el diccionario de contenido.
+const DIAS_ESPECIALES = {
+  '01-01': { de: 'Frohes neues Jahr! Hast du gute Vorsätze?', es: '¡Feliz año nuevo! ¿Tienes buenos propósitos?', en: 'Happy New Year! Any good resolutions?' },
+  '10-03': { de: 'Heute ist der Tag der Deutschen Einheit.', es: 'Hoy es el Día de la Unidad Alemana.', en: 'Today is German Unity Day.' },
+  '10-26': { de: 'Heute ist Nationalfeiertag in Österreich!', es: '¡Hoy es la fiesta nacional de Austria!', en: "Today is Austria's national holiday!" },
+  '10-31': { de: 'Süßes oder Saures? Heute ist Halloween!', es: '¿Truco o trato? ¡Hoy es Halloween!', en: 'Trick or treat? It is Halloween!' },
+  '11-11': { de: 'Laterne, Laterne, Sonne, Mond und Sterne! Heute ist Martinstag.', es: '¡Hoy es San Martín! Los niños salen a la calle con farolillos cantando.', en: "It's St Martin's Day! Children walk through the streets with lanterns, singing." },
+  '12-06': { de: 'Heute kommt der Nikolaus! Hast du deine Stiefel geputzt?', es: '¡Hoy viene San Nicolás! ¿Has limpiado tus botas?', en: 'St Nicholas comes today! Have you cleaned your boots?' },
+  '12-24': { de: 'Frohe Weihnachten! Heute ist Heiliger Abend.', es: '¡Feliz Navidad! Hoy es Nochebuena.', en: "Merry Christmas! It's Christmas Eve." },
+  '12-25': { de: 'Frohe Weihnachten! Was hat dir das Christkind gebracht?', es: '¡Feliz Navidad! ¿Qué te ha traído el Niño Jesús?', en: 'Merry Christmas! What did the Christkind bring you?' },
+  '12-31': { de: 'Heute ist Silvester! Guten Rutsch ins neue Jahr!', es: '¡Hoy es Nochevieja! ¡Feliz entrada de año!', en: "It's New Year's Eve! Have a good slide into the new year!" }
+};
+const NOCHE = { de: 'Schon so spät? Du bist ja eine richtige Nachteule!', es: '¿Tan tarde? ¡Eres un auténtico búho nocturno!', en: 'This late? You are a real night owl!' };
+export const COSQUILLAS = { de: 'Hihi! Hör auf, das kitzelt!', es: '¡Jiji! Para, que me haces cosquillas.', en: 'Hehe! Stop it, that tickles!' };
+export function fraseEspecial(fecha = new Date()) {
+  const clave = String(fecha.getMonth() + 1).padStart(2, '0') + '-' + String(fecha.getDate()).padStart(2, '0');
+  if (DIAS_ESPECIALES[clave]) return DIAS_ESPECIALES[clave];
+  if (fecha.getHours() < 5) return NOCHE;
+  return null;
+}
+
 export function preguntaFuchs() {
   const pool = repertorio();
   return pool[Math.floor(Math.random() * pool.length)];
@@ -582,6 +613,7 @@ export function otraFuchs(actual) {
 // la traduccion se quedaba con la de antes: aleman arriba e ingles debajo
 // menos justo despues de cambiar, donde seguia el castellano.
 export function glosaFuchs(p) {
+  if (p?.en) return getLang() === 'en' ? p.en : p.es;
   return p ? tc(p.es) : '';
 }
 

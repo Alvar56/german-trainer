@@ -312,7 +312,6 @@ export default function FoxAjustes({ onClose, onChange }) {
               fuchs={f}
               size={152}
               conCuerpo
-              separarObjetos
               chispeando={previsualizarEfecto}
               desvaneciendoEfecto={desvaneciendoEfecto}
               racha={20}

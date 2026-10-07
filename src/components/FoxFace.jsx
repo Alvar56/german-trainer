@@ -12,8 +12,8 @@ import { colorDe } from '../lib/fuchs.js';
 const W = 28;
 const H = 30;
 const ALTO_CABEZA = 19; // sin cuerpo, el dibujo se recorta aquí
-const OBJETOS_EASTER_EGG = new Set(['guitarra', 'trebol', 'camara', 'peluche', 'cocheRC', 'robot']);
-const TOQUES_EASTER_EGG = { guitarra: 4, trebol: 3, camara: 2, peluche: 2, cocheRC: 3, robot: 2 };
+const OBJETOS_EASTER_EGG = new Set(['guitarra', 'trebol', 'camara', 'peluche', 'cocheRC', 'robot', 'libro', 'taza', 'brezel', 'eistuete', 'sonnenblume', 'laterne', 'globo', 'cohete']);
+const TOQUES_EASTER_EGG = { guitarra: 4, trebol: 3, camara: 2, peluche: 2, cocheRC: 3, robot: 2, libro: 2, taza: 2, brezel: 2, eistuete: 2, sonnenblume: 2, laterne: 3, globo: 2, cohete: 3 };
 // (Aqui vivia MARGEN, el aire que se le anadia al viewBox para las chispas.
 //  Se lo llevaba del tamano del zorro; ahora las chispas se salen del cuadro.)
 // Cuanto se agranda el objeto de la mano respecto a la rejilla del zorro.
@@ -1039,15 +1039,32 @@ const EXTRAS = {
     ], 20.5, 22)
   },
   baston: {
-    a: '#6d4c2b', b: '#422a14', c: '#d4af37',
-    px: [
-      ...rect(21, 18, 23, 18, 'c'),
-      [20, 19, 'c'], [24, 19, 'c'], [22, 19, '#fff1a8'],
-      [20, 20, 'c'], [24, 20, 'c'],
-      [20, 21, 'c'], ...rect(23, 21, 24, 21, 'c'),
-      ...rect(23, 22, 23, 27, 'a'), ...rect(24, 22, 24, 27, 'b'),
-      [23, 28, 'c'], [24, 28, 'c']
-    ]
+    // Baston de paseo: puño curvo de madera, anillas doradas y contera.
+    k: '#3b2412', a: '#8b5a2b', h: '#b98250', b: '#5e3a1a', g: '#d4af37',
+    escala: 1.15, medio: true,
+    px: spriteMedio([
+      '...kkkkk..',
+      '..khhhhak.',
+      '.khakkkhak',
+      'khak..khak',
+      'kgk...khak',
+      '.k....khak',
+      '......kggk',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......khak',
+      '......kggk',
+      '......kbbk',
+      '.......kk.'
+    ], 20.3, 18.3)
   },
   bastonrey: {
     // Cetro: coronita con tres puntas y una joya rosa, bola dorada y vara
@@ -1556,69 +1573,110 @@ const EXTRAS = {
     ], 20, 23)
   },
   guitarra: {
-    a: '#d58a4e', b: '#a85c32', c: '#f1cc7b', d: '#422b24', e: '#fff1c6', escala: 1.34,
-    px: [
-      // Mástil corto y caja redondeada, con cintura suave y boca central.
-      [22, 12, 'd'], [23, 12, 'd'], [24, 12, 'd'], [21, 13, 'd'], ...rect(22, 13, 24, 14, 'a'), [25, 13, 'd'],
-      [21, 14, 'd'], ...rect(22, 14, 24, 21, 'a'), [25, 14, 'd'],
-      [22, 15, 'c'], [23, 15, 'c'], [24, 15, 'c'], [22, 16, 'c'], [23, 16, 'c'], [24, 16, 'c'],
-      [21, 21, 'd'], ...rect(22, 21, 24, 22, 'a'), [25, 21, 'd'],
-      [21, 22, 'd'], ...rect(22, 22, 24, 22, 'a'), [25, 22, 'd'],
-      [20, 23, 'd'], ...rect(21, 23, 25, 23, 'a'), [26, 23, 'd'],
-      [20, 24, 'd'], ...rect(21, 24, 25, 24, 'a'), [26, 24, 'd'],
-      [19, 25, 'd'], ...rect(20, 25, 26, 27, 'a'), [27, 25, 'd'],
-      [19, 26, 'd'], [27, 26, 'd'], [19, 27, 'd'], [27, 27, 'd'],
-      [20, 28, 'd'], ...rect(21, 28, 25, 28, 'a'), [26, 28, 'd'],
-      [21, 29, 'd'], [22, 29, 'a'], [23, 29, 'a'], [24, 29, 'a'], [25, 29, 'd'],
-      [20, 25, 'c'], [21, 24, 'c'], [22, 24, 'c'], [24, 24, 'c'], [25, 25, 'c'],
-      [22, 26, 'd'], [23, 26, 'e'], [24, 26, 'd'],
-      [23, 23, 'e'], [23, 24, 'e'], [23, 25, 'e'], [23, 27, 'e'], [23, 28, 'e']
-    ]
+    // Guitarra: clavijero con clavijas doradas, mastil con trastes, caja en ocho con su boca y el puente.
+    k: '#3b2414', a: '#d58a4e', h: '#f0b27a', b: '#a85c32', n: '#6b4426', f: '#d9c38a', s: '#f1e6c8', d: '#422b24', g: '#f4d27a',
+    escala: 1.15, medio: true,
+    px: spriteMedio([
+      '...kddddddk...',
+      '...kgddddgk...',
+      '...kddddddk...',
+      '....knnnnk....',
+      '....knnsnk....',
+      '....knnnnk....',
+      '....kffsfk....',
+      '....knnnnk....',
+      '....knnsnk....',
+      '....kffffk....',
+      '....knnsnk....',
+      '....knnnnk....',
+      '....kffsfk....',
+      '....knnnnk....',
+      '...khnnsnhk...',
+      '..khaaaaaahk..',
+      '.khaaaasaaahk.',
+      '.khaaaaaaaabk.',
+      '..khaakkaabk..',
+      '..khakkkkabk..',
+      '..khaakkaabk..',
+      '.khaaaaaaaahk.',
+      'khaaaaasaaaahk',
+      'khaaaaaaaaaabk',
+      'khaaaaasaaaabk',
+      'khaaddddddaabk',
+      'khaaaaaaaaaabk',
+      '.khbaaaaaabbk.',
+      '..kkhbbbbbkk..',
+      '....kkkkkk....'
+    ], 20, 13.8)
   },
   trebol: {
-    a: '#2c974f', b: '#94df72', c: '#17452e', d: '#d9efaa', escala: 1.34,
-    px: [
-      // Cuatro hojas redondas, juntas en un centro claro y tallo separado.
-      [21, 17, 'c'], [22, 17, 'c'], [20, 18, 'c'], [21, 18, 'c'], [22, 18, 'c'], [23, 18, 'c'], [21, 19, 'c'], [22, 19, 'c'],
-      [24, 17, 'c'], [25, 17, 'c'], [23, 18, 'c'], [24, 18, 'c'], [25, 18, 'c'], [26, 18, 'c'], [24, 19, 'c'], [25, 19, 'c'],
-      [20, 21, 'c'], [21, 20, 'c'], [22, 20, 'c'], [23, 20, 'c'], [21, 21, 'c'], [22, 21, 'c'], [21, 22, 'c'], [22, 22, 'c'],
-      [24, 20, 'c'], [25, 20, 'c'], [26, 21, 'c'], [27, 21, 'c'], [24, 21, 'c'], [25, 21, 'c'], [25, 22, 'c'], [26, 22, 'c'],
-      [21, 18, 'a'], [22, 18, 'b'], [24, 18, 'a'], [25, 18, 'b'],
-      [21, 21, 'a'], [22, 21, 'b'], [25, 21, 'a'], [26, 21, 'b'],
-      [22, 19, 'a'], [23, 19, 'd'], [24, 19, 'a'], [23, 20, 'd'], [23, 21, 'a'],
-      [23, 22, 'd'], [23, 23, 'd'], [24, 24, 'd'], [25, 25, 'd'], [26, 26, 'c']
-    ]
+    // Trebol de cuatro hojas redondas, con nervios claros y tallo curvo.
+    k: '#17452e', a: '#2c974f', b: '#5cc477', d: '#c8eeaa', c: '#2a6e3a',
+    escala: 1.15, medio: true,
+    px: spriteMedio([
+      '....kkk..kkk....',
+      '...kbbbkkbbbk...',
+      '..kbaaabbaaabk..',
+      '..kbadaaadaaak..',
+      '..kbaadadaaaak..',
+      '...kbaadaaaak...',
+      '...kbadadaaak...',
+      '..kbadaaadaabk..',
+      '..kbaaaaaaaaak..',
+      '..kbaaaaaaaaak..',
+      '...kbaakcaaak...',
+      '....kkkkckkk....',
+      '.......kck......',
+      '.......kck......',
+      '........kck.....',
+      '........kck.....',
+      '.........kck....',
+      '.........kck....',
+      '..........kck...',
+      '..........kck...'
+    ], 20, 18.6)
   },
   peluche: {
-    a: '#9a613d', b: '#68442f', c: '#d9955b', d: '#f4d5ad', e: '#292b32', escala: 1.12,
-    px: [
-      // Osito de peluche: orejas redondas, cabeza, hocico y cuerpo mullido.
-      [21, 17, 'b'], [22, 17, 'b'], [25, 17, 'b'], [26, 17, 'b'],
-      [20, 18, 'b'], [21, 18, 'a'], [22, 18, 'a'], [23, 18, 'b'], [24, 18, 'b'], [25, 18, 'a'], [26, 18, 'a'], [27, 18, 'b'],
-      [20, 19, 'b'], ...rect(21, 19, 26, 19, 'a'), [27, 19, 'b'],
-      [19, 20, 'b'], ...rect(20, 20, 27, 22, 'a'), [28, 20, 'b'],
-      [19, 21, 'b'], [28, 21, 'b'], [20, 22, 'b'], [27, 22, 'b'],
-      [21, 23, 'b'], [22, 23, 'a'], [23, 23, 'a'], [24, 23, 'a'], [25, 23, 'a'], [26, 23, 'b'],
-      [20, 24, 'b'], ...rect(21, 24, 26, 27, 'a'), [27, 24, 'b'],
-      [19, 25, 'b'], [20, 25, 'a'], [27, 25, 'a'], [28, 25, 'b'],
-      [19, 26, 'b'], [20, 26, 'a'], [27, 26, 'a'], [28, 26, 'b'],
-      [20, 27, 'b'], [21, 27, 'a'], [22, 27, 'a'], [25, 27, 'a'], [26, 27, 'a'], [27, 27, 'b'],
-      [21, 28, 'b'], [22, 28, 'b'], [25, 28, 'b'], [26, 28, 'b'],
-      [22, 20, 'c'], [23, 20, 'd'], [24, 20, 'd'], [25, 20, 'c'], [22, 21, 'd'], [23, 21, 'd'], [24, 21, 'd'], [25, 21, 'd'],
-      [22, 20, 'e'], [25, 20, 'e'], [23, 22, 'b'], [24, 22, 'b']
-    ]
+    // Osito de peluche: orejas con su interior claro, hocico, barriga, pies y un lacito rojo.
+    k: '#4a2c17', a: '#a86b40', h: '#c98a5a', b: '#7d4e2c', m: '#f2d2a9', e: '#1f1f24', r: '#e05a6a', q: '#c23a4a',
+    escala: 1.15, medio: true,
+    px: spriteMedio([
+      '..kkkk....kkkk..',
+      '.khhhhkkkkhhhhk.',
+      '.khmmahhhhammbk.',
+      '..khaaaaaaaabk..',
+      '...khaaaaaabk...',
+      '...kheaaaaebk...',
+      '...khameemabk...',
+      '...khammmmabk...',
+      '..kkkhammabkkk..',
+      '.khhharqqrahhhk.',
+      '.khaaaammaaaabk.',
+      '.khaaammmmaaabk.',
+      '..khammmmmmabk..',
+      '...khammmmabk...',
+      '...khaammaabk...',
+      '..khmmbbbbmmhk..',
+      '...khbkkkkhbk...'
+    ], 19.5, 20.1)
   },
   cocheRC: {
-    k: '#080b0e', r: '#c81818', y: '#ffd52e', d: '#292b2d', escala: 1.3,
-    px: mapaSprite([
-      '..kkk.....k................',
-      '..drd....rd................',
-      '..drdkkrrry.k.kkkkk........',
-      '..kkddkkrrrrrrrrkddkk......',
-      '...kdkdkrrrrrrrkdkkdrkk....',
-      '...kdkdkrrrrrrkkdkkdrrrk...',
-      '....kkkkkdkkkk..kkkkkkkk...'
-    ], 4, 23)
+    // Coche teledirigido: carroceria roja con brillo, ventanillas, faro, ruedas con tapacubos y antena.
+    k: '#14161a', r: '#e53935', h: '#ff8a80', d: '#b71c1c', c: '#8fd3ff', w: '#ffffff', t: '#2b2d31', g: '#9aa0a6', y: '#ffd52e',
+    escala: 1.15, medio: true,
+    px: spriteMedio([
+      '................k...',
+      '......kkkkkkk...k...',
+      '.....kccwckcck..k...',
+      '....kccccckccck.k...',
+      '.kkkkkkkkkkkkkkkkkk.',
+      'kyhhhhhhhhhhhhhhhrk.',
+      'krrrrrrrrrrrrrrrrdk.',
+      'kdrrkkkrrrrrkkkrrdk.',
+      '.kdktgtkkkkktgtkdk..',
+      '...ktttk...ktttk....',
+      '....kkk.....kkk.....'
+    ], 17, 23.7)
   },
   robot: {
     k: '#172839', b: '#244b70', s: '#4f9fc0', c: '#a9e5e8', w: '#e2f5e7', e: '#18272b',
@@ -1945,24 +2003,31 @@ const EXTRAS = {
     ]
   },
   cohete: {
-    a: '#f8fafc', b: '#e11d48', c: '#0284c7', d: '#f97316',
-    anima: (x, y) => y >= 24,
-    px: [
-      // ojiva / punta del cohete
-      [23, 16, 'b'], ...rect(22, 17, 24, 17, 'b'),
-      // fuselaje blanco aerodinámico
-      ...rect(21, 18, 25, 22, 'a'), ...rect(24, 18, 25, 22, '#cbd5e1'),
-      // ventanilla circular de cabina con brillo
-      ...rect(22, 19, 24, 20, 'c'), [23, 19, '#ffffff'],
-      // alerones / alas laterales rojas
-      [20, 21, 'b'], [20, 22, 'b'], [26, 21, 'b'], [26, 22, 'b'],
-      [21, 23, '#be123c'], [25, 23, '#be123c'],
-      // tobera de propulsión
-      ...rect(22, 23, 24, 23, '#475569'),
-      // llamarada de propulsión animada
-      ...rect(22, 24, 24, 25, 'd'), [23, 24, '#fde047'], [23, 26, '#fbbf24'], [23, 27, '#ef4444']
-    ]
-  }
+    // Cohete de juguete: punta y aletas rojas, ventanilla redonda con brillo y la llama que parpadea abajo.
+    k: '#1e293b', w: '#f8fafc', g: '#cbd5e1', r: '#e11d48', d: '#9f1239', c: '#38bdf8', b: '#0369a1', o: '#f97316', y: '#fbbf24',
+    escala: 1.15, medio: true,
+    anima: (x, y) => y >= 26.8,
+    px: spriteMedio([
+      '.....kk.....',
+      '....krrk....',
+      '...krrrdk...',
+      '..kkkkkkkk..',
+      '..kwwwwwgk..',
+      '..kwwkkwgk..',
+      '..kwkcckgk..',
+      '..kwkbckgk..',
+      '..kwwkkwgk..',
+      '..kwwwwwgk..',
+      '.krkwwwwgkrk',
+      'krrkwwwwgkrr',
+      'krrkkkkkkrrk',
+      'kkk.kggk.kkk',
+      '....kyyk....',
+      '...koyyok...',
+      '....kook....',
+      '.....kk.....'
+    ], 20.5, 19.8)
+  },
 };
 
 // Las particulas, de cerca.
@@ -2504,6 +2569,14 @@ export default function FoxFace({
               {id === 'peluche' && <title>Toca dos veces para darle un abrazo</title>}
               {id === 'cocheRC' && <title>Toca tres veces para hacerlo correr</title>}
               {id === 'robot' && <title>Toca dos veces para activarlo</title>}
+              {id === 'libro' && <title>Toca dos veces para leer</title>}
+              {id === 'taza' && <title>Toca dos veces para darle un sorbo</title>}
+              {id === 'brezel' && <title>Toca dos veces para darle un mordisco</title>}
+              {id === 'eistuete' && <title>Toca dos veces para probarlo</title>}
+              {id === 'sonnenblume' && <title>Toca dos veces para que salga el sol</title>}
+              {id === 'laterne' && <title>Toca tres veces para encender el farolillo</title>}
+              {id === 'globo' && <title>Toca dos veces para inflarlo</title>}
+              {id === 'cohete' && <title>Toca tres veces para despegar</title>}
               {juntarPixeles(pixelesRender, ex.medio ? .5 : pixelStep, ex.anima).map(([x, y, k, ancho], j) => (
                 <rect
                   key={j}
@@ -2553,6 +2626,62 @@ export default function FoxFace({
         <g aria-hidden="true" pointerEvents="none" fill="#f6d45b">
           <path d="M24 12v-3m-1.5 1.5h3" stroke="#f6d45b" strokeWidth=".8"><animate attributeName="opacity" values="1;.2;1" dur=".35s" repeatCount="4" /></path>
           <circle cx="24" cy="9" r="1"><animate attributeName="r" values=".5;1.5;.5" dur=".7s" repeatCount="2" /></circle>
+        </g>
+      )}
+      {/* Easter eggs de los objetos nuevos: cada uno hace su cosita. */}
+      {foxEgg === 'libro' && fuchs?.objeto === 'libro' && (
+        <g aria-hidden="true" pointerEvents="none" fontWeight="700" textAnchor="middle">
+          <text x="22" y="20" fontSize="3" fill="#8e44ad">A<animate attributeName="y" values="21;13" dur="1.6s" fill="freeze" /><animate attributeName="opacity" values="1;0" dur="1.6s" fill="freeze" /></text>
+          <text x="25" y="20" fontSize="3" fill="#dd2a2a">ä<animate attributeName="y" values="21;12" dur="1.8s" fill="freeze" /><animate attributeName="opacity" values="1;0" dur="1.8s" fill="freeze" /></text>
+          <text x="27" y="20" fontSize="3" fill="#f4c430">ß<animate attributeName="y" values="21;14" dur="1.4s" fill="freeze" /><animate attributeName="opacity" values="1;0" dur="1.4s" fill="freeze" /></text>
+        </g>
+      )}
+      {foxEgg === 'taza' && fuchs?.objeto === 'taza' && (
+        <g aria-hidden="true" pointerEvents="none" fill="#ffffff" stroke="#c9d3dd" strokeWidth=".2">
+          <circle cx="22.5" cy="20" r=".9"><animate attributeName="cy" values="21;14" dur="1.5s" fill="freeze" /><animate attributeName="opacity" values="1;0" dur="1.5s" fill="freeze" /></circle>
+          <circle cx="24.5" cy="20" r="1.2"><animate attributeName="cy" values="21;13" dur="1.8s" fill="freeze" /><animate attributeName="opacity" values="1;0" dur="1.8s" fill="freeze" /></circle>
+          <text x="27" y="19" fontSize="3" fill="#e74c3c" stroke="none">♥<animate attributeName="y" values="20;14" dur="1.6s" fill="freeze" /></text>
+        </g>
+      )}
+      {foxEgg === 'brezel' && fuchs?.objeto === 'brezel' && (
+        <g aria-hidden="true" pointerEvents="none" fill="#c27a3a">
+          <rect x="22" y="28" width=".7" height=".7"><animate attributeName="y" values="27;30" dur=".9s" fill="freeze" /></rect>
+          <rect x="24.5" y="28" width=".6" height=".6"><animate attributeName="y" values="27.5;30" dur="1.1s" fill="freeze" /></rect>
+          <rect x="26" y="28" width=".7" height=".7" fill="#ffffff"><animate attributeName="y" values="27;30" dur="1s" fill="freeze" /></rect>
+          <text x="25" y="20" fontSize="2.6" fontWeight="700" textAnchor="middle" fill="#93531f">mjam!</text>
+        </g>
+      )}
+      {foxEgg === 'eistuete' && fuchs?.objeto === 'eistuete' && (
+        <g aria-hidden="true" pointerEvents="none" textAnchor="middle" fontWeight="700">
+          <text x="24" y="19" fontSize="2.6" fill="#d65b82">lecker!<animate attributeName="y" values="20;16" dur="1.6s" fill="freeze" /></text>
+          <text x="27" y="22" fontSize="3" fill="#f28aa8">♥<animate attributeName="opacity" values="0;1;0" dur="1.6s" /></text>
+        </g>
+      )}
+      {foxEgg === 'sonnenblume' && fuchs?.objeto === 'sonnenblume' && (
+        <g aria-hidden="true" pointerEvents="none" stroke="#ffd23f" strokeWidth=".6" strokeLinecap="round">
+          <circle cx="25" cy="10" r="2.2" fill="#ffe680" stroke="none"><animate attributeName="r" values="0;2.2" dur=".6s" fill="freeze" /></circle>
+          <path d="M25 6.5v-1.5M25 13.5v1.5M21.5 10h-1.5M28.5 10h1.5M22.6 7.6l-1-1M27.4 7.6l1-1M22.6 12.4l-1 1M27.4 12.4l1 1"><animate attributeName="opacity" values="0;1;.4;1" dur="1.6s" fill="freeze" /></path>
+        </g>
+      )}
+      {foxEgg === 'laterne' && fuchs?.objeto === 'laterne' && (
+        <g aria-hidden="true" pointerEvents="none">
+          <circle cx="24" cy="24.5" r="4.5" fill="#ffd56b" opacity=".35"><animate attributeName="r" values="2;5;4" dur="1.2s" fill="freeze" /></circle>
+          <text x="20" y="18" fontSize="2.6" fill="#f4c430">★<animate attributeName="opacity" values="0;1;0" dur="1.2s" repeatCount="2" /></text>
+          <text x="27" y="17" fontSize="2.2" fill="#f4c430">☾<animate attributeName="opacity" values="0;1;0" dur="1.4s" repeatCount="2" /></text>
+        </g>
+      )}
+      {foxEgg === 'globo' && fuchs?.objeto === 'globo' && (
+        <g aria-hidden="true" pointerEvents="none" fill="#e74c3c">
+          <text x="24" y="16" fontSize="3" textAnchor="middle" fontWeight="700">♥<animate attributeName="y" values="18;8" dur="1.8s" fill="freeze" /><animate attributeName="opacity" values="1;0" dur="1.8s" fill="freeze" /></text>
+          <text x="26.5" y="17" fontSize="2.2" textAnchor="middle" fill="#f7a9a0">♥<animate attributeName="y" values="18;10" dur="1.5s" fill="freeze" /><animate attributeName="opacity" values="1;0" dur="1.5s" fill="freeze" /></text>
+        </g>
+      )}
+      {foxEgg === 'cohete' && fuchs?.objeto === 'cohete' && (
+        <g aria-hidden="true" pointerEvents="none">
+          <path d="M22.5 26l1.5 3 1.5-3z" fill="#f97316"><animate attributeName="opacity" values="1;.4;1" dur=".25s" repeatCount="6" /></path>
+          <text x="20" y="16" fontSize="2.4" fill="#fbbf24">✦<animate attributeName="opacity" values="0;1;0" dur=".7s" repeatCount="2" /></text>
+          <text x="27" y="14" fontSize="2" fill="#38bdf8">✦<animate attributeName="opacity" values="1;0;1" dur=".7s" repeatCount="2" /></text>
+          <text x="24" y="12" fontSize="2.4" textAnchor="middle" fontWeight="700" fill="#e11d48">3, 2, 1…</text>
         </g>
       )}
       {colorId.startsWith('galaxy') && (

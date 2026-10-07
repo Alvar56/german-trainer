@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import FoxFace from './FoxFace.jsx';
 import FoxAjustes from './FoxAjustes.jsx';
 import SaltosFelix, { useSaltos } from './SaltosFelix.jsx';
-import { getFuchs, nuevosDesbloqueos, marcarVisto, preguntaFuchs, otraFuchs, glosaFuchs } from '../lib/fuchs.js';
+import { getFuchs, nuevosDesbloqueos, marcarVisto, preguntaFuchs, otraFuchs, glosaFuchs, fraseEspecial, COSQUILLAS } from '../lib/fuchs.js';
 import Escuchar from './Escuchar.jsx';
 import { t } from '../lib/i18n.js';
 import { SIN_IA } from '../lib/modo.js';
@@ -26,7 +26,25 @@ export default function FoxCard({ onAbrir, onCambio }) {
   const saltos = useSaltos(primeraVez);
   // Una por carga -si cambiara a cada repintado, mareas- pero ahora se puede
   // pedir otra pulsando la burbuja.
-  const [pregunta, setPregunta] = useState(() => preguntaFuchs());
+  // Easter egg: en dias señalados (Navidad, San Martin, la fiesta nacional
+  // de Austria...) y de madrugada, la primera frase es la de la ocasion.
+  const [pregunta, setPregunta] = useState(() => fraseEspecial() || preguntaFuchs());
+  // Otro: si le tocas muchas veces seguidas, le haces cosquillas.
+  const toques = useRef({ n: 0, desde: 0 });
+  const [cosquillas, setCosquillas] = useState(false);
+  function tocarFelix() {
+    saltos.saltar();
+    const ahora = Date.now();
+    const tq = toques.current;
+    if (ahora - tq.desde > 2500) { tq.n = 0; tq.desde = ahora; }
+    tq.n += 1;
+    if (tq.n >= 6) {
+      tq.n = 0;
+      setPregunta(COSQUILLAS);
+      setCosquillas(true);
+      setTimeout(() => setCosquillas(false), 2200);
+    }
+  }
   // Lo que YA te puedes permitir y aun no has visto. Depende del saldo, asi
   // que hay que recalcularlo cada vez que se toca la tienda: comprar algo
   // cambia el numero, y quedarse sin monedas lo deja en cero.
@@ -50,7 +68,7 @@ export default function FoxCard({ onAbrir, onCambio }) {
         // Tocarlo le hace saltar. La tienda se abre con "Personalizar a
         // Felix", justo al lado: si lo hicieran los dos, la tienda taparia
         // el salto.
-        onClick={saltos.saltar}
+        onClick={tocarFelix}
         title={fuchs.nombre}
       >
         {/* En la portada, los dos ojos abiertos: el entornado ahi solo despistaba.
@@ -62,7 +80,7 @@ export default function FoxCard({ onAbrir, onCambio }) {
             160 de verdad se veia como 134. Al quitar ese margen aparecio a su
             tamano real y se comia la tarjeta. */}
         <SaltosFelix saltos={saltos} espacio={fuchs.fondo === 'weltraum'}>
-          <FoxFace fuchs={fuchs} gesto={saltos.saltando ? 'feliz' : 'normal'} size={SIN_IA ? 138 : 136} conCuerpo className="flota" />
+          <FoxFace fuchs={fuchs} gesto={cosquillas ? 'muyfeliz' : saltos.saltando ? 'feliz' : 'normal'} size={SIN_IA ? 138 : 136} conCuerpo className="flota" />
         </SaltosFelix>
       </button>
 
