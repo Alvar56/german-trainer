@@ -394,10 +394,24 @@ function orejasRana(g) {
   espejo(g, 4, 7, 10, 'h');
   espejo(g, 5, 7, 9, 'h');
 }
+// Mofletes: la cara de la rana se ensancha por abajo, mas ancha que el
+// craneo de los demas bichos. Sin esto parecia el zorro pintado de verde.
+function mofletesRana(g) {
+  espejo(g, 11, 4, 4, 'f');
+  espejo(g, 12, 3, 4, 'f');
+  bloque(g, 13, 15, 2, 4, 'f');
+  bloque(g, 13, 15, 23, 25, 'f');
+  espejo(g, 16, 3, 5, 'f');
+  espejo(g, 17, 4, 6, 'f');
+  // sombra por debajo del moflete, para que se vea redondo
+  espejo(g, 16, 3, 4, 'd');
+  espejo(g, 17, 4, 6, 'd');
+  espejo(g, 15, 2, 2, 'd');
+}
 function marcasRana(g) {
-  // Rubor suave y adorable en las mejillas
-  espejo(g, 13, 6, 7, 'r');
-  espejo(g, 14, 6, 7, 'r');
+  // Rubor en lo alto del moflete
+  espejo(g, 13, 4, 6, 'r');
+  espejo(g, 14, 4, 6, 'r');
   // Brillo sutil en la frente
   fila(g, 8, 12, 15, 'h');
 }
@@ -494,7 +508,7 @@ const BICHOS = {
   oso: { detras: orejasOso },
   conejo: { detras: orejasConejo, delante: marcasConejo },
   buho: { detras: orejasBuho, delante: marcasBuho },
-  rana: { detras: orejasRana, marcas: marcasRana },
+  rana: { detras: orejasRana, delante: mofletesRana, marcas: marcasRana },
   pato: { detras: orejasPato },
   erizo: { detras: puasErizo, delante: orejasDelanteErizo, marcas: marcasErizo },
   mapache: { detras: orejasMapache, marcas: marcasMapache }
