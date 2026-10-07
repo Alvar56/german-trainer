@@ -928,7 +928,7 @@ const DICT = {
   'tb.noMistakes': ['sin fallos 🎉', 'no mistakes 🎉'],
   'tb.nCorrections': ['{n} correcciones', '{n} corrections'],
   'tb.oneCorrection': ['1 corrección', '1 correction'],
-  'tb.notCorrected': ['sin corregir', 'not corrected'],
+  'tb.notCorrected': ['Sin corregir', 'Not corrected'],
   'tb.notFound': ['No se encontró la entrada.', 'Entry not found.'],
   'tb.confirmDel': ['¿Borrar esta entrada del diario?', 'Delete this diary entry?'],
   'tb.tabMineSub': ['lo que escribiste', 'what you wrote'],

@@ -9,9 +9,12 @@ import { TABLAS } from './tablas/index.js';
 function fmt(d) {
   if (!d) return '';
   try {
-    return new Date(d + 'T00:00:00').toLocaleDateString(localeFecha(), {
+    // En español sale todo en minúscula («miércoles, 7 de octubre»); como
+    // titulo de la entrada va con la primera en mayúscula.
+    const texto = new Date(d + 'T00:00:00').toLocaleDateString(localeFecha(), {
       weekday: 'long', day: 'numeric', month: 'long'
     });
+    return texto.charAt(0).toUpperCase() + texto.slice(1);
   } catch {
     return d;
   }
