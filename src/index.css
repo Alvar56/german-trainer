@@ -7465,3 +7465,13 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
   .kasus-tabelle-panel .tv-pestanas { padding-top: 2px; }
   .kasus-tabelle-panel .tv-pestana { padding: 6px 12px; }
 }
+
+/* La tienda de Felix en una pantalla baja (movil girado): la escena mide
+   290 px como minimo y la ventana unos 330, asi que a las opciones les
+   quedaba una tira de 37 px y no se podia bajar. Aqui se desplaza la
+   ventana entera, con la escena algo mas baja arriba. */
+@media (max-height: 500px) {
+  .fox-modal-caja:not(.bv-caja) { overflow-y: auto; }
+  .fox-modal-caja:not(.bv-caja) .fox-hero-escena { min-height: 220px; }
+  .fox-modal-caja:not(.bv-caja) .fox-modal-cuerpo { flex: none; overflow: visible; }
+}
