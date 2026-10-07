@@ -8063,3 +8063,8 @@ body.fox-modal-abierto .fox-card .pv { animation-play-state: paused; }
   .fox-card.con-paisaje:has(.fox-escena-herbstwald) { --pais-cielo: #fbd3a0; --pais-suelo: #c97a36; }
   .fox-card.con-paisaje:has(.fox-escena-grossstadt) { --pais-cielo: #5e4a96; --pais-suelo: #8d91a6; }
 }
+
+/* Con paisaje detras, el halo de color de Felix sobra: era para la tarjeta
+   lisa, y encima del paisaje teñia todo de un color raro (en la playa, un
+   amarillo fuerte). */
+.fox-card.con-paisaje .fox-card-cara.fox-aura-wrap::before { display: none; }
