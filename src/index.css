@@ -7629,7 +7629,7 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 .gj-match   { --gj-bg: #e8def8; --gj-fg: #4a2a8a; }
 .gj-blitz   { --gj-bg: #ffd8c2; --gj-fg: #8c3a0b; }
 .gj-order   { --gj-bg: #c2e7ff; --gj-fg: #004a77; }
-.gj-write   { --gj-bg: #dde3ea; --gj-fg: #2f3b48; }
+.gj-write   { --gj-bg: #c9d2dd; --gj-fg: #26313d; }
 .gj-cards   { --gj-bg: #ffd8e4; --gj-fg: #8c1d4a; }
 .gj-random  { --gj-bg: #c2e7ff; --gj-fg: #004a77; }
 .gj-diary   { --gj-bg: #ffdbcc; --gj-fg: #8a3a12; }
@@ -7662,7 +7662,7 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 .gametype:has(.gj-match)   { --gj-card: #e8def8; }
 .gametype:has(.gj-blitz)   { --gj-card: #ffd8c2; }
 .gametype:has(.gj-order)   { --gj-card: #c2e7ff; }
-.gametype:has(.gj-write)   { --gj-card: #dde3ea; }
+.gametype:has(.gj-write)   { --gj-card: #aebbcb; }
 .gametype:has(.gj-cards)   { --gj-card: #ffd8e4; }
 .gametype:has(.gj-random)  { --gj-card: #c2e7ff; }
 .gametype:has(.gj-diary)   { --gj-card: #ffdbcc; }
