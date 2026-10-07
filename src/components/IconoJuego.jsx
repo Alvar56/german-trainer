@@ -39,6 +39,22 @@ const SUELTOS = {
   '✨': JUEGOS['✨'][1]
 };
 
+// El nombre del juego de un emoji ('✅' -> 'test'), para pintar cosas con su
+// color fuera de la tarjeta (el degradado de abajo en los ejercicios).
+export function idJuego(e) {
+  return JUEGOS[e]?.[0] || null;
+}
+
+// Un simbolo pequeño de juego, sin circulo y en su color oscuro, para las
+// etiquetas de arriba de un ejercicio («✅ Test», «⚖️ Correcto o no»...).
+export function SimboloJuego({ e }) {
+  const j = JUEGOS[e];
+  if (!j) return e;
+  return (
+    <svg className={'sim-suelto sim-juego gj-' + j[0]} viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={j[1]} /></svg>
+  );
+}
+
 export default function IconoJuego({ e }) {
   const j = JUEGOS[e];
   if (!j) return <span className="gt-ico">{e}</span>;

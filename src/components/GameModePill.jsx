@@ -1,4 +1,6 @@
+import React, { useEffect } from 'react';
 import { pick } from '../lib/i18n.js';
+import { idJuego, SimboloJuego } from './IconoJuego.jsx';
 
 const LABELS = {
   mixed: ['🎲 Mezclado', '🎲 Mixed'],
@@ -29,6 +31,24 @@ const LABELS = {
 
 export default function GameModePill({ mode }) {
   const labels = LABELS[mode];
+  const texto = labels ? pick(...labels) : '';
+  const [emoji, ...resto] = texto.split(' ');
+  const juego = idJuego(emoji);
+
+  // Mientras dura el ejercicio, el body sabe a que se juega: el degradado de
+  // abajo (el «suelo» de Felix) toma el color del juego en vez del del paisaje.
+  useEffect(() => {
+    if (!juego) return undefined;
+    document.body.dataset.juego = juego;
+    return () => {
+      if (document.body.dataset.juego === juego) delete document.body.dataset.juego;
+    };
+  }, [juego]);
+
   if (!labels) return null;
-  return <span className="pill ctx-tema ctx-modo">{pick(...labels)}</span>;
+  return (
+    <span className="pill ctx-tema ctx-modo">
+      {juego ? <><SimboloJuego e={emoji} />{resto.join(' ')}</> : texto}
+    </span>
+  );
 }

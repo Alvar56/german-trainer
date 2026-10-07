@@ -7734,3 +7734,42 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 [data-theme='dark'] .gender-cta:not(.dominado):has(.gt-sim) {
   background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 16%, var(--accent-soft)) 0%, var(--accent-soft) 55%);
 }
+
+/* En un ejercicio, el degradado de abajo (el «suelo» del paisaje de Felix)
+   toma el color del juego: verde en el test, amarillo en ¿correcto o no?...
+   GameModePill pone el juego en <body data-juego>. */
+body[data-juego='test']      { --gj-card: #c4eed0; }
+body[data-juego='judge']     { --gj-card: #ffe8a3; }
+body[data-juego='match']     { --gj-card: #e8def8; }
+body[data-juego='blitz']     { --gj-card: #ffd8c2; }
+body[data-juego='order']     { --gj-card: #c2e7ff; }
+body[data-juego='write']     { --gj-card: #aebbcb; }
+body[data-juego='cards']     { --gj-card: #ffd8e4; }
+body[data-juego='reply']     { --gj-card: #b8ece6; }
+body[data-juego='gap']       { --gj-card: #d6dcff; }
+body[data-juego='letters']   { --gj-card: #c0ecf5; }
+body[data-juego='hangman']   { --gj-card: #ffdad6; }
+body[data-juego='kasus']     { --gj-card: #ffe8a3; }
+body[data-juego='gender']    { --gj-card: #ffd8d2; }
+body[data-juego='translate'] { --gj-card: #b8ece6; }
+body[data-juego] .fox-difuminado-suelo[class*='fox-difuminado-']:not(.fox-difuminado-nadaFondo) {
+  --fox-floor-glow: color-mix(in srgb, var(--gj-card) 55%, transparent);
+  background: radial-gradient(
+    ellipse 440px 320px at calc(100% - 75px) calc(100% - 60px),
+    color-mix(in srgb, var(--gj-card) 70%, transparent) 0%,
+    color-mix(in srgb, var(--gj-card) 35%, transparent) 35%,
+    color-mix(in srgb, var(--gj-card) 10%, transparent) 65%,
+    transparent 100%
+  );
+}
+[data-theme='dark'] body[data-juego] .fox-difuminado-suelo[class*='fox-difuminado-']:not(.fox-difuminado-nadaFondo) {
+  --fox-floor-glow: color-mix(in srgb, var(--gj-card) 22%, transparent);
+  background: radial-gradient(
+    ellipse 440px 320px at calc(100% - 75px) calc(100% - 60px),
+    color-mix(in srgb, var(--gj-card) 26%, transparent) 0%,
+    color-mix(in srgb, var(--gj-card) 12%, transparent) 35%,
+    transparent 85%
+  );
+}
+/* El simbolo de la etiqueta del juego, en el color oscuro de ese juego. */
+.sim-juego { fill: var(--gj-fg, currentColor); opacity: 1; }
