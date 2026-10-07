@@ -34,7 +34,10 @@ const FILAS = [
       ['di[e]|alt{e}|Lampe', 'ein[e]|alt{e}|Lampe'],
       ['di[e]|bequem{en}|Stühle', '—|bequem[e]|Stühle']
     ],
-    aviso: 'Nur Maskulinum ändert sich!'
+    aviso: 'Nur Maskulinum ändert sich!',
+    // Neutral, feminin y plural se quedan como en el Nominativ, igual que
+    // en la tabla de articulos.
+    igualNom: true
   },
   {
     kasus: 'Dativ', pregunta: 'Wem? / Wo?',
@@ -103,8 +106,9 @@ export default function AdjektivTabla() {
                 <div className="kt-kasus-sub">{f.pregunta}</div>
               </td>
               {f.formas.map(([bestimmt, unbestimmt], i) => (
-                <td key={i} className={'kt-cell ' + COLUMNAS[i].clase}>
+                <td key={i} className={'kt-cell ' + COLUMNAS[i].clase + (f.igualNom && i > 0 ? ' kt-same' : '')}>
                   {f.aviso && i === 0 && <div className="kt-pill-alert">{f.aviso}</div>}
+                  {f.igualNom && i > 0 && <div className="kt-same-badge">= wie Nominativ</div>}
                   <Forma tipo="Bestimmt" forma={bestimmt} />
                   <Forma tipo={i === 3 ? 'Ohne Art.' : 'Unbest.'} forma={unbestimmt} />
                 </td>

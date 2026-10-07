@@ -7386,6 +7386,13 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 }
 .tv-pestana:hover { background: none; color: var(--text); }
 .tv-pestana.on { color: var(--accent); border-bottom-color: var(--accent); }
+/* La cabecera, las pestañas y el aviso no se encogen nunca: en un movil
+   girado la ventana es muy baja y el reparto de alto las aplastaba hasta
+   casi esconder las pestañas. Lo que se desplaza es solo la tabla. */
+.kasus-tabelle-panel > .kt-header,
+.kasus-tabelle-panel > .tv-pestanas,
+.kasus-tabelle-panel > .tv-estado { flex-shrink: 0; }
+.kasus-tabelle-panel > .kt-scroll { flex: 1 1 auto; min-height: 0; }
 .tv-estado {
   margin: 8px 16px 0; padding: 6px 10px; border-radius: 8px;
   background: var(--surface-2); color: var(--text-2); font-size: 0.82rem; font-weight: 600;
@@ -7418,6 +7425,11 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 .adj-nombre { color: var(--text-2); }
 .adj-sin { color: var(--muted); }
 .adj-tabla .kt-item { align-items: baseline; }
+/* Mas aire: con dos formas por casilla y las terminaciones resaltadas, las
+   filas quedaban apretadas. */
+.adj-tabla .kt-cell, .adj-tabla .kt-td-kasus { padding-top: 14px; padding-bottom: 14px; }
+.adj-tabla .kt-item + .kt-item { margin-top: 10px; }
+.adj-tabla .kt-pill-alert, .adj-tabla .kt-same-badge { margin-bottom: 8px; }
 
 /* Preposiciones. */
 .pp-grupos { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; min-width: 760px; }
@@ -7445,3 +7457,11 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 /* El boton de las tablas del Tagebuch: blanco, al lado de "Nueva entrada". */
 .tb-tablas { background: var(--surface); border: 1.5px solid var(--border); font-weight: 600; }
 .tb-tablas:hover { border-color: var(--accent); background: var(--surface); }
+/* Ventana de tablas en una pantalla baja (movil girado): cabecera y
+   pestañas mas finas, para que la tabla tenga sitio. */
+@media (max-height: 500px) {
+  .kasus-tabelle-panel .kt-header { padding-top: 8px; padding-bottom: 8px; }
+  .kasus-tabelle-panel .kt-subtitle { display: none; }
+  .kasus-tabelle-panel .tv-pestanas { padding-top: 2px; }
+  .kasus-tabelle-panel .tv-pestana { padding: 6px 12px; }
+}
