@@ -7371,3 +7371,77 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 @media (min-width: 721px) {
   .fc-wrap > .translate-check { margin-inline: auto; }
 }
+
+/* ====================================================================
+   TABLAS DE GRAMATICA (components/tablas): pestañas, descarga y las dos
+   tablas nuevas. Usan la ventana y las clases kt-* de la tabla de articulos.
+   ==================================================================== */
+.tv-pestanas {
+  display: flex; gap: 6px; padding: 8px 16px 0; overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+.tv-pestana {
+  flex: 0 0 auto; padding: 8px 14px; border: none; border-bottom: 2.5px solid transparent;
+  border-radius: 0; background: none; color: var(--muted); font-weight: 600; font-size: 0.9rem;
+}
+.tv-pestana:hover { background: none; color: var(--text); }
+.tv-pestana.on { color: var(--accent); border-bottom-color: var(--accent); }
+.tv-estado {
+  margin: 8px 16px 0; padding: 6px 10px; border-radius: 8px;
+  background: var(--surface-2); color: var(--text-2); font-size: 0.82rem; font-weight: 600;
+}
+
+/* Lo que se descarga: la tabla con su titulo y la marca de la app. El titulo
+   y la marca solo se ven en la imagen (en pantalla ya estan en la cabecera). */
+.tabla-captura { display: flex; flex-direction: column; gap: 8px; background: var(--surface); min-width: 100%; }
+.tabla-captura-titulo, .tabla-marca { display: none; }
+/* Ancho FIJO para la imagen, no max-content: el parrafo de la nota no tiene
+   saltos, asi que "el ancho de su contenido" se iba a 380.000 px y la imagen
+   salia como una tira de 22 px de alto. 1100 px caben las tres tablas. */
+.tabla-captura.tabla-capturando { width: 1100px; min-width: 1100px; box-sizing: border-box; padding: 18px 20px 14px; }
+.tabla-capturando .tabla-captura-titulo { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
+.tabla-capturando .tabla-captura-titulo strong { font-size: 1.15rem; }
+.tabla-capturando .tabla-captura-titulo span { color: var(--muted); font-size: 0.85rem; }
+.tabla-capturando .tabla-marca {
+  display: block; align-self: flex-end; margin-top: 4px;
+  color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; opacity: 0.8;
+}
+/* En la imagen se lee todo: el movil esconde la nota y no deja partir pastillas. */
+.tabla-capturando .kt-note-card { display: flex !important; }
+.tabla-capturando .kt-rule-summary { flex-wrap: wrap !important; width: auto !important; }
+
+/* Adjetivos: articulo + adjetivo + nombre en una linea. */
+/* Salta de linea entre palabras, nunca dentro de una: en una sola linea,
+   "den bequemen Stuehlen" se salia de la columna del plural. */
+.adj-frase { white-space: normal; }
+.adj-frase > * { white-space: nowrap; }
+.adj-nombre { color: var(--text-2); }
+.adj-sin { color: var(--muted); }
+.adj-tabla .kt-item { align-items: baseline; }
+
+/* Preposiciones. */
+.pp-grupos { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; min-width: 760px; }
+.pp-grupo { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface); }
+.pp-grupo-titulo { font-weight: 800; font-size: 1rem; }
+.pp-grupo-sub { color: var(--muted); font-size: 0.78rem; margin: 2px 0 10px; }
+.pp-palabras { display: flex; flex-wrap: wrap; gap: 6px; }
+.pp-palabra { padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 0.92rem; }
+.pp-dat .pp-palabra { background: #fde68a; color: #713f12; }
+.pp-akk .pp-palabra { background: #bae6fd; color: #0369a1; }
+.pp-wechsel { border-color: var(--accent); }
+.pp-wechsel .pp-palabra {
+  background: linear-gradient(135deg, #fde68a 50%, #bae6fd 50%); color: #1e293b;
+}
+.pp-wowohin { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-width: 760px; }
+.pp-lado { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.pp-lado-titulo { font-weight: 800; font-size: 1rem; }
+.pp-lado-titulo span { font-weight: 600; color: var(--muted); font-size: 0.85rem; }
+.pp-lado-sub { color: var(--muted); font-size: 0.8rem; margin: 2px 0 8px; font-style: italic; }
+.pp-fila { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 4px 0; border-top: 1px dashed var(--border); font-size: 0.92rem; }
+.pp-base { color: var(--muted); }
+.pp-dat .pp-art { background: #fde68a; color: #713f12; padding: 0 3px; border-radius: 3px; }
+.pp-akk .pp-art { background: #bae6fd; color: #0369a1; padding: 0 3px; border-radius: 3px; }
+.pp-pill-akk { border-color: #7dd3fc; }
+/* El boton de las tablas del Tagebuch: blanco, al lado de "Nueva entrada". */
+.tb-tablas { background: var(--surface); border: 1.5px solid var(--border); font-weight: 600; }
+.tb-tablas:hover { border-color: var(--accent); background: var(--surface); }

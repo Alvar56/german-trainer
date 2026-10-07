@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SIN_IA } from '../lib/modo.js';
-import { t, localeFecha } from '../lib/i18n.js';
+import { t, pick, localeFecha } from '../lib/i18n.js';
 import { listEntries, createEntry, diaryStats, countWords, topMistakes } from '../lib/diary.js';
 import { aiAvailable } from '../lib/settings.js';
+import TablaVentana from './tablas/TablaVentana.jsx';
+import { TABLAS } from './tablas/index.js';
 
 function fmt(d) {
   if (!d) return '';
@@ -20,9 +22,19 @@ export default function Diary({ onOpen }) {
   const st = diaryStats();
   const fallos = topMistakes(5);
   const aiOn = aiAvailable();
+  // Las tablas de gramatica, a mano mientras escribes: articulos, adjetivos
+  // y preposiciones.
+  const [tablas, setTablas] = useState(false);
+  const [cerrandoTablas, setCerrandoTablas] = useState(false);
+  function cerrarTablas() {
+    if (cerrandoTablas) return;
+    setCerrandoTablas(true);
+    setTimeout(() => { setTablas(false); setCerrandoTablas(false); }, 320);
+  }
 
   return (
     <div className="wide">
+      {tablas && <TablaVentana tablas={TABLAS} onClose={cerrarTablas} cerrando={cerrandoTablas} />}
       <div className="page-head">
         <h1>Tagebuch</h1>
         <p>
@@ -68,6 +80,9 @@ export default function Diary({ onOpen }) {
       <div className="row" style={{ gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
         <button className="btn-primary" onClick={() => onOpen(createEntry().id)}>
           {t('tb.new')}
+        </button>
+        <button className="tb-tablas" onClick={() => setTablas(true)}>
+          📋 {pick('Tablas de gramática', 'Grammar tables')}
         </button>
       </div>
 
