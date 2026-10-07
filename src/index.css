@@ -7678,10 +7678,10 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 /* La fila de una palabra marcada lleva un degradado de su color que sale de
    la derecha, desde el punto, y se pierde hacia la izquierda. */
 .woerter-tabla tr.wt-coloreada {
-  background: linear-gradient(270deg, color-mix(in srgb, var(--wt-color) 20%, transparent) 0%, transparent 50%);
+  background: linear-gradient(270deg, color-mix(in srgb, var(--wt-color) 20%, transparent) 0%, transparent 22%);
 }
 [data-theme='dark'] .woerter-tabla tr.wt-coloreada {
-  background: linear-gradient(270deg, color-mix(in srgb, var(--wt-color) 22%, transparent) 0%, transparent 50%);
+  background: linear-gradient(270deg, color-mix(in srgb, var(--wt-color) 22%, transparent) 0%, transparent 22%);
 }
 
 /* «Repetir mis fallos» al final de una partida: el boton principal con un
