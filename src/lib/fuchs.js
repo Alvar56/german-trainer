@@ -258,7 +258,7 @@ export function getFuchs() {
   // Los objetos vuelven a costar monedas (hubo una temporada en que se podian
   // probar gratis). Si el que lleva puesto no lo ha comprado, se le quita.
   const objetoPuesto = COMPLEMENTOS.find((c) => c.id === f.objeto);
-  if (objetoPuesto && !objetoPuesto.req && objetoPuesto.precio > 0 && !f.comprado.includes(objetoPuesto.id)) {
+  if (!VER_TODO && objetoPuesto && !objetoPuesto.req && objetoPuesto.precio > 0 && !f.comprado.includes(objetoPuesto.id)) {
     f.objeto = DEFAULT.objeto;
   }
   // Si una especie deja de estar disponible, recuperar el animal gratuito.
@@ -312,9 +312,15 @@ export function coloresDisponibles(f = getFuchs(), l = null) {
   return COLORES.map((c) => ({ ...c, abierto: tienes(c.id, f, logr) }));
 }
 
+// TEMPORAL: todo desbloqueado para ver como queda cada cosa puesta (lo pidio
+// el usuario). No toca lo guardado ni las monedas: al volver a false, todo
+// vuelve a como estaba.
+export const VER_TODO = true;
+
 export function tienes(id, f = getFuchs(), l = null) {
   const cosa = getCosa(id);
   if (!cosa) return false;
+  if (VER_TODO) return true;
   if (cosa.req) return cumple(cosa.req, l || logros());
   if ((cosa.precio ?? 0) <= 0) return true;
   return Array.isArray(f.comprado) && f.comprado.includes(id);
