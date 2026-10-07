@@ -7475,3 +7475,113 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
   .fox-modal-caja:not(.bv-caja) .fox-hero-escena { min-height: 220px; }
   .fox-modal-caja:not(.bv-caja) .fox-modal-cuerpo { flex: none; overflow: visible; }
 }
+
+/* Los saltitos de Felix (FoxCard.jsx): al abrir la app y al tocarlo. Tres
+   botes, cada uno mas bajo, con un leve aplastamiento al tocar el suelo; una
+   sombra que se encoge cuando esta arriba y polvo al aterrizar. Las tres
+   animaciones comparten duracion y curva para ir a la par. */
+.fox-saludo-zona { position: relative; display: inline-block; --salto-ret: 0.4s; }
+.fox-saludo-zona.al-tocar { --salto-ret: 0s; }
+.fox-saludo { display: inline-block; position: relative; z-index: 1; transform-origin: 50% 100%; }
+.saltando > .fox-saludo { animation: fox-saltitos 1.5s cubic-bezier(.3, .7, .4, 1) var(--salto-ret) both; }
+@keyframes fox-saltitos {
+  0%   { transform: translateY(0) scale(1, 1); }
+  10%  { transform: translateY(0) scale(1.06, .94); }
+  22%  { transform: translateY(-18px) scale(.97, 1.04); }
+  34%  { transform: translateY(0) scale(1.06, .94); }
+  46%  { transform: translateY(-11px) scale(.98, 1.02); }
+  58%  { transform: translateY(0) scale(1.04, .96); }
+  70%  { transform: translateY(-5px); }
+  82%  { transform: translateY(0) scale(1.02, .98); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.fox-sombra {
+  position: absolute; left: 50%; bottom: 0; z-index: 0;
+  width: 62%; height: 12px; margin-left: -31%;
+  border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 0.12) 45%, transparent 72%);
+}
+.saltando > .fox-sombra { animation: fox-sombra 1.5s cubic-bezier(.3, .7, .4, 1) var(--salto-ret) both; }
+@keyframes fox-sombra {
+  0%   { opacity: 0; transform: scale(1); }
+  10%  { opacity: 1; transform: scale(1.06); }
+  22%  { opacity: .45; transform: scale(.62); }
+  34%  { opacity: 1; transform: scale(1.06); }
+  46%  { opacity: .6; transform: scale(.75); }
+  58%  { opacity: 1; transform: scale(1.03); }
+  70%  { opacity: .8; transform: scale(.88); }
+  82%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+/* Polvo en pixeles, como Felix: un cuadradito color arena y otro mas pequeño
+   al lado. En gris claro no se distinguia del fondo azulado de la tarjeta. */
+.fox-polvo {
+  position: absolute; bottom: 5px; z-index: 2;
+  width: 7px; height: 7px; border-radius: 1.5px; pointer-events: none; opacity: 0;
+  background: #c8b28f;
+}
+.fox-polvo-izq { left: 24%; box-shadow: -7px -4px 0 -1.5px #d9c6a5; }
+.fox-polvo-der { right: 24%; box-shadow: 7px -4px 0 -1.5px #d9c6a5; }
+.saltando > .fox-polvo-izq { animation: fox-polvo-izq 1.5s ease-out var(--salto-ret) both; }
+.saltando > .fox-polvo-der { animation: fox-polvo-der 1.5s ease-out var(--salto-ret) both; }
+/* Una nubecita por aterrizaje (34 %, 58 %, 82 %), cada vez mas pequeña. */
+@keyframes fox-polvo-izq {
+  0%, 33%  { opacity: 0; transform: translate(0, 0) scale(.4); }
+  34%      { opacity: .9; transform: translate(0, 0) scale(.7); }
+  46%      { opacity: 0; transform: translate(-18px, -9px) scale(1.5); }
+  47%, 57% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  58%      { opacity: .7; transform: translate(0, 0) scale(.55); }
+  68%      { opacity: 0; transform: translate(-12px, -6px) scale(1.15); }
+  69%, 81% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  82%      { opacity: .45; transform: translate(0, 0) scale(.45); }
+  92%, 100% { opacity: 0; transform: translate(-7px, -4px) scale(.85); }
+}
+@keyframes fox-polvo-der {
+  0%, 33%  { opacity: 0; transform: translate(0, 0) scale(.4); }
+  34%      { opacity: .9; transform: translate(0, 0) scale(.7); }
+  46%      { opacity: 0; transform: translate(18px, -9px) scale(1.5); }
+  47%, 57% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  58%      { opacity: .7; transform: translate(0, 0) scale(.55); }
+  68%      { opacity: 0; transform: translate(12px, -6px) scale(1.15); }
+  69%, 81% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  82%      { opacity: .45; transform: translate(0, 0) scale(.45); }
+  92%, 100% { opacity: 0; transform: translate(7px, -4px) scale(.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .saltando > .fox-saludo, .saltando > .fox-sombra, .saltando > .fox-polvo { animation: none; }
+}
+
+/* En el espacio (SaltosFelix con espacio): sin suelo no hay botes, sombra
+   ni polvo. Felix sube un poco y da una vuelta entera, despacio, como sin
+   gravedad, y a su lado parpadean dos estrellitas. */
+.fox-saludo-zona.en-espacio .fox-sombra { display: none; }
+.en-espacio.saltando > .fox-saludo {
+  animation: fox-voltereta 2.8s cubic-bezier(.45, .05, .35, 1) var(--salto-ret) both;
+  transform-origin: 50% 55%;
+}
+@keyframes fox-voltereta {
+  0%   { transform: translateY(0) rotate(0deg); }
+  30%  { transform: translateY(-16px) rotate(120deg); }
+  70%  { transform: translateY(-10px) rotate(320deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
+.fox-saludo-zona.en-espacio .fox-polvo {
+  bottom: auto; top: 22%; width: 11px; height: 11px; border-radius: 0; box-shadow: none;
+  background: #f5f3ff;
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+  filter: drop-shadow(0 0 3px rgba(196, 181, 253, 0.9));
+}
+.fox-saludo-zona.en-espacio .fox-polvo-izq { left: 6%; }
+.fox-saludo-zona.en-espacio .fox-polvo-der { right: 6%; top: 48%; }
+.en-espacio.saltando > .fox-polvo { animation: fox-estrellita 2.8s ease-in-out var(--salto-ret) both; }
+.en-espacio.saltando > .fox-polvo-der { animation-delay: calc(var(--salto-ret) + 0.5s); }
+@keyframes fox-estrellita {
+  0%, 10% { opacity: 0; transform: scale(0) rotate(0deg); }
+  30%     { opacity: 1; transform: scale(1.2) rotate(45deg); }
+  50%     { opacity: .4; transform: scale(.7) rotate(90deg); }
+  70%     { opacity: 1; transform: scale(1.1) rotate(135deg); }
+  100%    { opacity: 0; transform: scale(0) rotate(180deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .en-espacio.saltando > .fox-saludo, .en-espacio.saltando > .fox-polvo { animation: none; }
+}

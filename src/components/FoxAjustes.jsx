@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Desplegable from './Desplegable.jsx';
 import FoxFace from './FoxFace.jsx';
+import SaltosFelix, { useSaltos } from './SaltosFelix.jsx';
 import {
   getFuchs,
   setFuchs,
@@ -154,6 +155,8 @@ function Bloque({ titulo, ico, cosas, esPuesta, monedas, onPoner, onComprar, dot
 
 export default function FoxAjustes({ onClose, onChange }) {
   const [f, setF] = useState(getFuchs);
+  // Salta al abrir la tienda (ver SaltosFelix.jsx).
+  const saltos = useSaltos(true);
   const [monedas, setMonedas] = useState(saldo);
   const [aviso, setAviso] = useState('');
   const [previsualizarEfecto, setPrevisualizarEfecto] = useState(false);
@@ -206,6 +209,12 @@ export default function FoxAjustes({ onClose, onChange }) {
     onChangeRef.current?.(f);
     cierreTimer.current = setTimeout(onClose, 320);
   }
+
+  // Al abrir la tienda se enseña 3 segundos el efecto que lleva puesto Felix
+  // y luego se desvanece, igual que al elegirlo. Si no lleva ninguno, nada.
+  useEffect(() => {
+    mostrarPrevisualizacionEfecto(f.particulas);
+  }, []);
 
   // Y con Escape también. useTeclas no se mete cuando estás escribiendo, así
   // que ponerle nombre al zorro sigue funcionando.
@@ -288,7 +297,9 @@ export default function FoxAjustes({ onClose, onChange }) {
             <button className="fox-hero-cerrar" onClick={cerrar} title="Zurück" aria-label="Schließen">✕</button>
           </div>
 
-          <div className="fox-hero-personaje">
+          {/* Como en la portada: salta al abrir la tienda y cada vez que lo tocas. */}
+          <div className="fox-hero-personaje" onClick={saltos.saltar}>
+            <SaltosFelix saltos={saltos} espacio={f.fondo === 'weltraum'}>
             <FoxFace
               fuchs={f}
               gesto="feliz"
@@ -299,6 +310,7 @@ export default function FoxAjustes({ onClose, onChange }) {
               desvaneciendoEfecto={desvaneciendoEfecto}
               racha={20}
             />
+            </SaltosFelix>
           </div>
 
           <div className="fox-hero-stats-wrap">

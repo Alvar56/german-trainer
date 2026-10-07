@@ -1,16 +1,27 @@
 import React, { useState } from 'react';
 import FoxFace from './FoxFace.jsx';
 import FoxAjustes from './FoxAjustes.jsx';
+import SaltosFelix, { useSaltos } from './SaltosFelix.jsx';
 import { getFuchs, nuevosDesbloqueos, marcarVisto, preguntaFuchs, otraFuchs, glosaFuchs } from '../lib/fuchs.js';
 import Escuchar from './Escuchar.jsx';
 import { t } from '../lib/i18n.js';
 import { SIN_IA } from '../lib/modo.js';
+
+// Felix saluda con unos saltitos al abrir la app: solo la primera vez que
+// sale la portada en cada apertura, no cada vez que se vuelve a ella.
+let yaSaludo = false;
 
 
 export default function FoxCard({ onAbrir }) {
   // En estado, no leído a pelo: al personalizarlo desde aquí, la tarjeta tiene
   // que repintarse con el zorro nuevo sin recargar la página.
   const [fuchs, setFuchsLocal] = useState(getFuchs);
+  const [primeraVez] = useState(() => {
+    if (yaSaludo) return false;
+    yaSaludo = true;
+    return true;
+  });
+  const saltos = useSaltos(primeraVez);
   // Una por carga -si cambiara a cada repintado, mareas- pero ahora se puede
   // pedir otra pulsando la burbuja.
   const [pregunta, setPregunta] = useState(() => preguntaFuchs());
@@ -30,8 +41,11 @@ export default function FoxCard({ onAbrir }) {
     <div className={'fox-card' + (SIN_IA ? ' fox-card-corta' : '')}>
       <button
         className={'fox-card-cara fox-aura-wrap fox-aura-' + (fuchs.fondo || 'nadaFondo')}
-        onClick={() => setAjustes(true)}
-        title={t('fox.customiseName', { nombre: fuchs.nombre })}
+        // Tocarlo le hace saltar. La tienda se abre con "Personalizar a
+        // Felix", justo al lado: si lo hicieran los dos, la tienda taparia
+        // el salto.
+        onClick={saltos.saltar}
+        title={fuchs.nombre}
       >
         {/* En la portada, los dos ojos abiertos: el entornado ahi solo despistaba.
             Sin IA la tarjeta pierde la caja de contestar y el enlace del chat,
@@ -44,7 +58,9 @@ export default function FoxCard({ onAbrir }) {
         {/* Sin paisaje aqui: en la portada el zorro va suelto sobre la
             tarjeta. El fondo comprado se ve en su pantalla, no metido en un
             recuadro dentro de otro recuadro. */}
-        <FoxFace fuchs={fuchs} gesto="normal" size={SIN_IA ? 138 : 136} conCuerpo className="flota" />
+        <SaltosFelix saltos={saltos} espacio={fuchs.fondo === 'weltraum'}>
+          <FoxFace fuchs={fuchs} gesto={saltos.saltando ? 'feliz' : 'normal'} size={SIN_IA ? 138 : 136} conCuerpo className="flota" />
+        </SaltosFelix>
       </button>
 
       <div className="fox-card-texto">
