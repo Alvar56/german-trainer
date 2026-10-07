@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import FoxFace from './FoxFace.jsx';
+import PaisajeVivo from './PaisajeVivo.jsx';
 import FoxAjustes from './FoxAjustes.jsx';
 import SaltosFelix, { useSaltos } from './SaltosFelix.jsx';
 import { getFuchs, nuevosDesbloqueos, marcarVisto, preguntaFuchs, otraFuchs, glosaFuchs, fraseEspecial, COSQUILLAS } from '../lib/fuchs.js';
@@ -61,7 +62,9 @@ export default function FoxCard({ onAbrir, onCambio }) {
     <div className={'fox-card' + (SIN_IA ? ' fox-card-corta' : '') + (fuchs.fondo && fuchs.fondo !== 'nadaFondo' ? ' con-paisaje' : '')}>
       {/* El paisaje que le has comprado, de lado a lado de la tarjeta. */}
       {fuchs.fondo && fuchs.fondo !== 'nadaFondo' && (
-        <div className={'fox-card-paisaje fox-escena-' + fuchs.fondo} aria-hidden="true" />
+        <div className={'fox-card-paisaje fox-escena-' + fuchs.fondo} aria-hidden="true">
+          <PaisajeVivo fondo={fuchs.fondo} />
+        </div>
       )}
       <button
         className={'fox-card-cara fox-aura-wrap fox-aura-' + (fuchs.fondo || 'nadaFondo')}
