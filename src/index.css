@@ -8068,3 +8068,17 @@ body.fox-modal-abierto .fox-card .pv { animation-play-state: paused; }
    lisa, y encima del paisaje teñia todo de un color raro (en la playa, un
    amarillo fuerte). */
 .fox-card.con-paisaje .fox-card-cara.fox-aura-wrap::before { display: none; }
+
+/* El boton de conjugar de la lista de palabras: un simbolo de tabla en vez
+   del emoji 🔄 (en el movil se veia un cuadrado blanco con un emoji encima
+   del degradado de color de la fila). Redondo, discreto y del color de la app. */
+.wt-conj-ico { width: 15px; height: 15px; fill: currentColor; flex: 0 0 auto; }
+@media (max-width: 720px) {
+  .wt-conj {
+    width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    border: 1px solid var(--border); color: var(--accent);
+  }
+  .wt-conj-ico { display: block; width: 16px; height: 16px; }
+}
