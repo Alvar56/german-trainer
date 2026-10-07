@@ -699,7 +699,7 @@ function VocabTableRow({ c, deckId, lektionId, onConjugate, loadingVerb }) {
               disabled={loadingVerb === word}
               title={t('voc.conjugate')}
             >
-              <svg className="wt-conj-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 4h18v16H3zM5 6v3h6V6zm8 0v3h6V6zm-8 5v3h6v-3zm8 0v3h6v-3zm-8 5v2h6v-2zm8 0v2h6v-2z" /></svg>
+              <span className="wt-conj-corto" aria-hidden="true">Konj.</span>
               <span className="wt-conj-txt">
                 {loadingVerb === word ? t('loading') : t('voc.conjugate')}
               </span>

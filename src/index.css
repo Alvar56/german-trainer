@@ -8069,16 +8069,25 @@ body.fox-modal-abierto .fox-card .pv { animation-play-state: paused; }
    amarillo fuerte). */
 .fox-card.con-paisaje .fox-card-cara.fox-aura-wrap::before { display: none; }
 
-/* El boton de conjugar de la lista de palabras: un simbolo de tabla en vez
-   del emoji 🔄 (en el movil se veia un cuadrado blanco con un emoji encima
-   del degradado de color de la fila). Redondo, discreto y del color de la app. */
-.wt-conj-ico { width: 15px; height: 15px; fill: currentColor; flex: 0 0 auto; }
+/* El boton de conjugar de la lista de palabras. En el movil, en vez del
+   emoji (un cuadrado blanco con un emoji encima del degradado de la fila),
+   una pastilla pequeña con «Konj.», del color de la app. */
+.wt-conj-corto { display: none; }
 @media (max-width: 720px) {
+  .wt-conj-ico { display: none !important; }
   .wt-conj {
-    width: 32px; height: 32px; min-height: 0; padding: 0; border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
-    background: color-mix(in srgb, var(--surface) 85%, transparent);
-    border: 1px solid var(--border); color: var(--accent);
+    min-height: 0; height: auto; padding: 4px 10px; border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); color: var(--accent);
+    font-size: 0.78rem; font-weight: 700; line-height: 1.2;
   }
-  .wt-conj-ico { display: block; width: 16px; height: 16px; }
+  .wt-conj-corto { display: inline; }
+}
+/* El degradado de color de una palabra llega hasta el borde de la tarjeta:
+   la tabla se estira por la derecha lo que mide el relleno del panel, y la
+   ultima columna lo recupera por dentro. */
+.scroll-x:has(> .woerter-tabla) { margin-right: -12px; }
+.woerter-tabla .wt-acciones { padding-right: 24px; }
+@media (max-width: 720px) {
+  .woerter-tabla .wt-acciones { padding-right: 12px; }
 }
