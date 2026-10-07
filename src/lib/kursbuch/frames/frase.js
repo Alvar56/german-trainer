@@ -563,7 +563,7 @@ export const FRASE = {
     ],
     clozes: [
       { txt: '___ ich morgens ins Büro komme, trinke ich zuerst einen Kaffee. Und ___ viel zu tun ___, bleibe ich auch mal länger.', a: ['Wenn', 'wenn', 'ist'], extra: ['Als', 'als', 'sind'], t: 'Cuando llego a la oficina por la mañana, lo primero que hago es un café. Y cuando hay mucho que hacer, a veces me quedo más rato.', e: '"wenn" manda el verbo al final de su frase, y la principal empieza entonces por el verbo.' },
-      { txt: '___ ich morgens ins Büro komme, trinke ich zuerst einen Kaffee. Und ___ viel zu tun ___, bleibe ich länger. Ruf mich an, ___ du Fragen ___.', a: ['Wenn', 'wenn', 'ist', 'wenn', 'hast'], extra: ['Als', 'denn', 'sind', 'dass'], t: 'Cuando llego a la oficina por la mañana, lo primero es un café. Y cuando hay mucho que hacer me quedo más rato. Llámame si tienes dudas.', e: 'Tres «wenn» y en los tres el verbo se va al final de su frase: ist, hast. La principal empieza por el verbo cuando la subordinada va delante.' }
+      { txt: '___ ich morgens ins Büro komme, trinke ich zuerst einen Kaffee. Und ___ viel zu tun ___, bleibe ich länger. Ruf mich an, ___ du Fragen ___.', a: ['Wenn', 'wenn', 'ist', 'wenn', 'hast'], extra: ['Als', 'denn', 'sind', 'dass'], t: 'Cuando llego a la oficina por la mañana, lo primero es un café. Y cuando hay mucho que hacer me quedo más rato. Llámame si tienes dudas.', e: '«Wenn» introduce una condición o algo que ocurre cuando se cumple una situación. En la subordinada, el verbo conjugado va al final: «ist» y «hast». Si la subordinada va primero, la frase principal empieza con el verbo: «Wenn ich morgens ins Büro komme, trinke ich zuerst einen Kaffee».' }
     ]
   },
 

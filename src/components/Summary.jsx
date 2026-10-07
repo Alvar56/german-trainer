@@ -1,35 +1,70 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
 import TextoAleman from './TextoAleman.jsx';
 import Premios from './Premios.jsx';
+import { useTeclas } from '../lib/teclas.js';
+import { topicMastery } from '../lib/progress.js';
+import Confeti from './Confeti.jsx';
+import { cobrarCoronaMaestria } from '../lib/topicRewards.js';
 
 // A partir de aqui la tanda se da por buena: el mismo 80% con el que se
 // aprueba un apartado de Kommunikation, para no tener dos listones.
 const APROBADO = 80;
 
-export default function Summary({ data, onRepeat, onRepetirFallos, onHome, onTema }) {
-  const { topic, correctCount, total, accuracy, seconds, xp, streak, rank, mistakes, rachaMax, rachaRecord, monedas, bonoDia } = data;
+export default function Summary({ data, onRepeat, onRepetirFallos, onHome, onTema, volverAInicio = false }) {
+  const { topic, correctCount, total, accuracy, seconds, xp, streak, rank, mistakes, rachaRecord, monedas, bonoDia } = data;
   const fallos = data.fallos || [];
   const pct = Math.round(accuracy * 100);
   const mm = Math.floor(seconds / 60);
   const ss = seconds % 60;
   const perfect = correctCount === total;
-
-  const streakEvent = streak?.events?.find((e) => ['up', 'start', 'freeze-used'].includes(e.type));
+  const conceptos = (topic?.concepts || []).map((concepto) => concepto.id).filter(Boolean);
+  const mezcla = data.game === 'todo' || data.game === 'grammar-mixed' || topic?.id === 'mix';
+  const grammarCompleta = !mezcla && conceptos.length > 0 && topicMastery(conceptos).complete;
+  const [bonoCorona, setBonoCorona] = useState(0);
+  const coronaGanadaEnEstaSesion = Boolean(data.coronaRecienCompletada || bonoCorona > 0);
+  const coronaFinishTopic = data.mode === 'faltan' && coronaGanadaEnEstaSesion;
+  const celebracion = coronaGanadaEnEstaSesion ? 'dominio' : perfect ? 'suave' : null;
+  const premioProcesado = useRef(null);
+  const puedeRepetirFallos = !coronaFinishTopic && !!(onRepetirFallos && fallos.length > 0);
+  useTeclas({
+    Enter: () => coronaFinishTopic ? undefined : puedeRepetirFallos ? onRepetirFallos() : onRepeat(),
+    Escape: () => onTema ? onTema() : onHome?.()
+  }, true);
 
   // Subir de nivel es lo mas gordo que puede pasar al terminar una tanda y
   // era lo unico que no se decia: te enterabas al volver a la portada.
   const subida = streak?.events?.find((e) => e.type === 'level');
 
+  useEffect(() => {
+    if (!grammarCompleta || !topic?.id || premioProcesado.current === topic.id) return;
+    premioProcesado.current = topic.id;
+    setBonoCorona(cobrarCoronaMaestria('grammar', topic.id, data.coronaRecienCompletada));
+  }, [grammarCompleta, topic?.id]);
+
   return (
     <div className="stack reading">
+      {celebracion && <Confeti intensidad={celebracion} />}
       <div className="card center stack">
         <div className="confetti-badge">{perfect ? '🏆' : pct >= APROBADO ? '🎉' : '💪'}</div>
         <h2>{perfect ? t('sum.perfect') : pct >= APROBADO ? t('sum.good') : t('sum.keep')}</h2>
         {/* De que iba la tanda, con la misma pastilla que se lleva arriba
             mientras la haces. */}
-        {topic?.nameEs && <span className="pill ctx-tema">📖 {topic.nameEs}</span>}
+        {topic?.nameEs && (
+          <div className="vsummary-pills">
+            <span className="pill ctx-tema">📖 {data.game === 'grammar-mixed'
+              ? pick('Gramática mixta', 'Mixed grammar')
+              : data.game === 'todo'
+              ? pick('De todo un poco', 'A bit of everything')
+              : topic.id === 'vocab-mix' || data.game === 'vocab-mixed'
+              ? pick('Vocabulario mixto', 'Mixed vocabulary')
+              : topic.id === 'mix'
+              ? pick('Práctica mixta', 'Mixed practice')
+              : pick(topic.nameEs, topic.name || topic.nameEs)}</span>
+            {coronaGanadaEnEstaSesion && <span className="pill monedas vocab-corona-ganada">👑 {t('voc.crownEarned')}</span>}
+          </div>
+        )}
         <div className="stat-grid">
           <div className="card">
             <div className="big-stat">{pct}%</div>
@@ -51,14 +86,34 @@ export default function Summary({ data, onRepeat, onRepetirFallos, onHome, onTem
         <Premios
           subida={subida}
           xp={xp}
-          monedas={monedas}
+          monedas={Math.max(0, (Number(monedas) || 0) - (Number(data.bonoRachaFinal) || 0))}
+          bonoRachaFinal={data.bonoRachaFinal || 0}
+          bonoCorona={bonoCorona}
           bonoDia={bonoDia}
-          rachaMax={rachaMax}
           rachaRecord={rachaRecord}
-          dias={streak?.state?.current || 0}
-          congelador={streakEvent?.type === 'freeze-used'}
           rank={rank}
         />
+      </div>
+
+      <div className="btn-row resumen-acciones">
+        {puedeRepetirFallos && (
+          <button className="btn-primary resumen-retry" onClick={onRepetirFallos}>
+            <span className="op-tecla atajo-final">Enter</span>
+            {t('sum.retryFails', { n: fallos.length })}
+          </button>
+        )}
+        {!coronaFinishTopic && (
+          <button className={'resumen-otra ' + (puedeRepetirFallos ? 'btn-ghost' : 'btn-primary')} onClick={onRepeat}>
+            {!puedeRepetirFallos && <span className="op-tecla atajo-final">Enter</span>}
+            {t('sum.again')}
+          </button>
+        )}
+        {(onTema || onHome) && (
+          <button className="btn-ghost resumen-volver" onClick={onTema || onHome}>
+            <span className="op-tecla atajo-final">Esc</span>
+            {t(volverAInicio ? 'sum.backStartseite' : 'vsum.backExercises')}
+          </button>
+        )}
       </div>
 
       <div className="card stack">
@@ -73,7 +128,10 @@ export default function Summary({ data, onRepeat, onRepetirFallos, onHome, onTem
               <div className="mistake" key={i}>
                 <div className="de">
                   {it.type === 'order' ? (it.solution || []).join(' ') 
-                   : it.type === 'cloze' ? (it.clozeText ? String(it.clozeText).replace(/___/g, () => it.clozeAnswers ? it.clozeAnswers.join('/') : '___') : '')
+                   : it.type === 'cloze' ? (it.clozeText ? (() => {
+                       let respuesta = 0;
+                       return String(it.clozeText).replace(/___/g, () => String(it.clozeAnswers?.[respuesta++] || '___'));
+                     })() : '')
                    : it.type === 'open' ? (it.sentence || '')
                    : (() => {
                        const parts = String(it.answer || '___').split(/\s*\.\.\.\s*/);
@@ -94,31 +152,6 @@ export default function Summary({ data, onRepeat, onRepetirFallos, onHome, onTem
         ))}
       </div>
 
-      {/* Los mismos tres que al acabar una tanda de vocabulario: otra vez,
-          volver a lo que estabas y inicio. Habia seis (teoria, ejercicios,
-          solo fallos, Bestenliste...) y acabar un ejercicio se convertia en
-          elegir entre seis cosas. La tanda mixta no sale de ningun tema, asi
-          que ahi el de volver no se pinta. */}
-      <div className="btn-row">
-        {/* Lo que acabas de fallar, otra vez y nada más: es lo que apetece
-            cuando terminas y ves que se te han escapado dos. */}
-        {onRepetirFallos && fallos.length > 0 && (
-          <button className="btn-primary" onClick={onRepetirFallos}>
-            {t('sum.retryFails', { n: fallos.length })}
-          </button>
-        )}
-        <button className={onRepetirFallos && fallos.length > 0 ? 'btn-ghost' : 'btn-primary'} onClick={onRepeat}>
-          {t('sum.again')}
-        </button>
-        {onTema && (
-          <button className="btn-ghost" onClick={onTema}>
-            {t('sum.backTema')}
-          </button>
-        )}
-        <button className="btn-ghost" onClick={onHome}>
-          {t('sum.home')}
-        </button>
-      </div>
     </div>
   );
 }

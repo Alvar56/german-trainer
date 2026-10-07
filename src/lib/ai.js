@@ -996,11 +996,16 @@ ${raw}
 
 ${contexto}
 
-REGLA POR ENCIMA DE TODO: pasa a limpio SOLO lo que hay en esos apuntes.
-- No añadas reglas, palabras, ejemplos ni consejos que el alumno no haya escrito.
+REGLA POR ENCIMA DE TODO: pasa a limpio SOLO el contenido de esos apuntes.
+- No añadas reglas, temas, vocabulario ni consejos ajenos a los apuntes. Excepción:
+  cuando una palabra o expresión corregida quedaría suelta en INFORMACIÓN ÚTIL, añade
+  el ejemplo contextualizado breve que se pide en esa sección; usa solo el vocabulario
+  adicional imprescindible para formar una frase natural.
 - Si algo está abreviado o a medias, complétalo únicamente cuando sea evidente qué es.
-- Si los apuntes son una lista de palabras sueltas, el resultado es esa lista ordenada
-  y traducida. Que salga corto es correcto: no lo rellenes.
+- Si los apuntes son una lista de vocabulario, el resultado es esa lista ordenada y
+  traducida, sin ejemplos añadidos. Que salga corto es correcto: no lo rellenes. La
+  excepción son las palabras corregidas de una pregunta, que requieren un ejemplo si
+  aparecen en INFORMACIÓN ÚTIL.
 - Nada de "en esta lección también se ve...": eso no son sus apuntes.
 
 Formato: texto plano, sin markdown. Títulos en MAYÚSCULAS y listas con guiones.
@@ -1015,11 +1020,54 @@ GRAMÁTICA
   en alemán que haya escrito el alumno (y su traducción entre paréntesis).
 
 VOCABULARIO
-- solo las palabras que estén en los apuntes: término en alemán (con artículo si es
-  sustantivo) = traducción a ${idiomaAlumno()}.
+- solo las palabras que estén en los apuntes y merezcan la pena para un alumno A2-B1:
+  prioriza verbos, adjetivos, sustantivos temáticos, expresiones y palabras menos
+  transparentes o más útiles para expresarse. Omite vocabulario A1 muy básico
+  (por ejemplo, palabras cotidianas obvias) salvo que sea necesario para entender
+  los apuntes. No añadas palabras que el alumno no haya escrito.
+- término en alemán (con artículo si es sustantivo) = traducción a ${idiomaAlumno()}.
+- Si aparece una forma conjugada o declinada, puedes añadir el infinitivo o la forma
+  base entre paréntesis, sin perder la forma original de los apuntes.
+
+COMUNICACIÓN
+- expresiones, preguntas prácticas, peticiones, respuestas o intenciones comunicativas
+  que aparezcan en los apuntes. Escribe una formulación alemana natural y su traducción
+  o el contexto de uso, según lo que el alumno haya anotado.
+
+INFORMACIÓN ÚTIL
+- solo aclaraciones prácticas breves que ayuden a recordar o usar lo anotado y que no
+  encajen mejor en GRAMÁTICA, VOCABULARIO o COMUNICACIÓN. Cada línea debe aportar una
+  regla, distinción o respuesta concreta; no incluyas relleno.
+- No dejes palabras sueltas ni una corrección aislada. Para cada palabra o expresión,
+  escribe SIEMPRE: forma alemana corregida → frase alemana completa y natural que la use
+  (traducción a ${idiomaAlumno()}). El lado derecho nunca puede ser solo la misma palabra
+  corregida. Usa este formato literal, sin negrita ni markdown:
+  Müll → Wir bringen den Müll raus. (We take out the rubbish.)
+  vermieten → Der Vermieter vermietet die Wohnung. (The landlord rents out the apartment.)
+  einziehen → Wir ziehen nächste Woche in eine neue Wohnung ein. (We are moving into a new apartment next week.)
+- La palabra puede aparecer dentro del ejemplo, pero no la resaltes en negrita. Para una
+  regla, escribe la regla → ejemplo completo y su traducción.
+- Si una corrección procede de una pregunta del alumno, explica brevemente qué significa
+  o cuándo se usa; conserva la palabra corregida y acompáñala con el ejemplo.
+- Si no puedes contextualizar una palabra con un ejemplo correcto a partir de las notas,
+  ponla en VOCABULARIO o sáltatela; no la dejes suelta en INFORMACIÓN ÚTIL.
 
 DUDAS
-- cosas de los apuntes mal escritas, incompletas o que no se entienden, con la corrección.
+- usa esta sección solo si algo sigue siendo realmente ambiguo después de interpretarlo.
+
+CLASIFICACIÓN DE PREGUNTAS Y CORRECCIONES
+- Interpreta y resuelve las preguntas o fragmentos dudosos que el alumno haya escrito;
+  no los copies en una sección llamada "QUESTIONS" ni los dejes sin clasificar.
+- Errores de estructura, casos, artículos, conjugación u orden de palabras: corrígelos
+  y ponlos en GRAMÁTICA, con una explicación breve si ayuda.
+- Significado, traducción, ortografía o forma de una palabra: resuélvelo y ponlo en
+  VOCABULARIO, respetando el nivel A2-B1 indicado arriba.
+- Cómo formular algo en una situación real, preguntas y respuestas útiles o el registro
+  formal/informal: pon la expresión corregida en COMUNICACIÓN.
+- Usa solo el contexto escrito por el alumno para decidir; no inventes contenido.
+- No escribas tablas ni una sección QUESTIONS: el resultado es texto plano, una línea por
+  apunte corregido. La tabla de vocabulario la crea la aplicación. Usa la flecha solo para
+  conectar la forma, regla o expresión con su ejemplo contextualizado.
 
 Corrige los errores de alemán que veas (ortografía, artículos, mayúsculas).
 Responde solo con el texto, sin comentarios previos.`;
@@ -1028,7 +1076,7 @@ Responde solo con el texto, sin comentarios previos.`;
 }
 
 // Genera ejercicios de repaso (mc / order) a partir de los apuntes de una clase.
-export async function generateNotebookItems({ raw, clean, lektion, count = 8, ejercicios = [] }) {
+export async function generateNotebookItems({ raw, clean, lektion, count = 20, ejercicios = [] }) {
   if (!aiAvailable()) throw new Error(t('err.aiExercises'));
   // Los apuntes a limpio si los has pasado; si no, lo que escribiste tal cual.
   const base = String(clean || raw || '').slice(0, 4000);

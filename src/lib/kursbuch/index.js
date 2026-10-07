@@ -205,6 +205,9 @@ export function lektionDecks(lektion) {
     // girarlas, mientras que las de los mazos sueltos si.
     cards: g.items.map((it) => ({
       de: it.de,
+      _traducible: true,
+      _esBase: it.es,
+      _exEsBase: it.exEs || '',
       es: tc(it.es),
       ex: it.ex || '',
       exEs: it.exEs ? tc(it.exEs) : ''

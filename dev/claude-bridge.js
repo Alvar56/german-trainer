@@ -140,99 +140,102 @@ function enqueueClaude(prompt, options = {}) {
 }
 
 export function claudeBridge() {
+  // Igual en `vite` (desarrollo) que en `vite preview` (la app compilada).
+  const montar = (server) => {
+    server.middlewares.use('/api/ai', (req, res) => {
+      if (req.method !== 'POST') {
+        res.statusCode = 405;
+        res.end('Method Not Allowed');
+        return;
+      }
+      let body = '';
+      req.on('data', (c) => {
+        body += c;
+        // las fotos van en base64, así que el límite tiene que ser generoso
+        if (body.length > 20 * 1024 * 1024) req.destroy();
+      });
+      req.on('end', async () => {
+        res.setHeader('Content-Type', 'application/json');
+        let prompt = '';
+        let tools = [];
+        let timeoutMs = 120000;
+        let imagen = null;
+        try {
+          const parsed = JSON.parse(body || '{}');
+          prompt = String(parsed.prompt || '');
+          if (parsed.system) prompt = String(parsed.system) + '\n\n' + prompt;
+          if (Array.isArray(parsed.tools)) tools = parsed.tools.map(String);
+          if (Number(parsed.timeoutMs) > 0) timeoutMs = Math.min(Number(parsed.timeoutMs), 600000);
+          // Si viene una foto, se deja en un temporal y se le pasa la ruta al CLI.
+          if (parsed.image) {
+            imagen = guardarImagen(parsed.image);
+            if (!imagen) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: 'Imagen no válida (usa PNG, JPG, GIF o WEBP, máx. 12 MB).' }));
+              return;
+            }
+            if (!tools.includes('Read')) tools.push('Read');
+            prompt = `Lee la imagen que hay en esta ruta: ${imagen}\n\n${prompt}`;
+          }
+        } catch {
+          res.statusCode = 400;
+          res.end(JSON.stringify({ error: 'JSON inválido.' }));
+          return;
+        }
+        if (!prompt.trim()) {
+          res.statusCode = 400;
+          res.end(JSON.stringify({ error: 'Falta el prompt.' }));
+          return;
+        }
+        // Si el navegador cuelga mientras esta en cola, no hay a quien
+        // contestar: mejor no gastar una generacion en eso.
+        let vivo = true;
+        res.on('close', () => {
+          vivo = false;
+        });
+
+        try {
+          const text = await enqueueClaude(prompt, {
+            tools,
+            timeoutMs,
+            sigueInteresando: () => vivo
+          });
+          res.end(JSON.stringify({ text }));
+        } catch (e) {
+          if (e.abandonada) {
+            // Nadie escucha ya: se cierra y a otra cosa.
+            res.end();
+          } else {
+            // 429 tanto para la cuota agotada como para la cola llena: en los
+            // dos casos es "ahora no, vuelve luego", no un fallo del que haya
+            // que sospechar. 502 se queda para los problemas de verdad.
+            res.statusCode = e.limite || e.ocupado ? 429 : 502;
+            res.end(
+              JSON.stringify({
+                error: e.message || String(e),
+                limite: !!e.limite,
+                ocupado: !!e.ocupado,
+                reset: e.resetTexto || ''
+              })
+            );
+          }
+        } finally {
+          // la foto temporal no se queda en el disco pase lo que pase
+          if (imagen) {
+            try {
+              fs.unlinkSync(imagen);
+            } catch {
+              /* si ya no está, mejor */
+            }
+          }
+        }
+      });
+    });
+  };
   return {
     name: 'claude-bridge',
     apply: 'serve',
-    configureServer(server) {
-      server.middlewares.use('/api/ai', (req, res) => {
-        if (req.method !== 'POST') {
-          res.statusCode = 405;
-          res.end('Method Not Allowed');
-          return;
-        }
-        let body = '';
-        req.on('data', (c) => {
-          body += c;
-          // las fotos van en base64, así que el límite tiene que ser generoso
-          if (body.length > 20 * 1024 * 1024) req.destroy();
-        });
-        req.on('end', async () => {
-          res.setHeader('Content-Type', 'application/json');
-          let prompt = '';
-          let tools = [];
-          let timeoutMs = 120000;
-          let imagen = null;
-          try {
-            const parsed = JSON.parse(body || '{}');
-            prompt = String(parsed.prompt || '');
-            if (parsed.system) prompt = String(parsed.system) + '\n\n' + prompt;
-            if (Array.isArray(parsed.tools)) tools = parsed.tools.map(String);
-            if (Number(parsed.timeoutMs) > 0) timeoutMs = Math.min(Number(parsed.timeoutMs), 600000);
-            // Si viene una foto, se deja en un temporal y se le pasa la ruta al CLI.
-            if (parsed.image) {
-              imagen = guardarImagen(parsed.image);
-              if (!imagen) {
-                res.statusCode = 400;
-                res.end(JSON.stringify({ error: 'Imagen no válida (usa PNG, JPG, GIF o WEBP, máx. 12 MB).' }));
-                return;
-              }
-              if (!tools.includes('Read')) tools.push('Read');
-              prompt = `Lee la imagen que hay en esta ruta: ${imagen}\n\n${prompt}`;
-            }
-          } catch {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: 'JSON inválido.' }));
-            return;
-          }
-          if (!prompt.trim()) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: 'Falta el prompt.' }));
-            return;
-          }
-          // Si el navegador cuelga mientras esta en cola, no hay a quien
-          // contestar: mejor no gastar una generacion en eso.
-          let vivo = true;
-          res.on('close', () => {
-            vivo = false;
-          });
-
-          try {
-            const text = await enqueueClaude(prompt, {
-              tools,
-              timeoutMs,
-              sigueInteresando: () => vivo
-            });
-            res.end(JSON.stringify({ text }));
-          } catch (e) {
-            if (e.abandonada) {
-              // Nadie escucha ya: se cierra y a otra cosa.
-              res.end();
-            } else {
-              // 429 tanto para la cuota agotada como para la cola llena: en los
-              // dos casos es "ahora no, vuelve luego", no un fallo del que haya
-              // que sospechar. 502 se queda para los problemas de verdad.
-              res.statusCode = e.limite || e.ocupado ? 429 : 502;
-              res.end(
-                JSON.stringify({
-                  error: e.message || String(e),
-                  limite: !!e.limite,
-                  ocupado: !!e.ocupado,
-                  reset: e.resetTexto || ''
-                })
-              );
-            }
-          } finally {
-            // la foto temporal no se queda en el disco pase lo que pase
-            if (imagen) {
-              try {
-                fs.unlinkSync(imagen);
-              } catch {
-                /* si ya no está, mejor */
-              }
-            }
-          }
-        });
-      });
-    }
+    configureServer: montar,
+    configurePreviewServer: montar
   };
 }

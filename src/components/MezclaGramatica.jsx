@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { t } from '../lib/i18n.js';
 import { bandasConGramatica } from '../topics/index.js';
+import MezclaFiltros, { alternarFiltroSeleccionado } from './MezclaFiltros.jsx';
 
 // Practicar gramática sin elegir lección.
 //
@@ -13,6 +14,16 @@ import { bandasConGramatica } from '../topics/index.js';
 // llena media tanda de cosas que aún no has visto.
 export default function MezclaGramatica({ onStart }) {
   const bandas = bandasConGramatica();
+  const [bandasSeleccionadas, setBandasSeleccionadas] = useState([]);
+  const [dificultadesSeleccionadas, setDificultadesSeleccionadas] = useState([]);
+  const iniciarMezcla = () => {
+    const bandIds = bandas.filter((b) => bandasSeleccionadas.includes(b.id)).map((b) => b.id);
+    const topicId = bandIds.length ? 'mix:' + bandIds.join('|') : 'mix';
+    onStart(topicId, 'mixed', 'grammar-mixed', null, null, null, {
+      bandIds,
+      difficultyIds: dificultadesSeleccionadas
+    });
+  };
 
   return (
     <div className="panel" style={{ marginTop: 22 }}>
@@ -23,23 +34,19 @@ export default function MezclaGramatica({ onStart }) {
 
       <button
         className="btn-primary home-todo"
-        onClick={() => onStart('mix', 'mixed', 'mixed')}
+        onClick={iniciarMezcla}
       >
         <span className="gt-ico">🎲</span>
         <span className="gt-txt">{t('gr.mixAll')}</span>
       </button>
 
-      <div className="mezcla-niveles">
-        {bandas.map((b) => (
-          <button
-            key={b.id}
-            className="btn-ghost btn-sm"
-            onClick={() => onStart('mix:' + b.id, 'mixed', 'mixed')}
-          >
-            {t('gr.mixBand', { b: b.name })}
-          </button>
-        ))}
-      </div>
+      <MezclaFiltros
+        bandas={bandas}
+        bandasSeleccionadas={bandasSeleccionadas}
+        onCambiarBandas={(id) => setBandasSeleccionadas((actuales) => alternarFiltroSeleccionado(actuales, id))}
+        dificultadesSeleccionadas={dificultadesSeleccionadas}
+        onCambiarDificultades={(id) => setDificultadesSeleccionadas((actuales) => alternarFiltroSeleccionado(actuales, id))}
+      />
     </div>
   );
 }

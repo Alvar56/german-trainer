@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
+import GameModePill from './GameModePill.jsx';
 import { t, pick } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
 import { elegirFrases, corregir, pistas as pistasDe, apuntar, xpDe } from '../lib/uebersetzen.js';
@@ -12,15 +13,16 @@ import { bumpSessions, recordAnswer } from '../lib/progress.js';
 import { saveRun, guardarParcial } from '../lib/leaderboard.js';
 import { getSettings } from '../lib/settings.js';
 import { apuntarRespuesta, currentStreak } from '../lib/rachas.js';
-import { useTeclas } from '../lib/teclas.js';
+import { useExerciseActive, useTeclas } from '../lib/teclas.js';
 import Reloj from './Reloj.jsx';
 import RachaPill from './RachaPill.jsx';
-import StarButton from './StarButton.jsx';
 import Umlaut from './Umlaut.jsx';
+import PistaRevelable from './PistaRevelable.jsx';
 
 // Traducir frases del libro en las dos direcciones. Puedes pedir pistas de una
 // en una antes de contestar, y al corregir la IA te explica en qué has fallado.
 export default function TranslateGame({ onExit, onFinish, lektionId = null, dir = 'mix', nivel = 'all', cartasFijas = null }) {
+  const activa = useExerciseActive();
   const fox = useFox();
   // Sin suelo: lo que digas en Ajustes es lo que sale.
   const cuantas = getSettings().sessionSize || 10;
@@ -46,8 +48,8 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
   const aiOn = aiAvailable();
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [idx]);
+    if (activa) inputRef.current?.focus();
+  }, [activa, idx]);
 
   // El aviso de tanda vacia se pinta mas abajo, por debajo de useTeclas. Si
   // cortase aqui, una tanda que llega vacia y se rellena sin desmontar el
@@ -76,7 +78,7 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
           H: pedirPistaTranslate,
           Escape: onExit
         },
-    frases.length > 0
+    activa && frases.length > 0
   );
 
   if (vacia) {
@@ -198,7 +200,7 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
     const acc = total ? bien / total : 0;
     const xp = resultados.current.reduce((s, r) => s + xpDe(r.estado, r.pistas), 0);
     bumpSessions();
-    const streak = recordActivity(xp);
+    const streak = recordActivity(xp, Date.now() - empezado.current);
     saveRun({
       topicId: 'komm:uebersetzen',
       topicName: 'Übersetzen',
@@ -223,8 +225,9 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
       missed: resultados.current
         .filter((r) => r.estado !== 'bien')
         .map((r) => ({
-          de: r.frase.dir === 'de-es' ? r.frase.de : r.frase.es,
-          es: r.frase.dir === 'de-es' ? r.frase.es : r.frase.de
+          ...r.frase,
+          es: tc(r.frase.es),
+          tuya: r.tuya
         }))
     });
   }
@@ -242,7 +245,7 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
       <div className="progress-top">
         <button className="btn-ghost" onClick={onExit} title={t('ses.exit')}>✕</button>
         <div className="bar">
-          <span style={{ width: ((idx + (corregido ? 1 : 0)) / frases.length) * 100 + '%' }} />
+          <span style={{ width: (idx / frases.length) * 100 + '%' }} />
         </div>
         {idx > 0 && resultados.current[idx - 1] && (
           <button className="btn-ghost ses-atras ses-icon-btn" onClick={atras} title={t('ses.prev')}>
@@ -255,9 +258,8 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
       </div>
 
       <div className="ctx-fila">
-        <span className="pill ctx-tema">🔁 {pick('Traducir frases', 'Translate phrases')}</span>
+        <GameModePill mode="uebersetzen" />
         <span className="row" style={{ gap: 8 }}>
-          <StarButton item={{ ...cur, id: 'ueb:' + cur.de }} />
           <RachaPill n={seguidas} />
           <Reloj desde={empezado.current} />
         </span>
@@ -285,14 +287,15 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
                 <span className="up-tx">{p.texto}</span>
               </div>
             ))}
-            {nPistas < listaPistas.length && (
-              <button
-                className="btn-ghost btn-sm"
-                onClick={pedirPistaTranslate}
+            {listaPistas.length > 0 && (
+              <PistaRevelable
+                key={idx}
+                revealed={nPistas >= listaPistas.length}
+                onReveal={pedirPistaTranslate}
                 title="Atajo: Alt+P o P"
-              >
-                💡 {t('ueb.pedirPista', { n: listaPistas.length - nPistas })} <span className="op-tecla" style={{ marginLeft: 4 }}>Alt+P</span>
-              </button>
+                className="ueb-pista-accion"
+                label={<>💡 {t('ueb.pedirPista', { n: listaPistas.length - nPistas })} <span className="op-tecla" style={{ marginLeft: 4 }}>Alt+P</span></>}
+              />
             )}
           </div>
         )}
@@ -377,9 +380,14 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
           </div>
         )}
 
+        {!corregido && (
+          <p className="muted" style={{ fontSize: '0.76rem', marginTop: 8, textAlign: 'center' }}>
+            {pick('No hace falta clavar tildes ni puntuación.', 'Accents and punctuation do not have to be exact.')}
+          </p>
+        )}
+
         <button
-          className="btn-primary"
-          style={{ display: 'block', width: '100%', maxWidth: 320, margin: '14px auto 0' }}
+          className="btn-primary btn-corregir translate-check"
           onClick={corregido ? siguiente : comprobar}
           disabled={!corregido && !texto.trim()}
         >
@@ -389,12 +397,6 @@ export default function TranslateGame({ onExit, onFinish, lektionId = null, dir 
               : t('ueb.terminar')
             : t('ses.check')}
         </button>
-
-        {!corregido && (
-          <p className="muted" style={{ fontSize: '0.76rem', marginTop: 8, textAlign: 'center' }}>
-            {pick('No hace falta clavar tildes ni puntuación.', 'Accents and punctuation do not have to be exact.')}
-          </p>
-        )}
       <FoxOverlay fox={fox} mudo={!!corregido} racha={seguidas} />
       </div>
     </div>

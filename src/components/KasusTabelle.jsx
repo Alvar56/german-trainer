@@ -1,13 +1,23 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Tabla de referencia de casos y artículos (Kasus & Genus)
  * Reproduce fielmente la tabla de estudio (Bestimmte, Unbestimmte, Negativ- und Possessivartikel)
  * con terminaciones resaltadas (-r, -n, -m, -s, -e).
  */
-export default function KasusTabelle({ onClose }) {
-  return (
-    <div className="kt-backdrop" onClick={onClose}>
+export default function KasusTabelle({ onClose, cerrando = false }) {
+  function imprimirTabla() {
+    document.body.classList.add('kt-printing');
+    window.addEventListener('afterprint', () => document.body.classList.remove('kt-printing'), { once: true });
+    window.print();
+  }
+
+  // La pantalla de ejercicios anima su contenido con transform, lo que crea
+  // un contexto de apilado y recorta el backdrop debajo del menú lateral. El
+  // portal sitúa la tabla directamente sobre toda la ventana.
+  return createPortal(
+    <div className={'kt-backdrop' + (cerrando ? ' kt-cerrando' : '')} onClick={onClose}>
       <div
         className="kasus-tabelle-panel"
         role="dialog"
@@ -19,11 +29,19 @@ export default function KasusTabelle({ onClose }) {
           <div className="kt-title">📋 Die Artikelwörter & Fälle</div>
           <div className="kt-subtitle">Genus (Geschlecht) · Kasus (Fall)</div>
         </div>
-        {onClose && (
-          <button className="kt-close-btn" onClick={onClose} title="Cerrar tabla (Esc)">
-            ✕
+        <div className="kt-header-actions">
+          <button className="kt-print-btn" type="button" onClick={imprimirTabla} title="Imprimir o guardar la tabla como PDF">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14" />
+            </svg>
+            <span>Guardar PDF</span>
           </button>
-        )}
+          {onClose && (
+            <button className="kt-close-btn" onClick={onClose} title="Cerrar tabla (Esc)">
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="kt-scroll">
@@ -45,7 +63,7 @@ export default function KasusTabelle({ onClose }) {
               </th>
               <th className="kt-th-gen kt-pl">
                 <span className="kt-gen-label">Plural</span>
-                <span className="kt-marker kt-mark-p">-e, wie Nom, -n</span>
+                <span className="kt-marker kt-mark-p">-e, wie Nom, -n / -en</span>
               </th>
             </tr>
           </thead>
@@ -303,9 +321,9 @@ export default function KasusTabelle({ onClose }) {
                   <span className="kt-art">mein<span className="kt-hi kt-hi-dat">en</span></span>
                   <span className="kt-subposs">, deinen…</span>
                 </div>
-                <div className="kt-nomen-note">
-                  + <strong>-n</strong> am Nomen
-                </div>
+            <div className="kt-nomen-note">
+              <strong>den</strong>: -n · <strong>kein-/mein-</strong>: -en · Nomen: + -n
+            </div>
               </td>
             </tr>
           </tbody>
@@ -315,7 +333,7 @@ export default function KasusTabelle({ onClose }) {
           <div className="kt-note-card">
             <span className="kt-note-icon">💡</span>
             <div>
-              <strong>Dativ Plural:</strong> Das Nomen bekommt ein <code>-n</code> (z.B. <em>mit meinen Kinder<strong>n</strong></em>, <em>den Gäste<strong>n</strong></em>), außer wenn der Plural schon auf <code>-n</code> oder <code>-s</code> endet (<em>den Autos</em>).
+              <strong>Dativ Plural:</strong> Der bestimmte Artikel lautet <em>den</em> (-n); bei <em>kein</em> und Possessivartikeln kommt <code>-en</code> dazu: <em>keinen, meinen</em>. Das Nomen bekommt zusätzlich ein <code>-n</code> (z.B. <em>mit meinen Kinder<strong>n</strong></em>, <em>den Gäste<strong>n</strong></em>), außer wenn der Plural schon auf <code>-n</code> oder <code>-s</code> endet (<em>den Autos</em>).
             </div>
           </div>
           <div className="kt-rule-summary">
@@ -329,6 +347,7 @@ export default function KasusTabelle({ onClose }) {
         </div>
       </div>
     </div>
-  </div>
-);
+    </div>,
+    document.body
+  );
 }

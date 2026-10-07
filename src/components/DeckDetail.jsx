@@ -3,12 +3,13 @@ import { conjugar } from '../lib/conjugador.js';
 import { SIN_IA, PORTABLE } from '../lib/modo.js';
 import { deckStats, deleteUserDeck, vocabModes, cartasFalladas, cartasQueFaltan, getCardColor, setCardColor, colorVisible, esVerbo } from '../lib/vocab.js';
 import { t, pick } from '../lib/i18n.js';
-import { getStarredItems, useStars } from '../lib/stars.js';
+import { getStarredItems, groupStarredVocab, useStars } from '../lib/stars.js';
 import { aiAvailable } from '../lib/settings.js';
 import { generateConjugation } from '../lib/ai.js';
 import CoronaPanel, { BarrasTema } from './ProgresoTema.jsx';
 import AmpliarTema from './AmpliarTema.jsx';
 import { UMBRAL_TERMINAR } from '../lib/progress.js';
+import { crucigramasResueltos, MAX_CRUCIGRAMAS_VOCAB, UMBRAL_CRUCIGRAMA_VOCAB } from '../lib/vocabRewards.js';
 import Escuchar from './Escuchar.jsx';
 import PuntoColor from './PuntoColor.jsx';
 import ModalConjugacion from './ModalConjugacion.jsx';
@@ -25,9 +26,12 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
   const [conjugation, setConjugation] = useState(null);
   useStars();
   const st = deckStats(deck);
-  if (st.pct >= 100) {
-  }
+  const tarjetasPendientes = cartasQueFaltan(deck);
+  // El porcentaje visible se redondea. Si muestra 100 %, el crucigrama debe
+  // desbloquearse con ese mismo porcentaje, aunque quede una fracción interna.
+  const crucigramaBloqueado = !deck.cards?.length || st.pct < UMBRAL_CRUCIGRAMA_VOCAB;
   const fallos = cartasFalladas(deck);
+  const crucigramasHechos = crucigramasResueltos(deck.id);
   const aiOn = aiAvailable();
   const allStarredVocab = getStarredItems('vocab');
   const starred = allStarredVocab.filter(i =>
@@ -36,6 +40,7 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
       (i.de || i.id || String(i.id).replace('vocab:', '')).toLowerCase()
     )
   );
+  const starredGroups = groupStarredVocab(starred);
 
   const handleConjugate = async (verb, traduccion) => {
     // Primero el conjugador local: es instantaneo, va sin red y acierta con
@@ -193,28 +198,27 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
             </p>
 
             <div className="btn-row" style={{ marginTop: 12 }}>
-              {starred.length > 0 && (
+              {starredGroups.map((group) => {
+                return (
+                  <button
+                    className="btn-ghost btn-sm"
+                    key="starred-vocab"
+                    onClick={() => onStart(deck.id, group.mode, false, group.dir, group.items, null, 'marked')}
+                  >
+                    {t('star.review', { n: group.items.length })}
+                  </button>
+                );
+              })}
+              {fallos.length > 0 && (
                 <button
                   className="btn-ghost btn-sm"
-                  onClick={() => onStart(deck.id, 'quiz', false, null, starred)}
+                  onClick={() => onStart(deck.id, 'quiz', true)}
+                  title={t('gr.reviewWeakHint')}
                 >
-                  {t('star.review', { n: starred.length })}
+                  {t('gr.reviewWeakN', { n: fallos.length })}
                 </button>
               )}
-              <button
-                className="btn-ghost btn-sm"
-                onClick={() => onStart(deck.id, 'quiz', true)}
-                disabled={fallos.length === 0}
-                title={fallos.length ? t('gr.reviewWeakHint') : t('gr.reviewWeakNone')}
-              >
-                {fallos.length ? t('gr.reviewWeakN', { n: fallos.length }) : t('gr.reviewWeak')}
-              </button>
-              {/* Solo del 70% para arriba: por debajo falta casi todo y esto
-                  seria la sesion normal con otro nombre. */}
-              {/* Se ve siempre por debajo del 100%, pero apagado hasta el 70%:
-                  un boton que aparece de la nada no se entiende, y asi sabes
-                  que existe y cuanto te falta para abrirlo. */}
-              {st.pct < 100 && (
+              {tarjetasPendientes.length > 0 && (
                 <button
                   className="btn-ghost btn-sm"
                   onClick={() => onStart(deck.id, 'quiz', 'faltan')}
@@ -223,9 +227,24 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
                 >
                   {st.pct < UMBRAL_TERMINAR
                     ? t('voc.finishLocked', { p: UMBRAL_TERMINAR })
-                    : t('voc.finish', { n: cartasQueFaltan(deck).length })}
+                    : t('voc.finish', { n: tarjetasPendientes.length })}
                 </button>
               )}
+              {/* El crucigrama se abre al dominar todas las palabras del tema. */}
+              <button
+                className="btn-ghost btn-sm"
+                onClick={() => onStart(deck.id, 'crossword')}
+                disabled={crucigramaBloqueado || crucigramasHechos >= MAX_CRUCIGRAMAS_VOCAB}
+                title={crucigramaBloqueado
+                  ? t('voc.crosswordLockedHint', { p: UMBRAL_CRUCIGRAMA_VOCAB })
+                  : crucigramasHechos >= MAX_CRUCIGRAMAS_VOCAB
+                    ? t('voc.crosswordFinishedHint')
+                    : t('voc.crosswordHint')}
+              >
+                {crucigramaBloqueado
+                  ? t('voc.crosswordLocked', { p: UMBRAL_CRUCIGRAMA_VOCAB })
+                  : t('voc.crosswordProgress', { n: crucigramasHechos, total: MAX_CRUCIGRAMAS_VOCAB })}
+              </button>
               {aiOn && (
                 <button className="btn-ghost btn-sm" onClick={() => onReto(deck.id)}>
                   {t('gr.aiChallenge')}
@@ -237,10 +256,9 @@ export default function DeckDetail({ deck, tab = 'teoria', onTab, onStart, onRet
                 {t(fallos.length === 1 ? 'voc.missedWords' : 'voc.missedWordsPl', { n: fallos.length })}
               </p>
             )}
-            <div style={{ marginTop: 14 }}>
-              <CoronaPanel topicId={'vocab:' + deck.id} pct={st.pct} />
-            </div>
+            {st.pct < 100 && <CoronaPanel topicId={'vocab:' + deck.id} pct={st.pct} />}
           </div>
+          {st.pct >= 100 && <CoronaPanel topicId={'vocab:' + deck.id} pct={st.pct} />}
         </div>
       )}
 

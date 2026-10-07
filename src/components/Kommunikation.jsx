@@ -1,24 +1,25 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { tc } from '../lib/contenido/index.js';
-import Escuchar from './Escuchar.jsx';
+import { hablarSeguido, pararVoz, hayVozAlemana, alCargarVoces } from '../lib/audio.js';
 import { respuestaEnCadena, conversacionDe, seguimientoDe } from '../lib/kursbuch/respuestas.js';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
 import BookNav from './BookNav.jsx';
 import Dialog from './Dialog.jsx';
 import KommAsk from './KommAsk.jsx';
 import Cargando from './Cargando.jsx';
-import LargoDialogo, { turnosDe, largoGuardado } from './LargoDialogo.jsx';
+import LargoDialogo from './LargoDialogo.jsx';
+import { turnosDe, largoGuardado } from '../lib/largoDialogo.js';
 import KommPractice, { TIPOS } from './KommPractice.jsx';
 import MezclaKomm, { frasesDe } from './MezclaKomm.jsx';
 import Desplegable from './Desplegable.jsx';
 import { estadisticas as ueStats } from '../lib/uebersetzen.js';
-import { getLektion, KURSBUCH, lektionLabel, lektionKommunikation } from '../lib/kursbuch/index.js';
+import { getBand, getLektion, KURSBUCH, lektionLabel, lektionKommunikation } from '../lib/kursbuch/index.js';
 import { generateDialog } from '../lib/ai.js';
 import { guardados, borrarGuardado, otroIdioma } from '../lib/guardados.js';
 import { SIN_IA, PORTABLE } from '../lib/modo.js';
 import { aiAvailable } from '../lib/settings.js';
-import { kommMastery, recordKommPracticed, kommApartadosFallados, kommApartadosQueFaltan, UMBRAL_TERMINAR } from '../lib/progress.js';
-import { BarrasTema } from './ProgresoTema.jsx';
+import { kommMastery, kommListeningProgress, recordKommEscuchada, recordKommPracticed, kommApartadosFallados, kommFailedQuestions, kommApartadosQueFaltan, UMBRAL_TERMINAR } from '../lib/progress.js';
+import CoronaPanel, { BarrasTema } from './ProgresoTema.jsx';
 import { GENDER_NIVELES } from '../lib/vocab.js';
 import EtiquetaChip from './EtiquetaChip.jsx';
 import BotonCopiar from './BotonCopiar.jsx';
@@ -29,6 +30,41 @@ import MatchGame from './MatchGame.jsx';
 import VocabSummary from './VocabSummary.jsx';
 import BlitzGame from './BlitzGame.jsx';
 import { paresDeKommunikation } from '../lib/paresJuego.js';
+import { aplicarBonoRachaFinal } from '../lib/monedas.js';
+import { useExerciseActive } from '../lib/teclas.js';
+
+function EscucharConversacion({ texto, resetKey, onComplete }) {
+  const [hay, setHay] = useState(hayVozAlemana);
+  const [sonando, setSonando] = useState(false);
+  useEffect(() => alCargarVoces(() => setHay(hayVozAlemana())), []);
+  useEffect(() => {
+    setSonando(false);
+    pararVoz();
+    return () => pararVoz();
+  }, [resetKey]);
+  if (!hay || !texto) return null;
+  return (
+    <button
+      className="btn-primary btn-sm komm-listen-conv"
+      onClick={() => {
+        if (sonando) {
+          pararVoz();
+          setSonando(false);
+          return;
+        }
+        setSonando(hablarSeguido(texto.split(/\n+/), {
+          onFin: () => {
+            setSonando(false);
+            onComplete?.();
+          }
+        }));
+      }}
+    >
+      <span className="komm-label-desktop">{sonando ? t('dlg.stop') : t('komm.listenConv')}</span>
+      <span className="komm-label-mobile">{sonando ? t('dlg.stop') : pick('🔊 Escuchar', '🔊 Listen')}</span>
+    </button>
+  );
+}
 
 // Los tipos de pregunta que se pueden practicar sueltos.
 const TIPOS_EJERCICIO = [
@@ -62,13 +98,110 @@ const TIPOS_EJERCICIO = [
     subEs: 'Completa el hueco, a mano', subEn: 'Fill in the blank, by hand' }
 ];
 
+function difuminarVistaEjercicio() {
+  const main = document.querySelector('.main');
+  if (!main) return;
+  main.classList.remove('main-motion-fade', 'main-motion-forward', 'main-motion-backward');
+  void main.offsetWidth;
+  main.classList.add('main-motion-fade');
+}
+
+function claveResumenKomm(lektionId) {
+  return `komm:final:${lektionId}`;
+}
+
+function leerResumenKomm(lektionId) {
+  try {
+    return lektionId && typeof sessionStorage !== 'undefined'
+      ? JSON.parse(sessionStorage.getItem(claveResumenKomm(lektionId)) || 'null')
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarResumenKomm(lektionId, resumen) {
+  try {
+    if (!lektionId || typeof sessionStorage === 'undefined') return;
+    const key = claveResumenKomm(lektionId);
+    if (resumen) sessionStorage.setItem(key, JSON.stringify(resumen));
+    else sessionStorage.removeItem(key);
+  } catch {
+    // El resumen sigue funcionando aunque el navegador bloquee sessionStorage.
+  }
+}
+
+function idMezclaKomm(bandIds) {
+  return bandIds.length ? 'mix:' + bandIds.join('|') : 'mix';
+}
+
+function leerMezclaFinal() {
+  try {
+    if (typeof sessionStorage === 'undefined') return null;
+    const guardado = sessionStorage.getItem('komm:mix:final');
+    if (!guardado) return null;
+    let config;
+    try {
+      config = JSON.parse(guardado);
+    } catch {
+      // Compatibilidad con la versión anterior, que guardaba solo el tomo.
+      config = { bandIds: guardado.split('|'), difficultyIds: [] };
+    }
+    const bandIds = Array.isArray(config?.bandIds) ? config.bandIds : [];
+    const difficultyIds = Array.isArray(config?.difficultyIds) ? config.difficultyIds : [];
+    return leerResumenKomm(idMezclaKomm(bandIds))?.tipo === 'practice'
+      ? { bandIds, difficultyIds }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function guardarMezclaFinal(config) {
+  try {
+    if (typeof sessionStorage === 'undefined') return;
+    if (config) sessionStorage.setItem('komm:mix:final', JSON.stringify(config));
+    else sessionStorage.removeItem('komm:mix:final');
+  } catch {
+    // La mezcla se puede seguir usando aunque el navegador bloquee el guardado.
+  }
+}
+
 export default function Kommunikation({ lektionId, tab, onTab, onOpen, onBack, onTraducir, onReto, dialog, busy, setDialog, setBusy }) {
+  const activa = useExerciseActive();
   // El tomo que se está practicando mezclado, o 'todo'. null = no hay mezcla en
   // marcha y se ve la lista de lecciones.
-  const [mezcla, setMezcla] = useState(null);
+  const [mezcla, setMezcla] = useState(() => (lektionId ? null : leerMezclaFinal()));
+  const mezclaBandIds = mezcla?.bandIds || [];
+  const mezclaLektionId = mezcla ? idMezclaKomm(mezclaBandIds) : null;
+  const mezclaFinalGuardada = Boolean(
+    mezcla && leerResumenKomm(mezclaLektionId)?.resumen?.fin
+  );
+
+  useLayoutEffect(() => {
+    if (!activa) {
+      document.body.classList.remove('en-ejercicio');
+      return;
+    }
+    if (mezcla === null) return;
+    if (mezclaFinalGuardada) {
+      document.body.classList.remove('en-ejercicio');
+      return;
+    }
+    window.scrollTo(0, 0);
+    document.querySelector('.main')?.scrollTo(0, 0);
+    document.querySelector('.sidebar')?.scrollTo(0, 0);
+    document.body.classList.add('en-ejercicio');
+    return () => document.body.classList.remove('en-ejercicio');
+  }, [activa, mezclaBandIds.join('|'), mezcla?.difficultyIds?.join('|'), mezclaFinalGuardada]);
 
   if (mezcla !== null) {
-    return <KommMezclada band={mezcla.band} onSalir={() => setMezcla(null)} />;
+    return <KommMezclada bandIds={mezclaBandIds} difficultyIds={mezcla.difficultyIds || []} onSalir={() => {
+      guardarResumenKomm(mezclaLektionId, null);
+      guardarMezclaFinal(null);
+      difuminarVistaEjercicio();
+      setMezcla(null);
+    }} />;
   }
 
   if (!lektionId) {
@@ -86,7 +219,7 @@ export default function Kommunikation({ lektionId, tab, onTab, onOpen, onBack, o
             <KommAsk niveau="A2" />
             {/* Al final del todo, como la mezcla de vocabulario: primero las
                 lecciones, y cuando ya las conoces, mezclarlas. */}
-            <MezclaKomm onMezcla={(band) => setMezcla({ band })} />
+            <MezclaKomm onMezcla={(config) => { difuminarVistaEjercicio(); setMezcla(config); }} />
           </>
         }
       />
@@ -94,6 +227,7 @@ export default function Kommunikation({ lektionId, tab, onTab, onOpen, onBack, o
   }
   return (
     <KommDetail
+      key={lektionId}
       lektionId={lektionId}
       tab={tab}
       onTab={onTab}
@@ -103,6 +237,7 @@ export default function Kommunikation({ lektionId, tab, onTab, onOpen, onBack, o
       busy={busy}
       setDialog={setDialog}
       setBusy={setBusy}
+      activa={activa}
     />
   );
 }
@@ -114,8 +249,13 @@ export default function Kommunikation({ lektionId, tab, onTab, onOpen, onBack, o
 // recuento y las monedas ya están ahí, y así no hay dos sitios donde arreglar
 // lo mismo. Lo único que no hace es marcar apartados como hechos —no es de
 // ninguna función en concreto—, pero cuenta como sesión igual que el resto.
-function KommMezclada({ band, onSalir }) {
-  const todas = useMemo(() => frasesDe(band), [band]);
+function KommMezclada({ bandIds, difficultyIds, onSalir }) {
+  const todas = useMemo(() => frasesDe(bandIds), [bandIds.join('|')]);
+  const lektionId = idMezclaKomm(bandIds);
+  const guardado = leerResumenKomm(lektionId);
+  const tiposMezcla = difficultyIds.includes('easy') && !difficultyIds.includes('hard')
+    ? TIPOS.filter((tipo) => tipo !== 'hueco')
+    : TIPOS;
   const funktion = useMemo(() => {
     const barajadas = [...todas].sort(() => Math.random() - 0.5);
     return { funktion: t('komm.mixName'), wendungen: barajadas.slice(0, 10) };
@@ -126,11 +266,23 @@ function KommMezclada({ band, onSalir }) {
   return (
     <KommPractice
       mezcla
-      lektionId={band ? 'mix:' + band : 'mix'}
+      lektionId={lektionId}
+      mixBandNames={bandIds.map((id) => getBand(id)?.name).filter(Boolean)}
+      mixDifficultyIds={difficultyIds}
+      tipos={tiposMezcla}
       funktion={funktion}
       todasLasFrases={todas.map((w) => w.de)}
       todasLasGlosas={todas.map((w) => w.es)}
       todasLasRespuestas={todas.map((w) => respuestaEnCadena(w.de)?.de).filter(Boolean)}
+      resumenGuardado={guardado?.tipo === 'practice' ? guardado.resumen : null}
+      onGuardarResumen={(resumen) => {
+        guardarResumenKomm(lektionId, { tipo: 'practice', resumen });
+        guardarMezclaFinal({ bandIds, difficultyIds });
+      }}
+      onLimpiarResumen={() => {
+        guardarResumenKomm(lektionId, null);
+        guardarMezclaFinal(null);
+      }}
       onSalir={onSalir}
     />
   );
@@ -204,7 +356,8 @@ function KommDetail({
   dialog: propDialog,
   busy: propBusy,
   setDialog: propSetDialog,
-  setBusy: propSetBusy
+  setBusy: propSetBusy,
+  activa
 }) {
   const lektion = getLektion(lektionId);
   const [localBusy, setLocalBusy] = useState(null); // null | 'alles' | índice de la función
@@ -222,11 +375,67 @@ function KommDetail({
   const [desdeGuardada, setDesdeGuardada] = useState(false);
   const scrollLeccion = React.useRef(null);
   const [lastFocus, setLastFocus] = useState(null);
-  const [practica, setPractica] = useState(null);   // la función que estás practicando
+  const [resumenGuardado, setResumenGuardado] = useState(() => leerResumenKomm(lektionId));
+  const [practica, setPractica] = useState(() =>
+    resumenGuardado?.tipo === 'practice' ? resumenGuardado.config : null
+  );   // la función que estás practicando
   const [juego, setJuego] = useState(null);         // 'match' | 'blitz', que son juegos enteros
+  const [cartasFijasJuego, setCartasFijasJuego] = useState(null);
   // El resultado de esa partida, para enseñar el resumen al acabar en vez de
   // devolverte a los ejercicios sin decirte nada.
-  const [resumenJuego, setResumenJuego] = useState(null);
+  const [resumenJuego, setResumenJuego] = useState(() =>
+    resumenGuardado?.tipo === 'game' ? resumenGuardado.data : null
+  );
+  const [volverAListaDeEjercicios, setVolverAListaDeEjercicios] = useState(false);
+  const limpiarResumen = () => {
+    guardarResumenKomm(lektionId, null);
+    setResumenGuardado(null);
+  };
+  const guardarFinal = (resumen) => {
+    guardarResumenKomm(lektionId, resumen);
+    setResumenGuardado(resumen);
+  };
+  const abrirPractica = (config) => {
+    limpiarResumen();
+    difuminarVistaEjercicio();
+    setResumenJuego(null);
+    setPractica(config);
+  };
+  const salirPractica = () => {
+    limpiarResumen();
+    difuminarVistaEjercicio();
+    setVolverAListaDeEjercicios(true);
+    setPractica(null);
+  };
+  const abrirJuego = (cual) => {
+    limpiarResumen();
+    difuminarVistaEjercicio();
+    setResumenJuego(null);
+    setCartasFijasJuego(null);
+    setJuego(cual);
+  };
+  useLayoutEffect(() => {
+    if (!activa) {
+      document.body.classList.remove('en-ejercicio');
+      return;
+    }
+    const practicaTerminada = resumenGuardado?.tipo === 'practice' && resumenGuardado.resumen?.fin;
+    if ((!practica && !juego) || practicaTerminada) {
+      document.body.classList.remove('en-ejercicio');
+      return;
+    }
+    window.scrollTo(0, 0);
+    document.querySelector('.main')?.scrollTo(0, 0);
+    document.querySelector('.sidebar')?.scrollTo(0, 0);
+    document.body.classList.add('en-ejercicio');
+    return () => document.body.classList.remove('en-ejercicio');
+  }, [activa, Boolean(practica), Boolean(juego), resumenGuardado?.tipo, Boolean(resumenGuardado?.resumen?.fin)]);
+  useLayoutEffect(() => {
+    if (!volverAListaDeEjercicios || practica || juego || resumenJuego) return;
+    window.scrollTo(0, 0);
+    document.querySelector('.main')?.scrollTo(0, 0);
+    setVolverAListaDeEjercicios(false);
+  }, [volverAListaDeEjercicios, Boolean(practica), Boolean(juego), Boolean(resumenJuego)]);
   // Sube al terminar una práctica, para repintar las marcas sin recargar.
   const [vuelta, setVuelta] = useState(0);
   const [misKonv, setMisKonv] = useState(() => guardados('konversation'));
@@ -298,10 +507,16 @@ function KommDetail({
     [funktionen]
   );
   const km = lektion ? kommMastery(lektion.id, lektion.kommunikation) : null;
+  const escuchadas = lektion ? kommListeningProgress(lektion.id, lektion.kommunikation) : null;
   if (km && km.pct >= 100) {
   }
   // Lo que se te ha resistido y lo que te falta para el 100%, por apartado.
   const kFallados = lektion ? kommApartadosFallados(lektion.id, lektion.kommunikation) : [];
+  const kPreguntasFalladas = lektion ? kommFailedQuestions(lektion.id) : [];
+  const kFalladosSinPreguntaGuardada = kFallados.filter((apartado) =>
+    !kPreguntasFalladas.some((pregunta) => pregunta.seccion === apartado.funktion)
+  );
+  const cantidadFallosRepasables = kPreguntasFalladas.length + kFalladosSinPreguntaGuardada.length;
   const kFaltan = lektion ? kommApartadosQueFaltan(lektion.id, lektion.kommunikation) : [];
   // Una "función" de mentira con TODAS las frases de la lección: es lo que
   // practican los tipos de ejercicio de la pestaña de al lado.
@@ -314,14 +529,15 @@ function KommDetail({
       (x.wendungen || []).map((w) => ({ ...w, seccion: x.funktion }))
     )
   }), [lektion, funktionen]);
-  const hecho = km?.hechas || {};
+  const hecho = escuchadas?.hechas || {};
 
   // Una tanda con las frases de UNOS apartados concretos: los fallados o los
   // que faltan. Misma forma que `todaLaLeccion`, para que KommPractice pueda
   // seguir apuntando cada acierto a su apartado.
-  function tandaDe(apartados, nombre) {
+  function tandaDe(apartados, nombre, finishTopic = false) {
     return {
       funktion: nombre,
+      ...(finishTopic ? { finishTopic: true, apartados } : {}),
       wendungen: apartados.flatMap((x) =>
         (x.wendungen || []).map((w) => ({ ...w, seccion: x.funktion }))
       )
@@ -402,29 +618,62 @@ function KommDetail({
     };
     const apuntar = (de, ok) => {
       const par = pares.find((x) => x.de === de);
-      if (par?.funktion && ok) recordKommPracticed(lektion.id, par.funktion, 1, 1);
+      // Guardar también los fallos de Match y Blitz. El resumen podía enseñar
+      // las frases falladas, pero al volver a la lección el botón de repaso
+      // solo miraba kommPracticed y por eso aparecía desactivado.
+      if (par?.funktion) recordKommPracticed(lektion.id, par.funktion, ok ? 1 : 0, 1);
     };
-    const salir = () => { setJuego(null); setVuelta((v) => v + 1); };
+    const salir = () => { difuminarVistaEjercicio(); setJuego(null); setVuelta((v) => v + 1); };
     const acabar = (data) => {
+      difuminarVistaEjercicio();
       setVuelta((v) => v + 1);
       // `cual` se guarda con el resultado porque al salir del juego se pierde
       // `juego`, y "Otra ronda" necesita saber cual volver a abrir.
-      setResumenJuego({ ...data, cual: juego, volverA: 'ejercicios', deck: { emoji: ctx.emoji, name: ctx.nombre } });
+      const resumen = aplicarBonoRachaFinal({ ...data, cual: juego, volverA: 'tema', deck: { id: ctx.id, emoji: ctx.emoji, name: ctx.nombre } });
+      setResumenJuego(resumen);
+      guardarFinal({ tipo: 'game', data: resumen });
       setJuego(null);
     };
     return juego === 'match' ? (
-      <MatchGame pares={pares} apuntar={apuntar} contexto={ctx} onExit={salir} onFinish={acabar} />
+      <MatchGame pares={pares} cartasFijas={cartasFijasJuego} apuntar={apuntar} contexto={ctx} onExit={salir} onFinish={acabar} />
     ) : (
       // 40 segundos: aqui la pregunta es una frase, con +2s por acierto y -2s por fallo.
-      <BlitzGame cartas={pares} apuntar={apuntar} contexto={ctx} segundos={40} bono={2} onExit={salir} onFinish={acabar} />
+      <BlitzGame cartas={pares} cartasFijas={cartasFijasJuego} apuntar={apuntar} contexto={ctx} segundos={40} bono={2} onExit={salir} onFinish={acabar} />
     );
   }
 
   if (resumenJuego) {
-    const volver = () => setResumenJuego(null);
-    const otraRonda = () => { const cual = resumenJuego.cual; setResumenJuego(null); setJuego(cual); };
+    const volver = () => {
+      limpiarResumen();
+      difuminarVistaEjercicio();
+      setVolverAListaDeEjercicios(true);
+      setResumenJuego(null);
+    };
+    const otraRonda = () => {
+      const cual = resumenJuego.cual;
+      limpiarResumen();
+      difuminarVistaEjercicio();
+      setResumenJuego(null);
+      setCartasFijasJuego(null);
+      setJuego(cual);
+    };
+    const repetirFallos = () => {
+      const fallidas = resumenJuego.missed || [];
+      if (!fallidas.length) return;
+      const cual = resumenJuego.cual;
+      limpiarResumen();
+      difuminarVistaEjercicio();
+      setResumenJuego(null);
+      setCartasFijasJuego(fallidas);
+      setJuego(cual);
+    };
     return (
-      <VocabSummary data={resumenJuego} onRepeat={otraRonda} onDeck={volver} onHome={volver} />
+      <VocabSummary
+        data={resumenJuego}
+        onRepeat={otraRonda}
+        onRepetirFallos={resumenJuego.missed?.length ? repetirFallos : null}
+        onDeck={volver}
+      />
     );
   }
 
@@ -433,17 +682,25 @@ function KommDetail({
       // Los despistes salen de toda la leccion, turnos de seguimiento
       // incluidos: son frases que tambien has leido.
       <KommPractice
+        key={`${practica.reviewMistakes ? 'fallos' : practica.reviewMarked ? 'marcados' : 'practica'}:${practica.funktion?.funktion || practica.funktion || ''}`}
         lektionId={lektion.id}
+        nombreTema={lektionLabel(lektion)}
         funktion={practica.funktion}
         tipos={practica.tipos}
+        gameId={practica.gameId || 'komm'}
         itemsFijos={practica.itemsFijos}
+        reviewMistakes={practica.reviewMistakes}
+        reviewSections={practica.reviewSections}
+        reviewMarked={practica.reviewMarked}
         mezcla={practica.mezcla}
-        volverA={practica.volverA}
         todasLasFrases={todasLasFrases}
         todasLasRespuestas={todasLasRespuestas}
         todasLasGlosas={todasLasGlosas}
+        resumenGuardado={!practica.reviewMistakes && !practica.reviewMarked && resumenGuardado?.tipo === 'practice' ? resumenGuardado.resumen : null}
+        onGuardarResumen={(resumen) => guardarFinal({ tipo: 'practice', config: practica, resumen })}
+        onLimpiarResumen={limpiarResumen}
         onHecho={() => setVuelta((v) => v + 1)}
-        onSalir={() => setPractica(null)}
+        onSalir={salirPractica}
       />
     );
   }
@@ -484,7 +741,7 @@ function KommDetail({
           <h1><button type="button" className="titulo-volver" onClick={onBack}>{lektionLabel(lektion)}</button></h1>
           <p className="muted" style={{ marginTop: 4, fontSize: '0.9rem' }}>
             {lektion.bandName} · {lektion.kommunikation.length} {t('functions')}
-            {km && km.total > 0 && ` · ${km.practiced}/${km.total} ${t('komm.hechas')}`}
+            {escuchadas && escuchadas.total > 0 && ` · ${escuchadas.completadas}/${escuchadas.total} ${t('komm.hechas')} (${escuchadas.pct}%)`}
           </p>
         </div>
         <button className="link-btn" onClick={onBack} style={{ flexShrink: 0 }}>
@@ -568,14 +825,14 @@ function KommDetail({
           <button className="komm-head" onClick={() => setOpen(open === i ? null : i)} style={{ padding: 12 }}>
             <span className="lk-block-title" style={{ margin: 0 }}>
               {k.funktion}
-              {k.es && <div className="muted" style={{ fontSize: '0.8rem', fontWeight: 'normal', marginTop: 2 }}>{k.es}</div>}
+              {k.es && <div className="muted" style={{ fontSize: '0.8rem', fontWeight: 'normal', marginTop: 2 }}>{tc(k.es)}</div>}
             </span>
             {/* En una columna estrecha esto partia por el ultimo espacio y la
                 flecha se caia sola a la linea de abajo. La clase la mantiene
                 entera; quien encoge es el titulo. */}
             <span className="komm-cuenta">
-              {hecho[k.funktion] && <span className="pill completo">✓</span>}
-              <span>{(k.wendungen || []).length} {t('komm.phrases')} {open === i ? '▴' : '▾'}</span>
+              {hecho[k.funktion] && <span className="pill completo komm-tick-entrada">✓</span>}
+              <span>{t('komm.conversation')} {open === i ? '▴' : '▾'}</span>
             </span>
           </button>
           <Desplegable abierto={open === i}>
@@ -611,9 +868,8 @@ function KommDetail({
                         >
                           <p className="dlg-de">
                             {w.de}
-                            <Escuchar texto={w.de} className="dlg-say" frase />
                           </p>
-                          <p className="dlg-es"><span>{w.es}</span></p>
+                          <p className="dlg-es"><span>{tc(w.es)}</span></p>
                         </div>
                       </div>
                       {turnos.map((turno, ti) => {
@@ -635,7 +891,6 @@ function KommDetail({
                             >
                               <p className="dlg-de">
                                 {turno.de}
-                                <Escuchar texto={turno.de} className="dlg-say" frase />
                               </p>
                               <p className="dlg-es"><span>{tc(turno.es)}</span></p>
                             </div>
@@ -648,34 +903,36 @@ function KommDetail({
                   </div>
                 ))}
               </div>
-              {/* Practicar ESTE apartado, aquí mismo: es lo que apetece justo
-                  después de leerse sus frases. En la pestaña de ejercicios
-                  están los tipos de pregunta sobre la lección entera.
-
-                  La conversación sale siempre corta, sin preguntar: son tres
-                  frases, y elegir el largo aquí era una decisión de más. El
-                  selector es para la conversación de la lección entera. */}
-              <div className="row" style={{ gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
-                <button
-                  className="btn-primary btn-sm"
-                  onClick={() => setPractica({ funktion: k, volverA: 'teoria' })}
-                >
-                  {t('komm.practise')}
-                </button>
+              <div className="row komm-chat-acciones" style={{ gap: 10, flexWrap: 'wrap' }}>
+                <EscucharConversacion
+                  texto={textoApartado(k)}
+                  resetKey={`${tab}-${open}`}
+                  onComplete={() => {
+                    recordKommEscuchada(lektion.id, k.funktion);
+                    setVuelta((v) => v + 1);
+                  }}
+                />
                 {!SIN_IA && (
                   <button
-                    className="btn-ghost btn-sm"
+                    className="btn-ghost btn-sm komm-gen-conv"
                     onClick={() => makeDialog(k, i, 'corta')}
                     disabled={!aiOn || busy !== null}
                   >
                     {busy === i ? t('generating') : t('komm.convThis')}
                   </button>
                 )}
-                {/* La conversación entera de este apartado, en alemán y de
-                    corrido, para pegarla en un lector con voz decente. La del
-                    navegador vale para una frase, no para escucharse el
-                    apartado entero. */}
-                <BotonCopiar texto={() => textoApartado(k)} etiqueta={t('komm.copyConv')} />
+                {/* La conversación entera, por si se quiere guardar o escuchar
+                    fuera de la aplicación. */}
+                <BotonCopiar
+                  className="btn-ghost btn-sm komm-copy-conv"
+                  texto={() => textoApartado(k)}
+                  etiqueta={(
+                    <>
+                      <span className="komm-label-desktop">{t('komm.copyConv')}</span>
+                      <span className="komm-label-mobile">📋 {pick('Copiar', 'Copy')}</span>
+                    </>
+                  )}
+                />
               </div>
               {busy === i && (
                 <div style={{ marginTop: 14 }}>
@@ -715,11 +972,9 @@ function KommDetail({
               <button
                 className="gametype"
                 key={j.id}
-                onClick={() =>
-                  j.juego
-                    ? setJuego(j.juego)
-                    : setPractica({ funktion: todaLaLeccion, tipos: j.tipos, mezcla: true, volverA: 'ejercicios' })
-                }
+                onClick={() => j.juego
+                  ? abrirJuego(j.juego)
+                  : abrirPractica({ funktion: todaLaLeccion, tipos: j.tipos, gameId: `komm:${j.id}`, mezcla: true, volverA: 'ejercicios' })}
               >
                 <span className="gt-ico">{j.emoji}</span>
                 <span className="gt-txt">
@@ -741,9 +996,11 @@ function KommDetail({
               <button
                 className="btn-ghost btn-sm"
                 onClick={() =>
-                  setPractica({
+                  abrirPractica({
                     funktion: todaLaLeccion,
                     itemsFijos: starredKomm,
+                    reviewMarked: true,
+                    gameId: 'komm:marked',
                     mezcla: true,
                     volverA: 'ejercicios'
                   })
@@ -752,32 +1009,31 @@ function KommDetail({
                 {t('star.review', { n: starredKomm.length })}
               </button>
             )}
-            <button
-              className="btn-ghost btn-sm"
-              onClick={() =>
-                setPractica({
-                  funktion: tandaDe(kFallados, t('gr.reviewWeak')),
-                  mezcla: true,
-                  volverA: 'ejercicios'
-                })
-              }
-              disabled={kFallados.length === 0}
-              title={kFallados.length ? t('gr.reviewWeakHint') : t('gr.reviewWeakNone')}
-            >
-              {kFallados.length
-                ? t('gr.reviewWeakN', { n: kFallados.length })
-                : t('gr.reviewWeak')}
-            </button>
-
-            {/* Igual que en vocabulario: se ve siempre por debajo del 100% y
-                se abre al 70%, para que sea el último tramo y no la tanda
-                normal con otro nombre. */}
-            {(km?.pct || 0) < 100 && (
+            {cantidadFallosRepasables > 0 && (
               <button
                 className="btn-ghost btn-sm"
                 onClick={() =>
-                  setPractica({
-                    funktion: tandaDe(kFaltan, t('voc.finishLocked')),
+                  abrirPractica({
+                    funktion: tandaDe(kFalladosSinPreguntaGuardada, t('gr.reviewWeak')),
+                    reviewMistakes: true,
+                    gameId: 'komm:review',
+                    reviewSections: kFalladosSinPreguntaGuardada,
+                    mezcla: true,
+                    volverA: 'ejercicios'
+                  })
+                }
+                title={t('gr.reviewWeakHint')}
+              >
+                {t('gr.reviewWeakN', { n: cantidadFallosRepasables })}
+              </button>
+            )}
+            {kFaltan.length > 0 && (
+              <button
+                className="btn-ghost btn-sm"
+                onClick={() =>
+                  abrirPractica({
+                    funktion: tandaDe(kFaltan, t('voc.finish', { n: kFaltan.length }), true),
+                    gameId: 'komm:finish',
                     mezcla: true,
                     volverA: 'ejercicios'
                   })
@@ -841,6 +1097,11 @@ function KommDetail({
         </p>
       )}
       {err && <p style={{ color: 'var(--bad)', fontSize: '0.85rem' }}>{err}</p>}
+      {km?.pct >= 100 && (
+        <div style={{ marginTop: 20 }}>
+          <CoronaPanel topicId={'komm:' + lektion.id} pct={km.pct} />
+        </div>
+      )}
       </div>
       )}
 

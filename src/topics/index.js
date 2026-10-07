@@ -72,7 +72,7 @@ export function kommFrames(bandId = null) {
     }
   }
   if (!todasFrases.length) return [];
-  return todasFrases.map((w, idx) => ({
+  const frames = todasFrases.map((w, idx) => ({
     conceptId: `komm:${w.lektionId}`,
     make(rng) {
       const resp = respuestaDe(w.de);
@@ -123,6 +123,123 @@ export function kommFrames(bandId = null) {
       };
     }
   }));
+
+  // Este formato de Kommunikation (te contestan y tienes que reconocer qué
+  // habías dicho) también debe formar parte de "De todo un poco". Antes solo
+  // aparecía en la práctica dedicada de Kommunikation.
+  const entenderFrames = todasFrases.flatMap((w, idx) => {
+    const resp = respuestaDe(w.de);
+    const distractores = [...new Set(todasFrases
+      .filter((f) => f.de !== w.de && f.de !== resp?.de)
+      .map((f) => f.de))].slice(0, 3);
+    if (!resp || distractores.length < 2) return [];
+    return [{
+      conceptId: `komm:${w.lektionId}`,
+      make(rng) {
+      const options = [w.de, ...distractores];
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+      return {
+        id: `komm-understand-${idx}`,
+        type: 'mc',
+        conceptId: `komm:${w.lektionId}`,
+        prompt: pick('Te contestan a lo que ves arriba. ¿Qué habías dicho?', 'They reply to what you see above. What had you said?'),
+        sentence: resp.de,
+        marco: 'dicho',
+        marcoOpciones: 'tuyo',
+        sentenceAfterOptions: true,
+        answer: w.de,
+        options,
+        translation: w.es,
+        explanation: pick(`«${w.de}» puede provocar la respuesta «${resp.de}».`, `"${w.de}" can get the reply "${resp.de}".`)
+      };
+      }
+    }];
+  });
+
+  // Dirección inversa: ves un bocadillo y eliges qué contestar. Se reserva
+  // como formato propio para que la práctica mixta incluya ambos sentidos del
+  // diálogo, no solo reconocer qué frase originó una respuesta.
+  const responderFrames = todasFrases.flatMap((w, idx) => {
+    const resp = respuestaDe(w.de);
+    const distractores = [...new Set(todasFrases
+      .filter((f) => f.de !== w.de && f.de !== resp?.de)
+      .map((f) => respuestaDe(f.de)?.de)
+      .filter(Boolean))].slice(0, 3);
+    if (!resp || distractores.length < 2) return [];
+    return [{
+      conceptId: `komm:${w.lektionId}`,
+      make(rng) {
+        const options = [resp.de, ...distractores];
+        for (let i = options.length - 1; i > 0; i--) {
+          const j = Math.floor(rng() * (i + 1));
+          [options[i], options[j]] = [options[j], options[i]];
+        }
+        return {
+          id: `komm-reply-${idx}`,
+          type: 'mc',
+          conceptId: `komm:${w.lektionId}`,
+          prompt: pick('¿Qué responderías?', 'What would you reply?'),
+          sentence: w.de,
+          marco: 'dicho',
+          marcoOpciones: 'tuyo',
+          answer: resp.de,
+          options,
+          translation: w.es,
+          explanation: pick(`Una respuesta adecuada sería «${resp.de}».`, `An appropriate reply would be "${resp.de}".`)
+        };
+      }
+    }];
+  });
+
+  // En «De todo un poco», Kommunikation también puede salir como producción
+  // escrita y como orden de palabras, no solo como test de respuesta.
+  const produktionFrames = todasFrases.flatMap((w, idx) => {
+    const palabras = w.de.trim().split(/\s+/);
+    const res = [{
+      conceptId: `komm:${w.lektionId}`,
+      make() {
+        return {
+          id: `komm-write-${idx}`,
+          type: 'write',
+          conceptId: `komm:${w.lektionId}`,
+          prompt: enIdioma('Traduce al alemán', 'Translate into German'),
+          sentence: w.es,
+          answer: w.de,
+          translation: w.es,
+          explanation: `${w.de} — ${w.es}`
+        };
+      }
+    }];
+    if (palabras.length >= 3 && palabras.length <= 12) {
+      res.push({
+        conceptId: `komm:${w.lektionId}`,
+        make(rng) {
+          const tokens = [...palabras];
+          for (let i = tokens.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            [tokens[i], tokens[j]] = [tokens[j], tokens[i]];
+          }
+          return {
+            id: `komm-order-${idx}`,
+            type: 'order',
+            conceptId: `komm:${w.lektionId}`,
+            prompt: enIdioma('Ordena la frase', 'Put the sentence in order'),
+            tokens,
+            solution: palabras,
+            sentence: w.de,
+            translation: w.es,
+            explanation: `${w.de} — ${w.es}`
+          };
+        }
+      });
+    }
+    return res;
+  });
+
+  return [...frames, ...entenderFrames, ...responderFrames, ...produktionFrames];
 }
 
 // "Tema" virtual que junta todas las plantillas y conceptos: práctica mixta.
@@ -143,17 +260,21 @@ export function mixTopic() {
 
 // Lo mismo pero de UN nivel.
 export function mixTopicBanda(bandId) {
-  const banda = BAENDE.find((b) => b.id === bandId);
+  const requestedIds = Array.isArray(bandId) ? bandId : String(bandId || '').split('|').filter(Boolean);
+  const bandas = BAENDE.filter((b) => requestedIds.includes(b.id));
+  const bandIds = bandas.map((b) => b.id);
+  const nombreBandas = bandas.map((b) => b.name).join(' + ');
   const lecciones = KURSBUCH.lektionen.filter(
-    (l) => l.bandId === bandId && l.grammatik.length
+    (l) => bandIds.includes(l.bandId) && l.grammatik.length
   );
   const temas = lecciones.map((l) => lektionTopic(l));
-  const kFrames = kommFrames(bandId);
+  const kFrames = bandIds.flatMap((id) => kommFrames(id));
   return {
-    id: 'mix:' + bandId,
-    name: (banda?.name || bandId) + ' gemischt',
-    nameEs: 'Mezcla de ' + (banda?.name || bandId),
-    blurb: 'Ejercicios al azar de ' + (banda?.name || bandId),
+    id: 'mix:' + bandIds.join('|'),
+    mixBandIds: bandIds,
+    name: nombreBandas + ' gemischt',
+    nameEs: 'Mezcla de ' + nombreBandas,
+    blurb: 'Ejercicios al azar de ' + nombreBandas,
     theory: null,
     concepts: temas.flatMap((t) => t.concepts),
     frames: [...temas.flatMap((t) => t.frames), ...kFrames]

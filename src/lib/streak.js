@@ -12,7 +12,9 @@ export const MONEDAS_POR_DIA = 10;
 // Subir de nivel paga, lo mismo que sumar un dia de racha. Con 5 se quedaba
 // corto: cuesta cada vez mas XP (100, 300, 600, 1000...), asi que el nivel 12
 // son varios dias de trabajo y pagaba la mitad que aparecer un martes.
-export const MONEDAS_POR_NIVEL = 10;
+export const MONEDAS_POR_NIVEL = 20;
+// Un día solo cuenta como practicado cuando una sesión supera este tiempo.
+export const MIN_ACTIVITY_MS = 10_000;
 // Cuántos congeladores caben en el bolsillo y cada cuántos días seguidos cae
 // uno nuevo. Estaban a pelo en medio del código (el `% 5` y el `< 3`), así
 // que la pantalla de "cómo funciona" decía una cosa y el código otra.
@@ -121,16 +123,21 @@ export function getStreak() {
   return puesta;
 }
 
-// Llamar al terminar una sesion. Devuelve el estado nuevo + eventos
-// para poder animar ("racha subida", "congelador usado"...).
-export function recordActivity(xpGained) {
+// Llamar al terminar una sesión. Solo registra el día si duró más de 10 s.
+// Devuelve el estado + eventos para poder animar la racha.
+export function recordActivity(xpGained, durationMs = 0) {
   const s = getStreak();
   const today = todayKey();
-  const events = [];
-  // El nivel de antes, para saber si esta tanda lo ha subido. Se miraba en
-  // ningun sitio: subias de nivel y no te enterabas hasta que volvias a la
-  // portada y veias otro numero.
   const nivelAntes = levelFromXp(s.totalXp).level;
+  const events = [];
+  if (!(durationMs > MIN_ACTIVITY_MS)) {
+    // La tanda sigue dando su XP normal, pero no inaugura un día practicado.
+    s.totalXp += xpGained;
+    if (s.lastDay === today) s.history[today] = (s.history[today] || 0) + xpGained;
+    subidaDeNivel(nivelAntes, s.totalXp, events);
+    storage.set(KEYS.streak, s);
+    return { state: s, events, alreadyToday: s.lastDay === today, ignoredShort: true };
+  }
 
   if (s.lastDay === today) {
     s.history[today] = (s.history[today] || 0) + xpGained;

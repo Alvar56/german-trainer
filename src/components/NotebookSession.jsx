@@ -14,12 +14,12 @@ import { saveRun } from '../lib/leaderboard.js';
 import { makeRng, randomSeed, shuffle } from '../lib/rng.js';
 import { useTeclas } from '../lib/teclas.js';
 
-export default function NotebookSession({ note, lektion, onExit, onFinish }) {
+export default function NotebookSession({ note, lektion, onExit, onFinish, itemsFijos = null }) {
   const fox = useFox();
   const items = useMemo(() => {
     const r = makeRng(randomSeed());
-    return shuffle(r, [...(note?.items || [])]);
-  }, [note?.id]);
+    return shuffle(r, [...(itemsFijos?.length ? itemsFijos : note?.items || [])]);
+  }, [note?.id, itemsFijos]);
   const [idx, setIdx] = useState(0);
   const [retries, setRetries] = useState(0);
   const [phase, setPhase] = useState('answer'); // 'answer' | 'feedback'
@@ -95,7 +95,7 @@ export default function NotebookSession({ note, lektion, onExit, onFinish }) {
     let xp = validResults.reduce((s, r) => s + (r.correct ? 10 : 2), 0);
     if (acc >= 0.9) xp += 5;
     bumpSessions();
-    const streak = recordActivity(xp);
+    const streak = recordActivity(xp, Date.now() - started.current);
     saveRun({
       topicId: 'cuaderno',
       topicName: 'Cuaderno · ' + (note.title || lektion?.name || 'repaso'),
@@ -107,6 +107,22 @@ export default function NotebookSession({ note, lektion, onExit, onFinish }) {
       seconds,
       xp
     });
+    const missed = items.flatMap((item, i) => {
+      const result = results.current[i];
+      if (!result) return [];
+      if (result.correct) return [];
+      const solution = Array.isArray(item.solution) ? item.solution.join(' ') : item.solution;
+      const expected = solution || item.answer || item.sentence || '';
+      const chosen = typeof result.chosen === 'string'
+        ? result.chosen
+        : result.chosen?.text || result.chosen?.sentence || '';
+      return [{
+        ...item,
+        de: expected,
+        es: item.translation || item.prompt || '',
+        ...(chosen ? { tuya: chosen } : {})
+      }];
+    });
     onFinish({
       deck: { id: 'cuaderno', name: note.title || lektion?.name || 'Repaso de clase', emoji: '📓' },
       mode: 'notebook',
@@ -116,7 +132,8 @@ export default function NotebookSession({ note, lektion, onExit, onFinish }) {
       xp,
       streak,
       monedas: monedas.current,
-      missed: []
+      missed,
+      fallos: items.filter((_, i) => Boolean(results.current[i] && !results.current[i].correct))
     });
   }
 
@@ -130,7 +147,7 @@ export default function NotebookSession({ note, lektion, onExit, onFinish }) {
           </svg>
         </button>
         <div className="bar">
-          <span style={{ width: ((idx + (phase === 'feedback' ? 1 : 0)) / items.length) * 100 + '%' }} />
+          <span style={{ width: (idx / items.length) * 100 + '%' }} />
         </div>
         {idx > 0 && results.current[idx - 1] && (
           <button className="btn-ghost ses-atras ses-icon-btn" onClick={atras} title={t('ses.prev')}>

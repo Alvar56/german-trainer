@@ -13,7 +13,7 @@ const PERMITIDAS = new Set(['B', 'I', 'U', 'STRONG', 'EM', 'BR', 'DIV', 'P']);
 
 // Deja solo negrita, cursiva, subrayado y saltos de línea. Lo demás se convierte en
 // su texto: nada de atributos, ni enlaces, ni estilos, ni scripts.
-export function limpiarHtml(sucio) {
+function limpiarHtml(sucio) {
   const caja = document.createElement('div');
   caja.innerHTML = String(sucio || '');
 
@@ -38,7 +38,7 @@ export function limpiarHtml(sucio) {
 
 // ¿Queda algo de verdad, o solo etiquetas vacías? Un contentEditable vacío
 // suele guardar "<br>" o "<div><br></div>", y eso no es una nota.
-export function estaVacia(html) {
+function estaVacia(html) {
   const caja = document.createElement('div');
   caja.innerHTML = String(html || '');
   return !caja.textContent.trim();

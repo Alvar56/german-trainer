@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
-import { t } from '../lib/i18n.js';
+import GameModePill from './GameModePill.jsx';
+import { pick, t } from '../lib/i18n.js';
 import { pickCards, recordCard, deckStats } from '../lib/vocab.js';
+import { tc } from '../lib/contenido/index.js';
 import { recordActivity } from '../lib/streak.js';
 import { ganar, monedasDe, RECONSTRUIR } from '../lib/monedas.js';
 import { getSettings } from '../lib/settings.js';
@@ -11,11 +13,18 @@ import { saveRun } from '../lib/leaderboard.js';
 import { apuntarRespuesta, currentStreak } from '../lib/rachas.js';
 import Reloj from './Reloj.jsx';
 import RachaPill from './RachaPill.jsx';
+import StarButton from './StarButton.jsx';
+import PistaRevelable from './PistaRevelable.jsx';
+import { useExerciseActive } from '../lib/teclas.js';
 
 // Cuantas palabras, de Ajustes. Antes eran ocho fijas.
 const RONDAS_POR_DEFECTO = 8;
 const FALLOS_MAX = 6; // los seis trozos del muñeco
 const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß';
+const HANG_FLIP_SELECTOR = [
+  '.hang-layout', '.hang-tablero', '.hang-visual', '.hang-derecha', '.hang-pistas',
+  '.hang-pista-item', '.hang-give-up', '.hang-reto', '.hang-palabra', '.hang-teclado'
+].join(', ');
 
 // Las tres pistas, de menos a más chivata. Cada una que gastas baja lo que
 // paga la palabra, así que pedirlas cuesta algo pero nunca te mata: quedarse
@@ -23,9 +32,9 @@ const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜß';
 // El texto se pide al pintar, no aquí: si se guardara ya traducido, cambiar
 // de idioma sin recargar dejaría las pistas en el idioma anterior.
 const PISTAS = [
-  { id: 'es', clave: 'hg.hintEs' },
   { id: 'art', clave: 'hg.hintArt' },
-  { id: 'letra', clave: 'hg.hintLetter' }
+  { id: 'letra', clave: 'hg.hintLetter' },
+  { id: 'es', clave: 'hg.hintEs' }
 ];
 
 function sinArticulo(de) {
@@ -42,18 +51,32 @@ function esLetra(ch) {
   return LETRAS.includes(ch);
 }
 
+// En el teclado del ahorcado, A/Ä, O/Ö y U/Ü representan la misma vocal.
+function letraBase(ch) {
+  return String(ch).toUpperCase().replace(/[ÄÖÜ]/g, (v) => ({ Ä: 'A', Ö: 'O', Ü: 'U' })[v]);
+}
+
+function letraUsada(ch, usadas) {
+  const base = letraBase(ch);
+  return usadas.some((l) => letraBase(l) === base);
+}
+
 export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
+  const activa = useExerciseActive();
   const fox = useFox();
   const rondas = getSettings().sessionSize || RONDAS_POR_DEFECTO;
   const cards = useMemo(
     () =>
       // Repitiendo los fallos: esas y ya. Pasaron el filtro de forma cuando
-      // salieron la primera vez.
-      (cartasFijas && cartasFijas.length) ? cartasFijas :
+      // salieron la primera vez. Se valida otra vez para excluir frases que
+      // pudieran venir de una tanda antigua.
+      (cartasFijas && cartasFijas.length)
+        ? cartasFijas.filter((c) => /^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]{3,15}$/.test(sinArticulo(c.de)))
+        :
       pickCards(deck, rondas * 3)
         .filter((c) => {
           const limpio = sinArticulo(c.de);
-          return /^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß -]{3,15}$/.test(limpio);
+          return /^[A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]{3,15}$/.test(limpio);
         })
         .slice(0, rondas),
     [deck, rondas, cartasFijas]
@@ -62,8 +85,11 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
   const [idx, setIdx] = useState(0);
   const [usadas, setUsadas] = useState([]);
   const [pistas, setPistas] = useState([]);
+  const [letraRevelada, setLetraRevelada] = useState('');
   const [estado, setEstado] = useState('jugando');
   const [ganadas, setGanadas] = useState(0);
+  const hangmanRef = useRef(null);
+  const posicionesAntesDePista = useRef(null);
   const results = useRef([]);
   // La racha de aciertos seguidos: hasta ahora solo la llevaba gramática.
   // Lo que llevas seguidas AHORA, para el rayito de la cabecera. Se
@@ -78,14 +104,66 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
   const palabra = card ? sinArticulo(card.de).toUpperCase() : '';
   const articulo = card ? articuloDe(card.de) : '';
 
-  const fallos = usadas.filter((l) => !palabra.includes(l)).length;
+  const fallos = usadas.filter((l) => !Array.from(palabra).some((ch) => esLetra(ch) && letraBase(ch) === letraBase(l))).length;
   const ganado =
-    !!palabra && palabra.split('').every((ch) => !esLetra(ch) || usadas.includes(ch));
+    !!palabra && palabra.split('').every((ch) => !esLetra(ch) || letraUsada(ch, usadas));
   const perdido = fallos >= FALLOS_MAX;
+
+  function recordarPosiciones() {
+    const root = hangmanRef.current;
+    if (!root || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    posicionesAntesDePista.current = Array.from(root.querySelectorAll(HANG_FLIP_SELECTOR), (element) => {
+      const rect = element.getBoundingClientRect();
+      // Si se pide otra pista durante el movimiento, guardamos la posición que
+      // se ve ahora y dejamos que el siguiente movimiento continúe desde ahí.
+      element.getAnimations?.().forEach((animation) => animation.cancel());
+      return {
+        element,
+        parent: element.parentElement?.closest(HANG_FLIP_SELECTOR) || null,
+        left: rect.left,
+        top: rect.top
+      };
+    });
+  }
+
+  useLayoutEffect(() => {
+    const anteriores = posicionesAntesDePista.current;
+    posicionesAntesDePista.current = null;
+    if (!anteriores) return;
+
+    const desplazamientoPadres = new Map();
+    anteriores.forEach(({ element, parent, left, top }) => {
+      if (!element.isConnected) return;
+      const rect = element.getBoundingClientRect();
+      const deltaPadre = desplazamientoPadres.get(parent) || { x: 0, y: 0 };
+      const deltaX = left - rect.left;
+      const deltaY = top - rect.top;
+      // Al animar también los contenedores, restamos el movimiento heredado
+      // para que cada nivel recorra solo su propio cambio, sin duplicarlo.
+      const x = deltaX - deltaPadre.x;
+      const y = deltaY - deltaPadre.y;
+      const seMueve = Math.abs(x) >= 1 || Math.abs(y) >= 1;
+      const seAnima = seMueve && typeof element.animate === 'function';
+      if (seAnima) {
+        element.animate(
+          [
+            { transform: `translate3d(${x}px, ${y}px, 0)` },
+            { transform: 'translate3d(0, 0, 0)' }
+          ],
+          { duration: 560, easing: 'cubic-bezier(.16,1,.3,1)' }
+        );
+      }
+      desplazamientoPadres.set(element, {
+        x: deltaPadre.x + (seAnima ? x : 0),
+        y: deltaPadre.y + (seAnima ? y : 0)
+      });
+    });
+  }, [pistas]);
 
   useEffect(() => {
     setUsadas([]);
     setPistas([]);
+    setLetraRevelada('');
     setEstado('jugando');
     setGanadas(0);
   }, [idx]);
@@ -115,6 +193,7 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
   // Teclado físico: escribir letras, atajos 1-3 para pistas, Escape para salir.
   useEffect(() => {
     function alPulsar(e) {
+      if (!activa) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         onExit();
@@ -125,6 +204,14 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
           e.preventDefault();
           siguiente();
         }
+        return;
+      }
+      if (e.key === 'Enter' || e.key === ' ') {
+        // Enter/Espacio rinden la palabra; un botón enfocado conserva su
+        // acción accesible de teclado.
+        if (e.target instanceof HTMLElement && e.target.closest('button')) return;
+        e.preventDefault();
+        rendirse();
         return;
       }
       // Pistas con números 1, 2, 3 o atajos Alt+P / ?
@@ -154,31 +241,38 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
       }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const ch = e.key.toUpperCase();
-      if (LETRAS.includes(ch) && !usadas.includes(ch)) {
+      if (LETRAS.includes(ch) && !letraUsada(ch, usadas)) {
         e.preventDefault();
         setUsadas((u) => [...u, ch]);
       }
     }
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
-  }, [estado, usadas, idx, pistas]);
+  }, [activa, estado, usadas, idx, pistas]);
 
   function probar(l) {
-    if (estado !== 'jugando' || usadas.includes(l)) return;
+    if (estado !== 'jugando' || letraUsada(l, usadas)) return;
     setUsadas((u) => [...u, l]);
   }
 
   function pedirPista(id) {
     if (estado !== 'jugando' || pistas.includes(id)) return;
+    recordarPosiciones();
     if (id === 'letra') {
       // Se descubre una letra que falta en posición aleatoria
-      const faltantes = palabra.split('').filter((ch) => esLetra(ch) && !usadas.includes(ch));
+      const faltantes = palabra.split('').filter((ch) => esLetra(ch) && !letraUsada(ch, usadas));
       if (faltantes.length) {
         const falta = faltantes[Math.floor(Math.random() * faltantes.length)];
+        setLetraRevelada(falta);
         setUsadas((u) => [...u, falta]);
       }
     }
     setPistas((p) => [...p, id]);
+  }
+
+  function rendirse() {
+    if (estado !== 'jugando') return;
+    setUsadas(Array.from(LETRAS));
   }
 
   function siguiente() {
@@ -193,7 +287,7 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
     const total = results.current.length || cards.length;
     const xp = results.current.reduce((s, r) => s + (r.ok ? Math.max(4, 10 - r.pistas * 2) : 0), 0);
     bumpSessions();
-    const streak = recordActivity(xp);
+    const streak = recordActivity(xp, Date.now() - started.current);
     saveRun({
       topicId: 'vocab:' + deck.id,
       topicName: deck.name,
@@ -232,67 +326,86 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
   const acabado = estado !== 'jugando';
 
   return (
-    <div className="stack game">
+    <div className="stack game hangman-game" ref={hangmanRef}>
       {/* La misma cabecera que los demas ejercicios: salir, la barra de lo que
           llevas y el contador. Aqui faltaba la barra y el contador iba suelto. */}
       <div className="progress-top">
         <button className="btn-ghost" onClick={onExit} title="Salir">✕</button>
         <div className="bar">
-          <span style={{ width: ((idx + (acabado ? 1 : 0)) / cards.length) * 100 + '%' }} />
+          <span style={{ width: (idx / cards.length) * 100 + '%' }} />
         </div>
         <span className="timer">{idx + 1}/{cards.length}</span>
       </div>
 
       <div className="ctx-fila">
-        <span className="pill ctx-tema">{deck.emoji} {deck.name}</span>
+        <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
+          <span className="pill ctx-tema">{deck.emoji} {deck.name}</span>
+          <GameModePill mode="hangman" />
+        </span>
         <span className="row" style={{ gap: 8 }}>
+          {card && <StarButton item={{ ...card, id: 'vocab:' + (card.id || card.de), deckId: deck?.id, lektionId: deck?.lektionId, starMode: 'hangman' }} />}
           <RachaPill n={seguidas} />
           <Reloj desde={started.current} />
         </span>
       </div>
 
-      <div className="hang-tablero">
-        <Horca fallos={fallos} perdido={perdido} />
+      <div className="prompt-label hang-enunciado">{t('hg.instruction')}</div>
 
-        <div className="hang-derecha">
+      <div className="hang-layout">
+      <div className="hang-tablero">
+        <div className="hang-visual">
+          <Horca fallos={fallos} perdido={perdido} />
           <div className="hang-vidas">
             {Array.from({ length: FALLOS_MAX }, (_, i) => (
               <span key={i} className={'hang-vida' + (i < FALLOS_MAX - fallos ? '' : ' ida')} />
             ))}
           </div>
+        </div>
 
-          {pistas.includes('es') && <p className="hang-pista-txt">«{card.es}»</p>}
-          {pistas.includes('art') && (
-            <p className="hang-pista-txt">
-              {articulo
-                ? t('hg.article', { a: articulo.toLowerCase() })
-                : t('hg.startsWith', { l: palabra[0] })}
-            </p>
-          )}
-
+        <div className="hang-derecha">
           <div className="hang-pistas">
-            {PISTAS.map((p, idxP) => (
-              <button
-                key={p.id}
-                className="btn-ghost btn-sm"
-                onClick={() => pedirPista(p.id)}
-                disabled={acabado || pistas.includes(p.id)}
-                title={`Atajo: ${idxP + 1}`}
-              >
-                💡 {t(p.clave)} <span className="op-tecla" style={{ marginLeft: 4 }}>{idxP + 1}</span>
-              </button>
-            ))}
+            {PISTAS.map((p, idxP) => {
+              const usada = pistas.includes(p.id);
+              const pistaTexto = p.id === 'es'
+                ? `«${card._traducible ? tc(card._esBase) : card.es}»`
+                : p.id === 'art'
+                ? articulo
+                  ? t('hg.article', { a: articulo.toLowerCase() })
+                  : t('hg.startsWith', { l: palabra[0] })
+                : t('hg.revealedLetter', { l: letraRevelada });
+              return (
+                <PistaRevelable
+                  key={`${idx}-${p.id}`}
+                  revealed={usada}
+                  onReveal={() => pedirPista(p.id)}
+                  disabled={acabado}
+                  title={`Atajo: ${idxP + 1}`}
+                  clueTitle={pistaTexto}
+                  className="hang-pista-item pista-revelable--hang"
+                  label={<>💡 {t(p.clave)} <span className="op-tecla" style={{ marginLeft: 4 }}>{idxP + 1}</span></>}
+                >
+                  <span className="hang-pista-txt">{pistaTexto}</span>
+                </PistaRevelable>
+              );
+            })}
           </div>
+          {!acabado && (
+            <button className="btn-ghost hang-give-up" onClick={rendirse} aria-keyshortcuts="Enter Space">
+              {pick('Me rindo', 'Give up')}
+              <span className="op-tecla hang-shortcut">{pick('Intro / Espacio', 'Enter / Space')}</span>
+            </button>
+          )}
         </div>
       </div>
 
+      <div className="hang-reto">
       <div className="hang-palabra">
         {palabra.split('').map((ch, i) =>
           !esLetra(ch) ? (
             <span key={i} className="hang-hueco fijo">{ch === ' ' ? ' ' : ch}</span>
           ) : (
-            <span key={i} className={'hang-hueco' + (usadas.includes(ch) ? ' visto' : '')}>
-              {usadas.includes(ch) ? ch : ''}
+            <span key={i} className={'hang-hueco' + (letraUsada(ch, usadas) ? ' visto' : '')}>
+              {letraUsada(ch, usadas) ? ch : ''}
             </span>
           )
         )}
@@ -304,7 +417,7 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
             {estado === 'ganado' ? '✅ ' + t('hg.won') : '❌ ' + t('hg.wasWord') + ' ' + (articulo ? articulo + ' ' : '')}
             {estado === 'perdido' && <strong>{sinArticulo(card.de)}</strong>}
           </p>
-          <p className="muted">{card.de} — {card.es}</p>
+          <p className="muted">{card.de} — {card._traducible ? tc(card._esBase) : card.es}</p>
           {estado === 'ganado' && (
             <p className="muted" style={{ fontSize: '0.86rem' }}>
               {ganadas > 0
@@ -320,10 +433,11 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
           </button>
         </div>
       ) : (
+        <>
         <div className="hang-teclado">
           {LETRAS.split('').map((l) => {
-            const usada = usadas.includes(l);
-            const acierto = usada && palabra.includes(l);
+            const usada = letraUsada(l, usadas);
+            const acierto = usada && Array.from(palabra).some((ch) => esLetra(ch) && letraBase(ch) === letraBase(l));
             return (
               <button
                 key={l}
@@ -335,9 +449,12 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
               </button>
             );
           })}
-      <FoxOverlay fox={fox} mudo={acabado} racha={seguidas} />
         </div>
+        </>
       )}
+      </div>
+      </div>
+      <FoxOverlay fox={fox} mudo={acabado} racha={seguidas} />
     </div>
   );
 }

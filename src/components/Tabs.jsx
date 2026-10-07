@@ -10,6 +10,26 @@ export default function Tabs({ children, className = '' }) {
   const containerRef = useRef(null);
   const sliderRef = useRef(null);
 
+  const animarContenido = (event) => {
+    const boton = event.target.closest?.('.tab');
+    const tabs = containerRef.current;
+    if (!boton || !tabs) return;
+    const botones = Array.from(tabs.children).filter((el) => el.classList.contains('tab'));
+    const desde = botones.findIndex((el) => el.classList.contains('active'));
+    const hasta = botones.indexOf(boton);
+    if (desde < 0 || hasta < 0 || desde === hasta) return;
+
+    // El panel siguiente se actualiza al terminar el click de React. En el
+    // próximo frame ya está su nuevo contenido y se le puede dar dirección.
+    window.requestAnimationFrame(() => {
+      const panel = tabs.nextElementSibling;
+      if (!panel) return;
+      panel.classList.remove('tab-panel-forward', 'tab-panel-backward');
+      void panel.offsetWidth;
+      panel.classList.add(hasta > desde ? 'tab-panel-forward' : 'tab-panel-backward');
+    });
+  };
+
   const updateSlider = () => {
     if (!containerRef.current || !sliderRef.current) return;
     const activeBtn = containerRef.current.querySelector('.tab.active');
@@ -40,7 +60,7 @@ export default function Tabs({ children, className = '' }) {
   }, []);
 
   return (
-    <div ref={containerRef} className={'tabs' + (className ? ' ' + className : '')}>
+    <div ref={containerRef} className={'tabs' + (className ? ' ' + className : '')} onClickCapture={animarContenido}>
       {children}
       <span ref={sliderRef} className="tab-slider" aria-hidden="true" />
     </div>

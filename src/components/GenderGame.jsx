@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
+import GameModePill from './GameModePill.jsx';
 import { t, pick } from '../lib/i18n.js';
 import { pickGenderNouns, recordGender, recordCard, getDeck } from '../lib/vocab.js';
+import { tc } from '../lib/contenido/index.js';
 import { pistaGenero } from '../lib/genero.js';
-import { useTeclas, esOrdenador } from '../lib/teclas.js';
+import { useExerciseActive, useTeclas, esOrdenador } from '../lib/teclas.js';
 import { recordActivity } from '../lib/streak.js';
 import { cobrarEjercicio, RECONOCER } from '../lib/monedas.js';
 import { bumpSessions } from '../lib/progress.js';
@@ -13,6 +15,7 @@ import { apuntarRespuesta, currentStreak } from '../lib/rachas.js';
 import Reloj from './Reloj.jsx';
 import RachaPill from './RachaPill.jsx';
 import Escuchar from './Escuchar.jsx';
+import PistaRevelable from './PistaRevelable.jsx';
 
 const ARTS = [
   { a: 'der', color: 'der' },
@@ -21,6 +24,7 @@ const ARTS = [
 ];
 
 export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
+  const activa = useExerciseActive();
   const fox = useFox();
   // Sin suelo: lo que digas en Ajustes es lo que sale.
   const size = getSettings().sessionSize || 10;
@@ -43,6 +47,13 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
   const advancing = useRef(false);
   const timer = useRef(null);
   useEffect(() => () => clearTimeout(timer.current), []);
+  const cur = nouns[idx];
+
+  useEffect(() => {
+    if (!activa || esOrdenador() || !picked || !advancing.current) return;
+    timer.current = setTimeout(skipWait, picked === cur?.article ? 700 : 3000);
+    return () => clearTimeout(timer.current);
+  }, [activa, picked, idx, cur?.article]);
 
   // 1, 2 y 3 son der, die y das, en el orden en que salen en pantalla.
   // Con la respuesta dada, Enter o espacio avanzan a la siguiente pregunta.
@@ -71,8 +82,6 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
     );
   }
 
-  const cur = nouns[idx];
-
   function choose(art) {
     if (advancing.current || picked) return;
     const ok = art === cur.article;
@@ -87,9 +96,6 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
     ultimaSeguidas.current = rSeg;
     fox.acierto(ok);
     advancing.current = true;
-    if (!esOrdenador()) {
-      timer.current = setTimeout(skipWait, ok ? 700 : 3000);
-    }
   }
 
   function atras() {
@@ -166,7 +172,7 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
     let xp = results.current.reduce((s, r) => s + (r.ok ? 10 : 2), 0);
     if (acc >= 0.9) xp += 5;
     bumpSessions();
-    const streak = recordActivity(xp);
+    const streak = recordActivity(xp, Date.now() - started.current);
     saveRun({ topicId: 'vocab:gender', topicName: 'der/die/das', mode: 'gender', game: 'gender', correct, total, accuracy: Math.round(acc * 100) / 100, seconds, xp });
     repartirPorMazo(results.current);
     onFinish({
@@ -188,7 +194,7 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
     <div className="vocab-session">
       <div className="progress-top">
         <button className="btn-ghost" onClick={onExit} title="Salir">✕</button>
-        <div className="bar"><span style={{ width: ((idx + (picked ? 1 : 0)) / nouns.length) * 100 + '%' }} /></div>
+        <div className="bar"><span style={{ width: (idx / nouns.length) * 100 + '%' }} /></div>
         {idx > 0 && results.current[idx - 1] && (
           <button className="btn-ghost ses-atras ses-icon-btn" onClick={atras} title={t('ses.prev')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -200,7 +206,7 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
       </div>
 
       <div className="ctx-fila">
-        <span className="pill ctx-tema">🎲 der / die / das</span>
+        <GameModePill mode="gender" />
         <span className="row" style={{ gap: 8 }}>
           <RachaPill n={seguidas} />
           <Reloj desde={started.current} />
@@ -211,7 +217,7 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
       <div className="fc-wrap">
         <div className="gender-word">
           <span className="gw-noun">{cur.noun}</span>
-          <span className="gw-es">{cur.es}</span>
+          <span className="gw-es">{tc(cur.es)}</span>
         </div>
 
         {/* La pista. Nunca dice el artículo: dice la regla, que es lo que
@@ -219,20 +225,20 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
             que no tienen regla (cuatro de cada cinco) reciben la otra ayuda,
             descartar uno, que deja la duda en dos y no en tres. */}
         <div className="gender-niveles gg-pista" style={{ justifyContent: 'center' }}>
-          {!pista ? (
-            <button
-              className="ask-chip"
-              disabled={!!picked}
-              onClick={() => setPista(pistaGenero(cur.noun, cur.article))}
-              title="Atajo: P"
-            >
-              {t('gg.pista')} <span className="op-tecla" style={{ marginLeft: 4 }}>P</span>
-            </button>
-          ) : (
+          <PistaRevelable
+            key={`${idx}-${cur.noun}`}
+            revealed={Boolean(pista)}
+            onReveal={() => setPista(pistaGenero(cur.noun, cur.article))}
+            disabled={!!picked}
+            title="Atajo: P"
+            className="gg-pista-slot"
+            buttonClassName="ask-chip"
+            label={<>{t('gg.pista')} <span className="op-tecla" style={{ marginLeft: 4 }}>P</span></>}
+          >
             <span className="gg-pista-txt">
-              💡 {pista.tipo === 'regla' ? pick(pista.es, pista.en) : t('gg.descarte', { art: pista.fuera })}
+              💡 {pista?.tipo === 'regla' ? pick(pista.es, pista.en) : t('gg.descarte', { art: pista?.fuera })}
             </span>
-          )}
+          </PistaRevelable>
         </div>
 
         <div className="gender-row">
@@ -262,7 +268,7 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
               </span>
               <Escuchar texto={`${cur.article} ${cur.noun}`} className="dlg-say" frase />
             </div>
-            <div className="gf-es">{cur.es}</div>
+            <div className="gf-es">{tc(cur.es)}</div>
             <button className="btn-primary btn-sm" onClick={skipWait} style={{ marginTop: 4 }}>
               {t('ueb.siguiente')} {esOrdenador() ? <span className="op-tecla" style={{ marginLeft: 6 }}>↵</span> : null}
             </button>

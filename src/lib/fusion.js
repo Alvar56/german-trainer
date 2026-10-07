@@ -48,12 +48,92 @@ function ordenado(obj) {
 // Numeros que solo suben: el numero de sesiones, la XP total, el record.
 const mayor = (a, b) => Math.max(Number(a) || 0, Number(b) || 0);
 
+function sumaCarriles(carriles) {
+  return Object.values(carriles || {}).reduce((suma, n) => suma + (Number(n) || 0), 0);
+}
+
+function tieneContadorPorCarril(registro, campo) {
+  return Number.isFinite(Number(registro?.[`${campo}Base`]))
+    && registro?.[`${campo}Carriles`]
+    && typeof registro[`${campo}Carriles`] === 'object';
+}
+
+function totalContador(registro, campo) {
+  if (!registro) return 0;
+  const base = registro[`${campo}Base`];
+  if (tieneContadorPorCarril(registro, campo)) {
+    return Math.max(Number(registro[campo]) || 0, Number(base) + sumaCarriles(registro[`${campo}Carriles`]));
+  }
+  return Math.max(0, Number(registro[campo]) || 0);
+}
+
+// Junta contadores con un G-counter por pestaña. max() por sí solo perdía el
+// acierto de un aparato cuando dos copias partían del mismo valor y sumaban
+// offline a la vez. Los carriles hacen esa suma conmutativa e idempotente.
+function combinarContador(a, b, campo) {
+  const baseCampo = `${campo}Base`;
+  const carrilesCampo = `${campo}Carriles`;
+  const tieneA = tieneContadorPorCarril(a, campo);
+  const tieneB = tieneContadorPorCarril(b, campo);
+  if (!tieneA && !tieneB) return { valor: mayor(a?.[campo], b?.[campo]), extra: {} };
+
+  // Si una de las copias todavía escribe el formato antiguo, plegamos ambos
+  // totales a una nueva base. En cuanto todas usen carriles, se suman las
+  // aportaciones independientes sin duplicar las ya recibidas.
+  if (!tieneA || !tieneB) {
+    const base = Math.max(totalContador(a, campo), totalContador(b, campo));
+    return { valor: base, extra: { [baseCampo]: base, [carrilesCampo]: {} } };
+  }
+
+  const baseA = Math.max(0, Number(a[baseCampo]) || 0);
+  const baseB = Math.max(0, Number(b[baseCampo]) || 0);
+  const carrilesA = a[carrilesCampo] || {};
+  const carrilesB = b[carrilesCampo] || {};
+  const carriles = { ...carrilesA };
+  for (const [id, cantidad] of Object.entries(carrilesB)) {
+    carriles[id] = mayor(carriles[id], cantidad);
+  }
+
+  // También absorbe escrituras de una versión antigua que haya conservado los
+  // metadatos de carril pero solo haya incrementado el total visible.
+  const restoA = Math.max(0, (Number(a[campo]) || 0) - baseA - sumaCarriles(carrilesA));
+  const restoB = Math.max(0, (Number(b[campo]) || 0) - baseB - sumaCarriles(carrilesB));
+  const restoAntiguo = Math.max(restoA, restoB);
+  if (restoAntiguo) carriles.__legacy__ = mayor(carriles.__legacy__, restoAntiguo);
+
+  const base = Math.max(baseA, baseB);
+  const valor = base + sumaCarriles(carriles);
+  return {
+    valor,
+    extra: { [baseCampo]: base, [carrilesCampo]: ordenado(carriles) }
+  };
+}
+
 // Un contador de repaso (palabra, concepto, sustantivo del juego de generos).
 // Se queda con lo mas alto de cada cosa: nunca se pierde practica, y repetir la
 // fusion no cambia nada.
 function contadorMax(a, b) {
   if (!a || typeof a !== 'object') return b;
   if (!b || typeof b !== 'object') return a;
+  const reinicioA = Number(a.resetAt) || 0;
+  const reinicioB = Number(b.resetAt) || 0;
+  if (reinicioA !== reinicioB) {
+    const reciente = reinicioA > reinicioB ? a : b;
+    const r = {
+      ...reciente,
+      wrong: mayor(a.wrong, b.wrong),
+      strength: mayor(a.strength, b.strength),
+      lastSeen: Math.max(Number(a.lastSeen) || 0, Number(b.lastSeen) || 0),
+      due: mayor(a.due, b.due)
+    };
+    const fallos = combinarContador(a, b, 'wrong');
+    r.wrong = fallos.valor;
+    Object.assign(r, fallos.extra);
+    if (a.streak != null || b.streak != null) r.streak = mayor(a.streak, b.streak);
+    const color = a.color || b.color;
+    if (color) r.color = color;
+    return ordenado(r);
+  }
   // Lo que no es un contador -el color, marcas sueltas- sale del apunte mas
   // reciente; si empatan, del que diga elMismoSiempre.
   const ha = a.lastSeen || 0;
@@ -67,6 +147,11 @@ function contadorMax(a, b) {
     lastSeen: Math.max(ha, hb),
     due: mayor(a.due, b.due)
   };
+  for (const campo of ['correct', 'wrong']) {
+    const combinado = combinarContador(a, b, campo);
+    r[campo] = combinado.valor;
+    Object.assign(r, combinado.extra);
+  }
   if (a.streak != null || b.streak != null) r.streak = mayor(a.streak, b.streak);
   const color = a.color || b.color;
   if (color) r.color = color;
@@ -75,15 +160,57 @@ function contadorMax(a, b) {
 
 // Los apartados de Kommunikation llevan sus propios contadores.
 function contadorKomm(a, b) {
+  const reinicioA = Number(a?.resetAt) || 0;
+  const reinicioB = Number(b?.resetAt) || 0;
+  if (a && b && typeof a === 'object' && typeof b === 'object' && reinicioA !== reinicioB) {
+    const r = contadorMax(a, b);
+    r.at = mayor(a.at, b.at);
+    // Solo «aciertos» mide dominio del apartado y queda con el valor fijado
+    // por el reinicio. Los contadores de actividad siguen fusionándose.
+    for (const campo of ['preguntas', 'fallos', 'veces']) {
+      const normalizar = (registro) => campo !== 'fallos' || typeof registro.fallos === 'number'
+        ? registro
+        : { ...registro, fallos: Math.max(0, (registro.preguntas || 0) - (registro.aciertos || 0)) };
+      const combinado = combinarContador(normalizar(a), normalizar(b), campo);
+      r[campo] = combinado.valor;
+      Object.assign(r, combinado.extra);
+    }
+    return ordenado(r);
+  }
   const r = contadorMax(a, b);
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return r;
-  return ordenado({
+  const masReciente = (Number(a.at) || 0) > (Number(b.at) || 0)
+    ? a
+    : (Number(b.at) || 0) > (Number(a.at) || 0)
+      ? b
+      : elMismoSiempre(a, b);
+  const combinado = {
     ...r,
-    aciertos: mayor(a.aciertos, b.aciertos),
-    preguntas: mayor(a.preguntas, b.preguntas),
-    veces: mayor(a.veces, b.veces),
-    at: mayor(a.at, b.at)
-  });
+    at: mayor(a.at, b.at),
+    ...(masReciente.reviewCleared ? { reviewCleared: true } : {})
+  };
+  for (const campo of ['aciertos', 'preguntas', 'fallos', 'veces']) {
+    const normalizar = (registro) => campo !== 'fallos' || typeof registro.fallos === 'number'
+      ? registro
+      : { ...registro, fallos: Math.max(0, (registro.preguntas || 0) - (registro.aciertos || 0)) };
+    const combinadoCampo = combinarContador(normalizar(a), normalizar(b), campo);
+    combinado[campo] = combinadoCampo.valor;
+    Object.assign(combinado, combinadoCampo.extra);
+  }
+  if (!masReciente.reviewCleared) delete combinado.reviewCleared;
+  return ordenado(combinado);
+}
+
+// Para un ejercicio fallado manda el cambio más reciente. La entrada resuelta
+// también se conserva como tombstone para no resucitar errores al sincronizar.
+function registroMasReciente(a, b) {
+  if (!a || typeof a !== 'object') return b;
+  if (!b || typeof b !== 'object') return a;
+  const fa = Number(a.at) || 0;
+  const fb = Number(b.at) || 0;
+  if (fa > fb) return ordenado(a);
+  if (fb > fa) return ordenado(b);
+  return ordenado(elMismoSiempre(a, b));
 }
 
 // Dos diccionarios { clave: valor }, juntados clave a clave con la funcion que
@@ -150,15 +277,31 @@ function juntarProgreso(a, b) {
     ...elMismoSiempre(a, b),
     concepts: porClave(a.concepts, b.concepts, contadorMax),
     seenItems: porClave(a.seenItems, b.seenItems, mayor),
+    failedItems: porClave(a.failedItems, b.failedItems, registroMasReciente),
     kommPracticed: porClave(a.kommPracticed, b.kommPracticed, contadorKomm),
+    kommFailedItems: porClave(a.kommFailedItems, b.kommFailedItems, registroMasReciente),
+    kommEscuchadas: porClave(a.kommEscuchadas, b.kommEscuchadas, mayor),
     sessions: mayor(a.sessions, b.sessions)
   });
+}
+
+// Cada crucigrama conserva su propio tablero y estado. Si dos aparatos han
+// guardado el mismo mazo, se queda la sesión actualizada más recientemente.
+function sesionCrucigramaMasReciente(a, b) {
+  if (!a || typeof a !== 'object') return b;
+  if (!b || typeof b !== 'object') return a;
+  const fa = Number(a.updatedAt) || 0;
+  const fb = Number(b.updatedAt) || 0;
+  if (fa > fb) return a;
+  if (fb > fa) return b;
+  return elMismoSiempre(a, b);
 }
 
 // `mio` es lo de este aparato y `suyo` lo del servidor.
 export const FUSIONES = {
   'vocab:progress': (mio, suyo) => porClave(mio, suyo, contadorMax),
   'vocab:gender': (mio, suyo) => porClave(mio, suyo, contadorMax),
+  'vocab:crossword-sessions': (mio, suyo) => porClave(mio, suyo, sesionCrucigramaMasReciente),
   progress: juntarProgreso,
   streak: juntarRacha,
   'notebook:notes': porId,

@@ -4,7 +4,7 @@
 // ejemplos de las reglas de Gramática. Así traduces lo que estás dando, no
 // frases sueltas de ninguna parte.
 
-import { BAENDE, getLektion, ruleConceptId } from './kursbuch/index.js';
+import { KURSBUCH, getLektion, ruleConceptId, allBookDecks } from './kursbuch/index.js';
 import { storage } from './storage.js';
 import { GENDER_NIVELES } from './vocab.js';
 import { tc } from './contenido/index.js';
@@ -16,6 +16,7 @@ const ULTIMAS = 'uebersetzen:ultimas';
 // Ni tan cortas que sean una palabra ni tan largas que sean un párrafo.
 const MIN_PALABRAS = 3;
 const MAX_PALABRAS = 12;
+const TOTAL_GLOBAL = 1000;
 
 function util(de, es) {
   const d = String(de || '').trim();
@@ -39,7 +40,7 @@ export function frases({ lektionId = null } = {}) {
   const vistas = new Set();
   const lecciones = lektionId
     ? [getLektion(lektionId)].filter(Boolean)
-    : BAENDE.flatMap((b) => b.lektionen);
+    : KURSBUCH.lektionen;
 
   for (const l of lecciones) {
     // expresiones de Kommunikation
@@ -74,9 +75,27 @@ export function frases({ lektionId = null } = {}) {
     }
   }
 
-  // Exactamente 2000 ejercicios en el juego global, podando las frases más
+  // El ejercicio global llega a 1000 con ejemplos breves y cotidianos de los
+  // mazos A1.1 del propio libro. Conservan sus glosas, así que se traducen al
+  // inglés con la misma tabla de contenido que el resto del material.
+  if (!lektionId && out.length < TOTAL_GLOBAL) {
+    for (const deck of allBookDecks()) {
+      if (deck.bandName !== 'A1.1') continue;
+      for (const card of deck.cards || []) {
+        const de = String(card.ex || '').trim();
+        const es = String(card.exEs || '').trim();
+        if (!util(de, es) || vistas.has(de)) continue;
+        vistas.add(de);
+        out.push({ de, es, band: deck.bandName });
+        if (out.length >= TOTAL_GLOBAL) break;
+      }
+      if (out.length >= TOTAL_GLOBAL) break;
+    }
+  }
+
+  // Exactamente 1000 ejercicios en el juego global, podando las frases más
   // repetitivas (mismos prefijos repetidos en exceso o de 3 palabras).
-  if (!lektionId && out.length > 2000) {
+  if (!lektionId && out.length > TOTAL_GLOBAL) {
     const prefCounts = {};
     out.forEach((x) => {
       const p = x.de.split(/\s+/).slice(0, 2).join(' ').toLowerCase();
@@ -91,7 +110,7 @@ export function frases({ lektionId = null } = {}) {
       return { x, idx, penalty };
     });
     scored.sort((a, b) => a.penalty - b.penalty || a.idx - b.idx);
-    return scored.slice(0, 2000).sort((a, b) => a.idx - b.idx).map((s) => s.x);
+    return scored.slice(0, TOTAL_GLOBAL).sort((a, b) => a.idx - b.idx).map((s) => s.x);
   }
 
   return out;
@@ -211,11 +230,13 @@ export function elegirFrases(cuantas = 10, { lektionId = null, direccion = 'mix'
 // ni los espacios de más cuentan como fallo. Lo que se practica es la frase.
 export function normalizar(s) {
   return String(s || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '') // caracteres de ancho cero que pueden colarse al pegar
     .toLowerCase()
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '') // las tildes que NFD deja sueltas
     .replace(/ß/g, 'ss')
-    .replace(/[¿?¡!.,;:"'()–—-]/g, ' ')
+    .replace(/[²³]/g, (n) => n === '²' ? '2' : '3') // aceptar m2 como equivalente a m²
+    .replace(/\p{P}/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -250,9 +271,9 @@ export function similitud(s1, s2) {
   return (maxL - dist) / maxL;
 }
 
-// Además de "bien" y "mal" hay un "casi": una sola palabra distinta. Ahí no
-// tiene sentido tratarlo como si no supieras la frase.
-// Si la frase coincide en un 90% o más con la original, se da por correcta.
+// Las diferencias de formato (mayúsculas, tildes y puntuación) ya se quitan en
+// normalizar. También aceptamos una errata de una sola letra; las respuestas
+// que superen el 50% de similitud se muestran como "casi" (amarillo).
 export function corregir(tuya, buena) {
   const a = normalizar(tuya);
   const b = normalizar(buena);
@@ -263,6 +284,8 @@ export function corregir(tuya, buena) {
   const pb = b.split(' ').filter(Boolean);
 
   const simCadena = similitud(a, b);
+  const longitudMax = Math.max(a.length, b.length);
+  const distanciaCaracteres = Math.round((1 - simCadena) * longitudMax);
 
   let matches = 0;
   const pool = [...pb];
@@ -275,8 +298,8 @@ export function corregir(tuya, buena) {
   }
   const simPalabras = pb.length > 0 ? matches / Math.max(pa.length, pb.length) : 0;
 
-  // Si coincide en un 90% o más (por caracteres o por palabras), se da por correcta
-  if (simCadena >= 0.90 || (pb.length >= 4 && simPalabras >= 0.90)) {
+  // Una sola letra mal escrita no convierte una frase que se sabe en un fallo.
+  if (distanciaCaracteres <= 1 || simCadena >= 0.90 || (pb.length >= 4 && simPalabras >= 0.90)) {
     return { estado: 'bien', distintas: [] };
   }
 
@@ -287,7 +310,7 @@ export function corregir(tuya, buena) {
     // mismas palabras, otro orden
     return { estado: 'orden', distintas: [] };
   }
-  if (faltan.length <= 1 && sobran.length <= 1 && pa.length === pb.length) {
+  if (simCadena > 0.5 || simPalabras > 0.5) {
     return { estado: 'casi', distintas: faltan };
   }
   return { estado: 'mal', distintas: faltan };

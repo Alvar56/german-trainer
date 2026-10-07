@@ -6,6 +6,7 @@
 
 import { storage } from './storage.js';
 import { playAudio } from './audio.js';
+import { currentStreak } from './rachas.js';
 
 const KEY = 'monedas';
 
@@ -40,6 +41,23 @@ export function ganar(n) {
   storage.set(KEY, next);
   avisar(cuanto, next);
   return next;
+}
+
+// Bono único al terminar una tanda mientras la racha actual sigue en 10 o
+// más. Se aplica al cerrar la sesión (no al pulsar Check) y se devuelve por
+// separado para que el resumen pueda mostrarlo sin mezclarlo con lo cobrado
+// respuesta a respuesta.
+export function aplicarBonoRachaFinal(data, { elegible = true } = {}) {
+  if (!data || data.bonoRachaFinal != null) return data;
+  const { soloFlashcards, ...resumen } = data;
+  const total = Number(data.total) || 0;
+  const bonoRachaFinal = elegible && !soloFlashcards && total > 0 && currentStreak() >= 10 ? 5 : 0;
+  if (bonoRachaFinal) ganar(bonoRachaFinal);
+  return {
+    ...resumen,
+    monedas: Math.max(0, Number(data.monedas) || 0) + bonoRachaFinal,
+    bonoRachaFinal
+  };
 }
 
 // Devuelve true si había suficiente. Nunca deja el saldo en negativo.

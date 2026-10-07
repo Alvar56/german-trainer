@@ -23,13 +23,10 @@ export default function Monedero() {
   const puntero = useRef(null);
   const id = useRef(0);
   const timers = useRef([]);
+  const congelarPosicion = useRef(false);
+  const temporizadorPosicion = useRef(null);
 
   // La pildora sube del todo cuando ya has bajado, para no tapar la cabecera.
-  //
-  // Ojo con el ResizeObserver: al cambiar de pantalla el scroll vuelve a 0
-  // SIN disparar 'scroll', asi que la pildora se quedaba creyendo que seguias
-  // abajo y se colocaba mal durante todo el ejercicio. El alto del body si
-  // cambia al cambiar de vista, y eso si lo podemos oir.
   //
   // Y de paso se publica el alto de la cabecera en --cabecera. En el movil la
   // barra de arriba es una tira horizontal cuyo alto depende de si el motor de
@@ -37,15 +34,17 @@ export default function Monedero() {
   // el CSS, en las pantallas estrechas la pildora acababa plantada encima de
   // la fila de secciones.
   useEffect(() => {
-    const mirar = () => {
-      setScrolled(window.scrollY > 40);
+    const main = document.querySelector('.main');
+    const medirCabecera = () => {
       const barra = document.querySelector('.sidebar');
-      if (barra) {
-        document.documentElement.style.setProperty(
-          '--cabecera',
-          `${Math.round(barra.getBoundingClientRect().height)}px`
-        );
-      }
+      if (!barra) return;
+      document.documentElement.style.setProperty(
+        '--cabecera',
+        `${Math.round(barra.getBoundingClientRect().height)}px`
+      );
+    };
+    const mirar = () => {
+      if (!congelarPosicion.current) setScrolled(Math.max(window.scrollY, main?.scrollTop || 0) > 40);
       // Y lo que mide de ancho la esquina, en --hud. Las cabeceras que llevan
       // algo pegado a la derecha (el "← Volver" de un tema, la del chat) le
       // dejan ese hueco. Estaba escrito a mano en el CSS -92px, lo que medía
@@ -58,15 +57,37 @@ export default function Monedero() {
         );
       }
     };
+    const alRedimensionar = () => {
+      medirCabecera();
+      mirar();
+    };
+    const mantenerPosicionDuranteCambio = () => {
+      congelarPosicion.current = true;
+      clearTimeout(temporizadorPosicion.current);
+      temporizadorPosicion.current = setTimeout(() => {
+        congelarPosicion.current = false;
+        setScrolled(Math.max(window.scrollY, main?.scrollTop || 0) > 40);
+      }, 1000);
+    };
+    // La altura del menú solo se vuelve a medir al cambiar el viewport. Si se
+    // midiera con cada cambio de sección, el monedero podría saltar mientras
+    // el contenido móvil entra con su animación.
+    medirCabecera();
     mirar();
     window.addEventListener('scroll', mirar, { passive: true });
+    main?.addEventListener('scroll', mirar, { passive: true });
+    window.addEventListener('resize', alRedimensionar);
+    window.addEventListener('app:layout-transition', mantenerPosicionDuranteCambio);
     const ro = new ResizeObserver(mirar);
-    ro.observe(document.body);
-    const barra = document.querySelector('.sidebar');
-    if (barra) ro.observe(barra);
+    // Solo el monedero: observar todo el body hacía que cada cambio de menú o
+    // idioma recalculara el estado de scroll y moviera la píldora sin necesidad.
     if (esquina.current) ro.observe(esquina.current);
     return () => {
       window.removeEventListener('scroll', mirar);
+      main?.removeEventListener('scroll', mirar);
+      window.removeEventListener('resize', alRedimensionar);
+      window.removeEventListener('app:layout-transition', mantenerPosicionDuranteCambio);
+      clearTimeout(temporizadorPosicion.current);
       ro.disconnect();
     };
   }, []);

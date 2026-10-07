@@ -4,12 +4,14 @@ import { guardados, borrarGuardado, otroIdioma } from '../lib/guardados.js';
 import Dialog from './Dialog.jsx';
 import Cargando from './Cargando.jsx';
 import Sugerencias from './Sugerencias.jsx';
-import LargoDialogo, { turnosDe, largoGuardado } from './LargoDialogo.jsx';
+import LargoDialogo from './LargoDialogo.jsx';
+import { turnosDe, largoGuardado } from '../lib/largoDialogo.js';
 import { generateDialog } from '../lib/ai.js';
 import { aiAvailable } from '../lib/settings.js';
 import { t, pick } from '../lib/i18n.js';
 import { runJob, clearJob } from '../lib/aiJobs.js';
 import { useAiJob } from '../lib/useAiJob.js';
+import Desplegable from './Desplegable.jsx';
 
 const JOB = 'komm:ask';
 
@@ -191,12 +193,12 @@ export default function KommAsk({ niveau = 'A2' }) {
           )}
 
           {misKonv.length > 0 && (
-            <button className="link-btn pie-abrir" onClick={() => setVerKonv(!verKonv)}>
+            <button className="link-btn pie-abrir" onClick={() => setVerKonv(!verKonv)} aria-expanded={verKonv}>
               {verKonv ? t('save.hideConv') : t('save.showConv', { n: misKonv.length })}
             </button>
           )}
 
-          {verKonv && misKonv.length > 0 && (
+          <Desplegable abierto={verKonv && misKonv.length > 0} className="desplegable-guardados">
             <div className="guardados-lista">
               {misKonv.map((k) => (
                 <span className="guardado-chip" key={k.id}>
@@ -216,7 +218,7 @@ export default function KommAsk({ niveau = 'A2' }) {
                 </span>
               ))}
             </div>
-          )}
+          </Desplegable>
         </div>
 
         {!aiOn && (

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { t } from '../lib/i18n.js';
+import Desplegable from './Desplegable.jsx';
 
 // Las ideas de ejemplo de los buscadores: dudas de gramática, situaciones para
 // una conversación, temas para un mazo, artistas para una canción.
@@ -15,9 +16,8 @@ import { t } from '../lib/i18n.js';
 //    larga y se enseña un puñado distinto cada vez que entras, con un botón
 //    para volver a barajar.
 //
-// Devuelve el enlace y el panel SUELTOS, sin envolverlos: van dentro de
-// .ask-pies junto al enlace de lo guardado, para que los dos enlaces salgan en
-// la misma línea y el panel que se abra caiga debajo de los dos.
+// El enlace y el panel animado son elementos hermanos dentro de .ask-pies:
+// los enlaces caben en la misma línea y el panel cae debajo de ambos.
 
 function barajar(xs) {
   const a = [...xs];
@@ -43,11 +43,11 @@ export default function Sugerencias({ opciones, onElegir, disabled = false, cuan
 
   return (
     <>
-      <button className="link-btn pie-abrir" onClick={() => setAbierto(!abierto)}>
+      <button className="link-btn pie-abrir" onClick={() => setAbierto(!abierto)} aria-expanded={abierto}>
         {abierto ? t('sug.hide') : t('sug.show')}
       </button>
 
-      {abierto && (
+      <Desplegable abierto={abierto} className="desplegable-sugerencias">
         <div className="ask-sug">
           {visibles.map((s) => (
             <button
@@ -69,7 +69,7 @@ export default function Sugerencias({ opciones, onElegir, disabled = false, cuan
             </button>
           )}
         </div>
-      )}
+      </Desplegable>
     </>
   );
 }

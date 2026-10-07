@@ -6,7 +6,7 @@ import { t } from '../lib/i18n.js';
 //
 // Lleva el apano del textarea porque navigator.clipboard no existe fuera de
 // https, y el HTML portable se abre desde file://.
-export async function copiarAlPortapapeles(texto) {
+async function copiarAlPortapapeles(texto) {
   const txt = String(texto || '').trim();
   if (!txt) return false;
   try {

@@ -1,4 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect, useRef } from 'react';
+
+// Permite mantener un ejercicio montado en segundo plano al cambiar de menú
+// sin que sus atajos sigan respondiendo por encima de la pantalla visible.
+export const ExerciseActiveContext = createContext(true);
+
+export function useExerciseActive() {
+  return useContext(ExerciseActiveContext);
+}
 
 // Atajos de teclado para los ejercicios.
 //
@@ -27,11 +35,13 @@ function escribiendo(el) {
 // `mapa` es { tecla: función }. Las teclas van tal cual las da el navegador:
 // '1', 'Enter', ' ' para el espacio. Devuelve nada; se engancha solo.
 export function useTeclas(mapa, activo = true) {
+  const contextoActivo = useExerciseActive();
+  const activoAhora = activo && contextoActivo;
   const ref = useRef(mapa);
   ref.current = mapa;
 
   useEffect(() => {
-    if (!activo) return undefined;
+    if (!activoAhora) return undefined;
     function alPulsar(e) {
       if ((e.ctrlKey || e.metaKey || e.altKey) && e.key !== 'Control' && e.key !== 'Alt') return;
       if (escribiendo(e.target) && e.key !== 'Escape') return;
@@ -42,7 +52,7 @@ export function useTeclas(mapa, activo = true) {
     }
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
-  }, [activo]);
+  }, [activoAhora]);
 }
 
 // Atajo para lo más común: las opciones se eligen con 1, 2, 3… en el orden en

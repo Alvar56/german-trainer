@@ -30,47 +30,15 @@ export default function Diary({ onOpen }) {
         </p>
       </div>
 
-      {/* En clase, no en un style: puesto en linea se saltaba las media
-          queries y en el movil las cuatro se apretaban en 70-94 px. */}
-      <div className={'statcards tira-resumen ' + (SIN_IA ? 'statcards-3' : 'statcards-4')}>
+      <div className="statcards statcards-diario tira-resumen">
         <div className="card statcard">
           <div className="n">{st.count}</div>
           <div className="l">{t('tb.entries')}</div>
         </div>
-        {/* Sin IA son tres fichas, y en el móvil el grid es de dos columnas:
-            la tercera se quedaba sola con un hueco al lado. Las palabras van
-            las últimas y a lo ancho —es el número que más crece, y así las
-            tres llenan las dos filas—. Con IA son cuatro y salen 2+2 solas.
-
-            "Corregidas" se queda en 0 para siempre cuando no hay IA que
-            corrija: una ficha que solo puede decir cero no es un dato. */}
-        {SIN_IA ? (
-          <>
-            <div className="card statcard">
-              <div className="n">{st.racha} {st.racha > 0 ? '✍️' : ''}</div>
-              <div className="l">{t('tb.daysRow')}</div>
-            </div>
-            <div className="card statcard statcard-ancha">
-              <div className="n">{st.palabras}</div>
-              <div className="l">{t('tb.wordsWritten')}</div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="card statcard">
-              <div className="n">{st.palabras}</div>
-              <div className="l">{t('tb.wordsWritten')}</div>
-            </div>
-            <div className="card statcard">
-              <div className="n">{st.racha} {st.racha > 0 ? '✍️' : ''}</div>
-              <div className="l">{t('tb.daysRow')}</div>
-            </div>
-            <div className="card statcard">
-              <div className="n">{st.corregidas}</div>
-              <div className="l">{t('tb.corrected')}</div>
-            </div>
-          </>
-        )}
+        <div className="card statcard">
+          <div className="n">{st.palabras}</div>
+          <div className="l">{t('tb.wordsWritten')}</div>
+        </div>
       </div>
 
       {fallos.length > 0 && (
@@ -99,7 +67,7 @@ export default function Diary({ onOpen }) {
 
       <div className="row" style={{ gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
         <button className="btn-primary" onClick={() => onOpen(createEntry().id)}>
-          + Neuer Eintrag
+          {t('tb.new')}
         </button>
       </div>
 

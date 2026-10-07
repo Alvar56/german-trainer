@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { t } from '../lib/i18n.js';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { t, pick } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
 import { useTeclas } from '../lib/teclas.js';
+import { animarFichas, medirFichas } from '../lib/flipOrder.js';
 
 // Ordenar la frase en la misma caja, de dos maneras que valen a la vez:
 //
@@ -10,8 +11,7 @@ import { useTeclas } from '../lib/teclas.js';
 //   · tocando: un toque la levanta y otro toque en otra palabra la coloca
 //     justo delante. Sin arrastrar, que en móvil y en trackpad es un lío.
 //
-// Nada se pinta de verde hasta que le das a Comprobar: si la app te va
-// diciendo cuáles llevas bien, acabas resolviendo a base de probar.
+// Las palabras que ya están en su posición se marcan en verde mientras ordenas.
 export default function WordOrder({ item, onAnswer }) {
   // El aviso de item invalido se pinta al final, por debajo de los hooks. Si
   // cortase aqui arriba, un item que pasa de invalido a valido sin que el
@@ -44,11 +44,22 @@ export default function WordOrder({ item, onAnswer }) {
   const [otraForma, setOtraForma] = useState(null);
 
   const boxRef = useRef(null);
+  const posicionesAntes = useRef(null);
   const inicio = useRef(null); // gesto en curso
   // Los handlers de puntero se disparan muchas veces seguidas; leer el estado
   // de React llegaría tarde, así que lo importante va también en refs.
   const destinoRef = useRef(null);
   const cogidaRef = useRef(null);
+
+  function prepararAnimacion() {
+    posicionesAntes.current = medirFichas(boxRef.current, '.wo-word');
+  }
+
+  useLayoutEffect(() => {
+    const anteriores = posicionesAntes.current;
+    posicionesAntes.current = null;
+    animarFichas(boxRef.current, '.wo-word', anteriores);
+  }, [words]);
 
   useEffect(() => {
     setWords(initial);
@@ -79,15 +90,25 @@ export default function WordOrder({ item, onAnswer }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drag]);
 
-  // Solo se usa DESPUÉS de comprobar: qué palabras cayeron en su sitio.
-  //
-  // Antes se contaba hasta el primer fallo y todo lo de detrás salía en rojo,
-  // aunque estuviera bien puesto: con una palabra cambiada de sitio, media
-  // frase correcta parecía un desastre.
+  // Qué palabras ya están en su posición correcta. Se muestra durante el
+  // ejercicio para dar el mismo feedback progresivo que Wortsalat.
   const enSuSitio = useMemo(
     () => words.map((w, i) => w.text === solution[i]),
     [words, solution]
   );
+
+  // En cuanto toda la frase aceptada queda ordenada, se registra el acierto.
+  // Las palabras correctas en posiciones sueltas siguen verdes como pista,
+  // pero solo la frase completa dispara la respuesta.
+  useEffect(() => {
+    if (checked || !valido) return;
+    const mia = words.map((w) => w.text).join(' ');
+    if (!validas.includes(mia)) return;
+    setOtraForma(mia !== solution.join(' ') ? mia : null);
+    setCorrect(true);
+    setChecked(true);
+    onAnswer(true);
+  }, [words, checked, valido, validas, solution, onAnswer]);
 
   // La palabra arrastrada se queda en el DOM aunque se vea fantasma: si se
   // desmonta, el navegador suelta la captura del puntero y el pointerup ya no
@@ -168,6 +189,7 @@ export default function WordOrder({ item, onAnswer }) {
 
     if (s.movido) {
       const donde = destinoRef.current;
+      prepararAnimacion();
       setWords((ws) => {
         const desde = ws.findIndex((w) => w.id === s.id);
         const movida = ws[desde];
@@ -190,6 +212,7 @@ export default function WordOrder({ item, onAnswer }) {
     } else if (levantada === s.id) {
       fijarCogida(null);
     } else {
+      prepararAnimacion();
       setWords((ws) => {
         const desde = ws.findIndex((w) => w.id === levantada);
         const hasta = ws.findIndex((w) => w.id === s.id);
@@ -214,6 +237,7 @@ export default function WordOrder({ item, onAnswer }) {
     const destinoIdx = i + dir;
     if (destinoIdx < 0 || destinoIdx >= words.length) return;
     e.preventDefault();
+    prepararAnimacion();
     setWords((ws) => {
       const next = [...ws];
       const [x] = next.splice(i, 1);
@@ -225,10 +249,10 @@ export default function WordOrder({ item, onAnswer }) {
     });
   }
 
-  // Enter para comprobar. Control (o Tab) enfoca/recorre las palabras, y
+  // Enter permite rendirse. Control (o Tab) enfoca/recorre las palabras, y
   // las flechas izquierda/derecha mueven la palabra enfocada.
   useTeclas({
-    Enter: () => check(),
+    Enter: () => rendirse(),
     Control: () => {
       const wordsEls = boxRef.current?.querySelectorAll('.wo-word');
       if (!wordsEls || wordsEls.length === 0) return;
@@ -241,15 +265,12 @@ export default function WordOrder({ item, onAnswer }) {
     }
   }, !checked && valido);
 
-  function check() {
-    // No basta con comparar contra la frase guardada: en alemán suele haber
-    // más de una colocación buena. Vale cualquiera de las aceptadas.
-    const mia = words.map((w) => w.text).join(' ');
-    const ok = validas.includes(mia);
-    setOtraForma(ok && mia !== solution.join(' ') ? mia : null);
-    setCorrect(ok);
+  function rendirse() {
+    if (checked) return;
+    setOtraForma(null);
+    setCorrect(false);
     setChecked(true);
-    onAnswer(ok);
+    onAnswer(false);
   }
 
   if (!valido) return <div className="error">Invalid item</div>;
@@ -268,15 +289,16 @@ export default function WordOrder({ item, onAnswer }) {
       >
         {words.map((w, i) => {
           let cls = 'wo-word';
-          // El color solo aparece al comprobar.
           if (checked) cls += correct || enSuSitio[i] ? ' ok' : ' ko';
           else if (drag?.id === w.id) cls += ' fantasma';
+          else if (enSuSitio[i]) cls += ' ok';
           else if (cogida === w.id) cls += ' cogida';
           return (
             <React.Fragment key={w.id}>
               {destino === i && hueco}
               <button
                 className={cls}
+                data-flip-id={w.id}
                 disabled={checked}
                 onPointerDown={(e) => onPointerDown(e, w)}
                 onPointerMove={onPointerMove}
@@ -307,8 +329,8 @@ export default function WordOrder({ item, onAnswer }) {
           <p className="wo-hint muted">
             {cogida !== null ? t('ses.dragHint2') : t('ses.dragHint')}
           </p>
-          <button className="btn-primary" style={{ marginTop: 12, width: '100%' }} onClick={check}>
-            {t('ses.check')}
+          <button className="btn btn-corregir" onClick={rendirse}>
+            {pick('No me sale', 'I give up')}
           </button>
         </>
       )}

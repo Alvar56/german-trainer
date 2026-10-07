@@ -1,23 +1,27 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
-import { recordKommPracticed, bumpSessions, KOMM_APROBADO, kommMastery } from '../lib/progress.js';
+import { tc } from '../lib/contenido/index.js';
+import { recordKommPracticed, recordKommQuestion, kommFailedQuestions, bumpSessions, KOMM_APROBADO, kommMastery, kommPuntosQueFaltan } from '../lib/progress.js';
 import { recordActivity } from '../lib/streak.js';
 import { saveRun, rankOfRun } from '../lib/leaderboard.js';
-import { cobrarEjercicio, RECONOCER, RECONSTRUIR, PRODUCIR } from '../lib/monedas.js';
+import { aplicarBonoRachaFinal, cobrarEjercicio, RECONOCER, RECONSTRUIR, PRODUCIR } from '../lib/monedas.js';
 import { getLektion } from '../lib/kursbuch/index.js';
 import MultipleChoice from './MultipleChoice.jsx';
 import { respuestaEnCadena, seguimientoDe } from '../lib/kursbuch/respuestas.js';
-import { TIPOS, palabraTapable } from '../lib/kursbuch/kommTipos.js';
+import { TIPOS, palabraTapable, palabraHuecoValida } from '../lib/kursbuch/kommTipos.js';
 import { marcarEjercicio } from '../lib/enEjercicio.js';
 import WordOrder from './WordOrder.jsx';
 import WriteCard from './WriteCard.jsx';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
 import { apuntarRespuesta, currentStreak } from '../lib/rachas.js';
-import { useTeclas } from '../lib/teclas.js';
+import { useExerciseActive, useTeclas } from '../lib/teclas.js';
 import Reloj from './Reloj.jsx';
 import RachaPill from './RachaPill.jsx';
+import GameModePill from './GameModePill.jsx';
 import Premios from './Premios.jsx';
 import StarButton from './StarButton.jsx';
+import Confeti from './Confeti.jsx';
+import { cobrarCoronaMaestria } from '../lib/topicRewards.js';
 
 // Miniejercicio de una función comunicativa, con las frases que YA trae el
 // Kursbuch. Sin IA: las Wendungen están impresas en el libro, así que esto
@@ -80,7 +84,8 @@ export { TIPOS };
 // enterarte y no daba tiempo ni a equivocarte. Cada frase da para varias
 // preguntas distintas (elegirla, ordenarla, contestarla...), asi que se
 // reparten por rondas hasta llegar a diez.
-export const POR_TANDA = 10;
+const POR_TANDA = 10;
+const ARRAY_VACIO = Object.freeze([]);
 
 
 // Todas las preguntas que se le pueden montar a UNA frase. Devuelve funciones
@@ -102,7 +107,7 @@ function montadores(w, ajenas, otrasRespuestas, glosas, vuelta = 0) {
         prompt: t('komm.exPick'),
         sentence: w.es + (w.wann ? `  (${w.wann})` : ''),
         marco: 'dicho',
-        marcoOpciones: 'tuyo',
+        marcoOpciones: 'dicho',
         answer: w.de,
         options: mezclar([w.de, ...distractores])
       },
@@ -137,6 +142,7 @@ function montadores(w, ajenas, otrasRespuestas, glosas, vuelta = 0) {
         sentence: resp.de,
         marco: 'dicho',
         marcoOpciones: 'tuyo',
+        sentenceAfterOptions: true,
         answer: w.de,
         options: mezclar([w.de, ...distractores])
       },
@@ -165,7 +171,8 @@ function montadores(w, ajenas, otrasRespuestas, glosas, vuelta = 0) {
         item: {
           anweisung: t('komm.exHueco'),
           sentence: conHueco,
-          answer: buena
+          answer: buena,
+          hintTranslation: w.es
         },
         explica: { de: w.de, es: w.es }
       };
@@ -222,7 +229,7 @@ function espaciarPreguntas(lista) {
 // Prioriza las frases del apartado elegido (con tipos distintos para cada
 // una), y si el apartado tiene pocas frases, complementa con otras frases de
 // la lección en vez de machacar las mismas 3 frases en un bucle repetitivo.
-function construir(wendungen, ajenas = [], otrasRespuestas = [], glosas = [], objetivo = POR_TANDA, tipos = TIPOS, lektionId = null) {
+function construir(wendungen, ajenas = [], otrasRespuestas = [], glosas = [], objetivo = POR_TANDA, tipos = TIPOS, lektionId = null, soloPrimarias = false) {
   const frasesPrimarias = mezclar(
     wendungen.flatMap((w) => [
       w,
@@ -292,7 +299,7 @@ function construir(wendungen, ajenas = [], otrasRespuestas = [], glosas = [], ob
 
   // Ronda 3: Si todavía faltan preguntas (para no saturar con la misma frase),
   // añadimos preguntas de repaso del resto de la lección
-  if (candidatas.length < objetivo && frasesAjenas.length > 0) {
+  if (!soloPrimarias && candidatas.length < objetivo && frasesAjenas.length > 0) {
     for (const w of mezclar(frasesAjenas)) {
       if (candidatas.length >= objetivo) break;
       const item = intentarGenerar(w, null, 0);
@@ -321,25 +328,74 @@ function construir(wendungen, ajenas = [], otrasRespuestas = [], glosas = [], ob
   return espaciarPreguntas(candidatas.slice(0, objetivo));
 }
 
+// En el repaso de fallos, el contador representa apartados: se monta una
+// pregunta de cada apartado para que la cola y la cifra coincidan.
+function construirRepasoApartados(apartados, ajenas, otrasRespuestas, glosas, tipos, lektionId, preguntasFalladas) {
+  const falladas = (preguntasFalladas || []).map((pregunta) => ({ ...pregunta }));
+  const esHueco = (pregunta) => pregunta?._kommTipo === 'hueco' || pregunta?.tipo === 'escribir';
+  const exactas = falladas.filter((pregunta) => !esHueco(pregunta) || palabraHuecoValida(pregunta.item?.answer));
+  const seccionesConHuecosDescartados = new Set(
+    falladas
+      .filter((pregunta) => esHueco(pregunta) && !palabraHuecoValida(pregunta.item?.answer))
+      .map((pregunta) => pregunta.seccion)
+      .filter(Boolean)
+  );
+  const seccionesConEjerciciosExactos = new Set(exactas.map((pregunta) => pregunta.seccion).filter(Boolean));
+  const seccionesDeRespaldo = (apartados || []).filter((apartado) =>
+    !seccionesConEjerciciosExactos.has(apartado.funktion) || seccionesConHuecosDescartados.has(apartado.funktion)
+  );
+  const generadas = seccionesDeRespaldo.flatMap((apartado, i) => {
+    const wendungen = (apartado.wendungen || []).map((w) => ({
+      ...w,
+      seccion: apartado.funktion
+    }));
+    const [pregunta] = construir(wendungen, ajenas, otrasRespuestas, glosas, 1, tipos, lektionId);
+    return pregunta
+      ? [{ ...pregunta, _reviewPosition: i + 1, _reviewSection: apartado.funktion }]
+      : [];
+  });
+  return [...exactas, ...generadas].map((pregunta, i) => ({
+    ...pregunta,
+    _reviewPosition: i + 1,
+    _reviewSection: pregunta.seccion || pregunta._reviewSection
+  }));
+}
+
 export default function KommPractice({
   lektionId,
+  nombreTema = '',
   funktion,
-  todasLasFrases = [],
-  todasLasRespuestas = [],
-  todasLasGlosas = [],
+  todasLasFrases = ARRAY_VACIO,
+  todasLasRespuestas = ARRAY_VACIO,
+  todasLasGlosas = ARRAY_VACIO,
   // Que tipos de pregunta entran. Por defecto, los seis.
   tipos = TIPOS,
+  gameId = 'komm',
+  reviewMistakes = false,
+  reviewSections = ARRAY_VACIO,
+  reviewMarked = false,
   // La tanda mezclada no es de ninguna función, así que no marca ninguna
   // como hecha. Todo lo demás (monedas, XP, racha, sesión) cuenta igual.
   itemsFijos = null,
   mezcla = false,
-  // A donde te devuelve el boton del resumen, para decirlo con su nombre:
-  // 'teoria' si has entrado desde las frases, 'ejercicios' si desde la rejilla.
-  volverA = null,
+  mixBandNames = ARRAY_VACIO,
+  mixDifficultyIds = ARRAY_VACIO,
+  resumenGuardado = null,
+  onGuardarResumen,
+  onLimpiarResumen,
   onSalir,
   onHecho
 }) {
+  const activa = useExerciseActive();
   const fox = useFox();
+  const finishTopic = Boolean(funktion && typeof funktion === 'object' && funktion.finishTopic);
+  const apartadosPendientes = finishTopic ? (funktion.apartados || []) : [];
+  // Fija el tamaño de «Finish the topic» al entrar. El progreso se actualiza
+  // tras cada respuesta; si recalculamos los huecos en cada render, la lista
+  // se encoge mientras se juega y puede terminar después de la primera.
+  const [preguntasPendientes] = useState(() => finishTopic
+    ? Math.max(1, kommPuntosQueFaltan(lektionId, apartadosPendientes))
+    : POR_TANDA);
   // Mientras esta tanda esté en pantalla, la app no se recarga sola aunque la
   // sincronización traiga datos nuevos: en Gramática y Vocabulario la práctica
   // es una vista propia y la lista de App.jsx la protege, pero aquí pasa
@@ -349,17 +405,23 @@ export default function KommPractice({
   // Las preguntas de "repetir los fallos": cuando las hay, la tanda son esas.
   const [fijas, setFijas] = useState(null);
   const generadas = useMemo(
-    () => construir(funktion?.wendungen || [], todasLasFrases, todasLasRespuestas, todasLasGlosas, POR_TANDA, tipos, lektionId),
-    [funktion?.funktion, (funktion?.wendungen || []).length, tipos, vuelta, lektionId]
+    () => reviewMistakes
+      ? construirRepasoApartados(reviewSections, todasLasFrases, todasLasRespuestas, todasLasGlosas, tipos, lektionId, kommFailedQuestions(lektionId))
+      : construir(funktion?.wendungen || [], todasLasFrases, todasLasRespuestas, todasLasGlosas, preguntasPendientes, tipos, lektionId, finishTopic),
+    [funktion?.funktion, (funktion?.wendungen || []).length, reviewMistakes, reviewSections, tipos, vuelta, lektionId, finishTopic, preguntasPendientes]
   );
-  const preguntas = fijas || itemsFijos || generadas;
+  const preguntasIniciales = fijas || itemsFijos || generadas;
+  const [reviewQueue, setReviewQueue] = useState(preguntasIniciales);
+  const preguntas = reviewMistakes ? reviewQueue : preguntasIniciales;
+  const reviewTotal = useRef(preguntasIniciales.length);
+  const reviewHistory = useRef([]);
   const [i, setI] = useState(0);
   const [juzgada, setJuzgada] = useState(null); // null | true | false
   const aciertos = useRef(0);
   // Para que la tanda cuente como sesión hace falta lo mismo que en los demás
   // juegos: qué has ido acertando (la racha de monedas sale de ahí) y cuánto
   // has tardado.
-  const resultados = useRef([]);
+  const resultados = useRef(resumenGuardado?.resultados || []);
   const monedas = useRef(0);
   // La racha de aciertos seguidos, igual que en los demás juegos.
   // Lo que llevas seguidas ahora, para el rayito de la cabecera.
@@ -370,9 +432,52 @@ export default function KommPractice({
   const mejorSeguidas = useRef(0);
   const ultimaSeguidas = useRef(null);
   const desde = useRef(Date.now());
-  const [fin, setFin] = useState(null);
+  const finalizado = useRef(false);
+  const [fin, setFin] = useState(resumenGuardado?.fin || null);
+  const [bonoCorona, setBonoCorona] = useState(() => Number(resumenGuardado?.fin?.bonoCorona) || 0);
+  const coronaRecienCompletada = useRef(Boolean(resumenGuardado?.fin?.coronaRecienCompletada));
+  const coronaProcesada = useRef(null);
+
+  useEffect(() => {
+    if (!fin || bonoCorona > 0 || coronaProcesada.current === lektionId || !lektionId) return;
+    const leccion = getLektion(lektionId);
+    const maestria = leccion?.kommunikation?.length
+      ? kommMastery(lektionId, leccion.kommunikation)
+      : null;
+    if (maestria && maestria.total > 0 && maestria.practiced === maestria.total) {
+      coronaProcesada.current = lektionId;
+      const premio = cobrarCoronaMaestria('kommunikation', lektionId, coronaRecienCompletada.current);
+      if (premio > 0) {
+        const finConCorona = { ...fin, bonoCorona: premio };
+        setBonoCorona(premio);
+        setFin(finConCorona);
+        if (!reviewMistakes) {
+          onGuardarResumen?.({
+            fin: finConCorona,
+            resultados: reviewHistory.current.length ? reviewHistory.current : resultados.current
+          });
+        }
+      }
+    }
+  }, [fin, bonoCorona, lektionId, reviewMistakes, onGuardarResumen]);
+
+  // La lista superior se esconde durante la tanda en móvil. Al terminar,
+  // vuelve a mostrarse y el resumen queda arriba, igual que en las otras dos
+  // secciones. Repetir o empezar otra tanda reactiva el modo ejercicio.
+  useLayoutEffect(() => {
+    if (!activa) return;
+    document.body.classList.toggle('en-ejercicio', !fin);
+    if (fin) {
+      window.scrollTo(0, 0);
+      document.querySelector('.main')?.scrollTo(0, 0);
+      document.querySelector('.sidebar')?.scrollTo(0, 0);
+    }
+  }, [activa, fin]);
 
   const p = preguntas[i] || null;
+  const contextTitle = (reviewMistakes || reviewMarked || finishTopic) && nombreTema
+    ? pick(`Kommunikation · ${nombreTema}`, `Communication · ${nombreTema}`)
+    : (typeof funktion === 'object' ? (funktion?.funktion || '') : (funktion || ''));
 
   const starItem = useMemo(() => {
     if (!p) return null;
@@ -396,8 +501,20 @@ export default function KommPractice({
 
   // Escape para salir de la práctica.
   useTeclas({ Escape: onSalir });
-  // Enter para pasar a la siguiente, como en gramática.
-  useTeclas({ Enter: () => siguiente(), ' ': () => siguiente(), ArrowLeft: () => atras() }, juzgada !== null && !fin);
+  const navegacionLibre = reviewMistakes || reviewMarked || Boolean(itemsFijos?.length || fijas?.length);
+  // Las flechas recorren toda la lista; Enter solo pasa tras corregir.
+  useTeclas({
+    ...(juzgada !== null ? { Enter: () => siguiente(), ' ': () => siguiente() } : {}),
+    ...(navegacionLibre ? { ArrowLeft: () => atras(), ArrowRight: () => siguiente() } : {})
+  }, !fin && (juzgada !== null || navegacionLibre));
+  // En el resumen, Enter activa el repaso si hay errores; si no, empieza otra
+  // ronda, igual que el botón principal visible en cada caso.
+  useTeclas({
+    Enter: () => {
+      if (resultados.current.some((r) => r && !r.ok)) repetirFallos();
+      else otraVez();
+    }
+  }, Boolean(fin));
 
   if (!preguntas.length) return null;
 
@@ -415,15 +532,25 @@ export default function KommPractice({
           : RECONOCER,
       pistas
     });
-    resultados.current[i] = { ok, seccion: preguntas[i].seccion, pregunta: preguntas[i] };
+    const seccion = preguntas[i].seccion || (mezcla ? null : funktion.funktion);
+    const pregunta = { ...preguntas[i], seccion };
+    resultados.current[i] = { ok, tuya: _texto, seccion, pregunta };
+    recordKommQuestion(lektionId, pregunta, ok);
     // La barra de la leccion sube AQUI, en cada respuesta, igual que en
     // gramatica y en vocabulario. Antes se apuntaba todo junto al terminar la
     // tanda: la barra pegaba un salto de hasta veinte puntos de una vez, y si
     // te salias a la mitad no contaba nada de lo que llevabas bien.
-    const seccion = preguntas[i].seccion || (mezcla ? null : funktion.funktion);
     if (seccion) {
       const peso = (preguntas[i].tipo && preguntas[i].tipo !== 'test' && preguntas[i].tipo !== 'mc') ? 2 : 1;
-      recordKommPracticed(lektionId, seccion, ok ? peso : 0, 1);
+      const leccionKomm = !mezcla ? getLektion(lektionId) : null;
+      const datosKomm = leccionKomm?.kommunikation || [];
+      const completaAntes = datosKomm.length > 0
+        && kommMastery(lektionId, datosKomm).practiced === datosKomm.length;
+      recordKommPracticed(lektionId, seccion, ok ? peso : 0, 1, { reviewMistake: reviewMistakes });
+      if (ok && !completaAntes && datosKomm.length > 0
+        && kommMastery(lektionId, datosKomm).practiced === datosKomm.length) {
+        coronaRecienCompletada.current = true;
+      }
       apuntados.current += 1;
     }
     const rSeg = apuntarRespuesta(ok);
@@ -436,6 +563,11 @@ export default function KommPractice({
 
   function verEstado(idx) {
     setI(idx);
+    if (reviewMistakes) {
+      setJuzgada(null);
+      fox.sigue();
+      return;
+    }
     const hecho = resultados.current[idx];
     if (hecho) {
       setJuzgada(hecho.ok);
@@ -446,16 +578,54 @@ export default function KommPractice({
   }
 
   function atras() {
+    if (navegacionLibre) {
+      moverRepaso(-1);
+      return;
+    }
     if (i === 0) return;
     verEstado(i - 1);
   }
 
   function siguiente() {
+    if (navegacionLibre) {
+      moverRepaso(1);
+      return;
+    }
     if (i + 1 < preguntas.length) {
       verEstado(i + 1);
       return;
     }
-    const pct = Math.round((aciertos.current / preguntas.length) * 100);
+    finalizar();
+  }
+
+  function moverRepaso(direction) {
+    if (reviewMistakes && resultados.current[i]?.ok) {
+      reviewHistory.current.push(resultados.current[i]);
+      const nextQueue = [...preguntas];
+      nextQueue.splice(i, 1);
+      const nextResults = [...resultados.current];
+      nextResults.splice(i, 1);
+      resultados.current = nextResults;
+      setReviewQueue(nextQueue);
+      if (!nextQueue.length) {
+        finalizar();
+        return;
+      }
+      const nextIndex = direction > 0
+        ? Math.min(i, nextQueue.length - 1)
+        : (i === 0 ? nextQueue.length - 1 : i - 1);
+      verEstado(nextIndex);
+      return;
+    }
+    if (!preguntas.length) return;
+    verEstado((i + direction + preguntas.length) % preguntas.length);
+  }
+
+  function finalizar() {
+    if (finalizado.current) return;
+    finalizado.current = true;
+    const total = reviewMistakes ? reviewTotal.current : preguntas.length;
+    const pct = Math.round((aciertos.current / total) * 100);
     // Lo de cada apartado ya se ha ido apuntando respuesta a respuesta; aqui
     // solo queda avisar a la lista de que se repinte.
     if (apuntados.current > 0) onHecho?.();
@@ -464,18 +634,17 @@ export default function KommPractice({
     // ejercicios eran los únicos de la app que no contaban para nada: podías
     // pasarte una tarde en Kommunikation y la portada seguía en cero.
     const segundos = Math.max(1, Math.round((Date.now() - desde.current) / 1000));
-    const total = preguntas.length;
     const acc = total ? aciertos.current / total : 0;
     let xp = aciertos.current * 10 + (total - aciertos.current) * 2;
     if (acc >= 0.9) xp += 5;
     bumpSessions();
     // Lo que devuelve dice si esta tanda ha subido de nivel.
-    const racha = recordActivity(xp);
+    const racha = recordActivity(xp, Date.now() - desde.current);
     const run = saveRun({
       topicId: 'komm:' + lektionId,
       topicName: 'Kommunikation · ' + (typeof funktion === 'object' ? (funktion?.funktion || '') : (funktion || '')),
       mode: 'komm',
-      game: 'komm',
+      game: gameId,
       correct: aciertos.current,
       total,
       accuracy: Math.round(acc * 100) / 100,
@@ -483,11 +652,11 @@ export default function KommPractice({
       xp
     });
     const rank = rankOfRun(run.id, 'komm:' + lektionId);
-    setFin({
+    const resultadoFinal = aplicarBonoRachaFinal({
       pct,
       segundos,
       // Cuantas has fallado, para el boton de repetirlas.
-      fallos: resultados.current.filter((r) => !r.ok).length,
+      fallos: reviewMistakes ? 0 : resultados.current.filter((r) => r && !r.ok).length,
       aciertos: aciertos.current,
       total,
       xp,
@@ -497,11 +666,21 @@ export default function KommPractice({
       rachaMax: mejorSeguidas.current,
       rachaRecord: ultimaSeguidas.current,
       rank,
-      subida: racha.events.find((e) => e.type === 'level') || null
+      subida: racha.events.find((e) => e.type === 'level') || null,
+      coronaRecienCompletada: coronaRecienCompletada.current
     });
+    setFin(resultadoFinal);
+    if (!reviewMistakes) {
+      onGuardarResumen?.({
+        fin: resultadoFinal,
+        resultados: reviewHistory.current.length ? reviewHistory.current : resultados.current
+      });
+    }
   }
 
   function otraVez() {
+    onLimpiarResumen?.();
+    finalizado.current = false;
     aciertos.current = 0;
     resultados.current = [];
     apuntados.current = 0;
@@ -518,6 +697,8 @@ export default function KommPractice({
   function repetirFallos() {
     const malas = resultados.current.filter((r) => !r.ok).map((r) => r.pregunta).filter(Boolean);
     if (!malas.length) return;
+    onLimpiarResumen?.();
+    finalizado.current = false;
     resultados.current = [];
     apuntados.current = 0;
     aciertos.current = 0;
@@ -532,93 +713,160 @@ export default function KommPractice({
 
   if (fin) {
     const aprobado = fin.pct >= APROBADO;
+    const fallos = resultados.current.filter((r) => r && !r.ok);
+    const leccionKomm = lektionId && !mezcla ? getLektion(lektionId) : null;
+    const maestriaKomm = leccionKomm?.kommunikation?.length
+      ? kommMastery(lektionId, leccionKomm.kommunikation)
+      : null;
+    const kommunikationCompleta = !!maestriaKomm
+      && maestriaKomm.total > 0
+      && maestriaKomm.practiced === maestriaKomm.total;
+    const coronaGanadaEnEstaSesion = Boolean(fin.coronaRecienCompletada || bonoCorona > 0);
+    const celebracion = coronaGanadaEnEstaSesion ? 'dominio' : fin.pct === 100 ? 'suave' : null;
     return (
-      <div className="card center stack kp-fin">
-        {/* La misma cabecera que en gramatica y en vocabulario: el emoji
-            manda y el porcentaje baja a su tarjeta. Un 100% gigante en
-            verde no dice si es para celebrarlo o no; una copa, si. */}
-        <div className="confetti-badge">{fin.pct === 100 ? '🏆' : aprobado ? '🎉' : '💪'}</div>
-        <h2>{fin.pct === 100 ? t('sum.perfect') : aprobado ? t('sum.good') : t('sum.keep')}</h2>
-        <span className="pill ctx-tema">
-          💬 {typeof funktion === 'object' ? (funktion?.funktion || '') : (funktion || '')}
-        </span>
-        <div className="stat-grid">
-          <div className="card">
-            <div className="big-stat">{fin.pct}%</div>
-            <div className="muted">{t('sum.accuracy')}</div>
+      <div className="stack reading kp-resumen">
+        {celebracion && <Confeti intensidad={celebracion} />}
+        <div className="card center stack kp-fin">
+          <div className="confetti-badge">{fin.pct === 100 ? '🏆' : aprobado ? '🎉' : '💪'}</div>
+          <h2>{fin.pct === 100 ? t('sum.perfect') : aprobado ? t('sum.good') : t('sum.keep')}</h2>
+          <div className="vsummary-pills">
+            <span className="pill ctx-tema">💬 {contextTitle}</span>
+            {coronaGanadaEnEstaSesion && <span className="pill monedas vocab-corona-ganada">👑 {t('voc.crownEarned')}</span>}
           </div>
-          <div className="card">
-            <div className="big-stat">{fin.aciertos}/{fin.total}</div>
-            <div className="muted">{t('sum.hits')}</div>
-          </div>
-          <div className="card">
-            <div className="big-stat">
-              {Math.floor(fin.segundos / 60)}:{String(fin.segundos % 60).padStart(2, '0')}
+          <div className="stat-grid">
+            <div className="card">
+              <div className="big-stat">{fin.pct}%</div>
+              <div className="muted">{t('sum.accuracy')}</div>
             </div>
-            <div className="muted">{t('sum.time')}</div>
+            <div className="card">
+              <div className="big-stat">{fin.aciertos}/{fin.total}</div>
+              <div className="muted">{t('sum.hits')}</div>
+            </div>
+            <div className="card">
+              <div className="big-stat">
+                {Math.floor(fin.segundos / 60)}:{String(fin.segundos % 60).padStart(2, '0')}
+              </div>
+              <div className="muted">{t('sum.time')}</div>
+            </div>
           </div>
+          <Premios
+            subida={fin.subida}
+            xp={fin.xp}
+            monedas={Math.max(0, (Number(fin.monedas) || 0) - (Number(fin.bonoRachaFinal) || 0))}
+            bonoRachaFinal={fin.bonoRachaFinal || 0}
+            bonoCorona={bonoCorona}
+            bonoDia={fin.bonoDia}
+            rachaMax={fin.rachaMax}
+            rachaRecord={fin.rachaRecord}
+            dias={fin.dias}
+            rank={fin.rank}
+          />
+          {!mezcla && (
+            <p className={aprobado ? '' : 'muted'}>
+              {aprobado ? t('komm.exPassed') : t('komm.exFailed', { p: APROBADO })}
+            </p>
+          )}
         </div>
-        <Premios
-          subida={fin.subida}
-          xp={fin.xp}
-          monedas={fin.monedas}
-          bonoDia={fin.bonoDia}
-          rachaMax={fin.rachaMax}
-          rachaRecord={fin.rachaRecord}
-          dias={fin.dias}
-          rank={fin.rank}
-        />
-        {/* En la mezcla no hay apartado que completar: la nota es la nota. */}
-        {!mezcla && (
-          <p className={aprobado ? '' : 'muted'}>
-            {aprobado ? t('komm.exPassed') : t('komm.exFailed', { p: APROBADO })}
-          </p>
-        )}
-        <div className="row" style={{ gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-          {/* Lo fallado, otra vez y nada más. */}
-          {fin.fallos > 0 && (
-            <button className="btn-primary" onClick={repetirFallos}>
-              {t('sum.retryFails', { n: fin.fallos })}
+
+        <div className="btn-row resumen-acciones">
+          {fallos.length > 0 && (
+            <button className="btn-primary resumen-retry" onClick={repetirFallos}>
+              <span className="op-tecla atajo-final">Enter</span>
+              {t('sum.retryFails', { n: fallos.length })}
             </button>
           )}
-          <button className={fin.fallos > 0 ? 'btn-ghost' : 'btn-primary'} onClick={otraVez}>
-            {t('komm.practiceAgain')}
+          <button className={'resumen-otra ' + (fallos.length > 0 ? 'btn-ghost' : 'btn-primary')} onClick={otraVez}>
+            {t('sum.again')}
           </button>
-          <button className="btn-ghost" onClick={onSalir}>
-            {volverA === 'ejercicios'
-              ? t('vsum.backExercises')
-              : volverA === 'teoria'
-                ? t('komm.backTheory')
-                : t('back')}
+          <button className="btn-ghost resumen-volver" onClick={onSalir}>
+            {t('vsum.backExercises')}
           </button>
         </div>
+
+        {fallos.length > 0 && (
+          <div className="card stack">
+            <h3>{t('vsum.toReview')} ({fallos.length})</h3>
+            {fallos.map((r, idx) => {
+              const pregunta = r.pregunta;
+              const de = pregunta.explica?.de || pregunta.item?.answer || pregunta.item?.solution?.join(' ') || '';
+              const es = pregunta.explica?.es || '';
+              return (
+                <div className="mistake" key={`${idx}-${de}`}>
+                  <div className="de">{de}</div>
+                  {es && <div className="muted" style={{ fontSize: '0.86rem' }}><span className="lang-tag">{codigoIdioma()}</span>{tc(es)}</div>}
+                  {r.tuya && <div className="muted" style={{ fontSize: '0.86rem', marginTop: 4 }}>{pick('Tu respuesta: ', 'Your answer: ')}{r.tuya}</div>}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
 
   const buena = p?.item?.answer || (p?.item?.solution || []).join(' ');
+  const reviewResult = reviewMistakes ? resultados.current[i] : null;
+  const reviewRemaining = reviewMistakes ? Math.max(0, preguntas.length - (juzgada === true ? 1 : 0)) : 0;
+  const reviewPosition = reviewMistakes ? (p?._reviewPosition || i + 1) : i + 1;
+  const reviewProgressTotal = reviewMistakes ? reviewTotal.current : preguntas.length;
+  const reviewCounterTotal = reviewMistakes ? reviewRemaining : reviewProgressTotal;
+  const reviewCounterPosition = reviewMistakes ? Math.min(i + 1, reviewRemaining) : reviewPosition;
+  const progressPct = navegacionLibre
+    ? (reviewMistakes
+      ? ((reviewProgressTotal - reviewRemaining) / Math.max(1, reviewProgressTotal)) * 100
+      : ((reviewPosition - 1) / Math.max(1, reviewProgressTotal)) * 100)
+    : (i / preguntas.length) * 100;
+  const contextReviewLabel = reviewMistakes
+    ? t('gr.reviewWeakPill')
+    : reviewMarked
+      ? t('star.reviewPill')
+      : null;
 
   return (
     <div className="stack kp">
       <div className="progress-top">
         <button className="btn-ghost" onClick={onSalir} title={t('back')}>✕</button>
-        <div className="bar"><span style={{ width: ((i + (juzgada !== null ? 1 : 0)) / preguntas.length) * 100 + '%' }} /></div>
-        {i > 0 && resultados.current[i - 1] && (
+        <div className="bar"><span style={{ width: progressPct + '%' }} /></div>
+        {navegacionLibre ? (
+          <>
+            <button className="btn-ghost ses-atras ses-icon-btn" onClick={atras} disabled={preguntas.length < 2 && juzgada !== true} title={t('ses.prev')}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button className="btn-ghost ses-siguiente ses-icon-btn" onClick={siguiente} disabled={preguntas.length < 2 && juzgada !== true} title={t('ses.next')}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
+        ) : i > 0 && resultados.current[i - 1] && (
           <button className="btn-ghost ses-atras ses-icon-btn" onClick={atras} title={t('ses.prev')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
           </button>
         )}
-        <span className="timer">{i + 1}/{preguntas.length}</span>
+        <span className="timer">{navegacionLibre
+          ? `${reviewCounterPosition}/${reviewCounterTotal}`
+          : `${i + 1}/${preguntas.length}`}</span>
       </div>
 
       {/* El nombre de la funcion es CONTEXTO, no un enunciado. Llevaba la
           misma clase que el enunciado del ejercicio y salian dos lineas
           grises identicas seguidas, sin saber cual era cual. */}
       <div className="ctx-fila">
-        <span className="pill ctx-tema">
-          💬 {typeof funktion === 'object' ? (funktion?.funktion || '') : (funktion || '')}
+        <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
+          <span className="pill ctx-tema">
+            💬 {contextTitle}
+          </span>
+          {mezcla && mixBandNames.map((name) => <span key={name} className="pill ctx-tema">{name}</span>)}
+          {mezcla && mixDifficultyIds.map((id) => (
+            <span key={id} className="pill ctx-tema">{id === 'easy' ? pick('Fácil', 'Easy') : pick('Difícil', 'Difficult')}</span>
+          ))}
+          {!(mezcla && gameId === 'komm') && <GameModePill mode={gameId} />}
+          {finishTopic && <span className="pill ctx-tema">{t('voc.finishPill')}</span>}
+          {contextReviewLabel && <span className="pill ctx-tema">{contextReviewLabel}</span>}
         </span>
         <span className="row" style={{ gap: 8 }}>
           <StarButton item={starItem} />
@@ -629,6 +877,7 @@ export default function KommPractice({
 
       {/* key: sin él, React reaprovecha el componente entre preguntas y se
           queda la respuesta anterior ya marcada. */}
+      <div key={i} className="question-swap">
       {p.tipo === 'mc' ? (
         <MultipleChoice key={i} item={p.item} onAnswer={contestar} />
       ) : p.tipo === 'escribir' ? (
@@ -648,7 +897,7 @@ export default function KommPractice({
           {p.explica && (
             <div className="es">
               <span className="lang-tag">{codigoIdioma()}</span>
-              {p.explica.es}
+              {tc(p.explica.es)}
             </div>
           )}
           {/* Cuando fallas, cual era la buena. Solo si aporta algo: en
@@ -658,14 +907,17 @@ export default function KommPractice({
           {!juzgada && buena && buena !== p.explica?.de && buena !== p.explica?.es && (
             <div className="es">
               {t('vs.answerIs')}{' '}
-              <strong>{buena}</strong>
+              <strong>{tc(buena)}</strong>
             </div>
           )}
           <button className="btn-primary" style={{ marginTop: 14 }} onClick={siguiente}>
-            {i + 1 < preguntas.length ? t('ueb.siguiente') : t('ueb.terminar')}
+            {p.tipo === 'escribir' && i + 1 < preguntas.length
+              ? pick('Siguiente', 'Next')
+              : (i + 1 < preguntas.length ? t('ueb.siguiente') : t('ueb.terminar'))}
           </button>
         </div>
       )}
+      </div>
       {/* El zorro, como en los demás ejercicios: reacciona a cada respuesta y
           se calla mientras está el pie de la corrección, que es donde se le
           montaría el bocadillo. */}

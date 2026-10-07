@@ -2671,7 +2671,7 @@ export const A11 = {
             { de: 'das Yoga', es: 'el yoga', ex: 'Yoga hilft mir gegen den Stress.', exEs: 'El yoga me ayuda contra el estrés.' },
             { de: 'das Fitnessstudio', es: 'el gimnasio', ex: 'Ich habe eine Karte fürs Fitnessstudio.', exEs: 'Tengo abono para el gimnasio.' },
             { de: 'das Eislaufen', es: 'el patinaje sobre hielo', ex: 'Im Winter gehen wir vor dem Rathaus eislaufen.', exEs: 'En invierno vamos a patinar delante del ayuntamiento.' },
-            { de: 'das Handball', es: 'el balonmano', ex: 'In der Schule habe ich Handball gespielt.', exEs: 'En el colegio jugaba al balonmano.' },
+            { de: 'der Handball', es: 'el balonmano', ex: 'In der Schule habe ich Handball gespielt.', exEs: 'En el colegio jugaba al balonmano.' },
             { de: 'der Marathon', es: 'el maratón', ex: 'Im April läuft halb Wien den Marathon.', exEs: 'En abril media Viena corre el maratón.' },
             { de: 'das Turnen', es: 'la gimnasia', ex: 'Meine Tochter geht zum Turnen.', exEs: 'Mi hija va a gimnasia.' }
           ]

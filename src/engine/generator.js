@@ -7,9 +7,10 @@ import { weakConcepts, freshConcepts, itemSeenRecently, conceptosQueFaltan } fro
 import { getSettings, aiAvailable } from '../lib/settings.js';
 import { generateItems, generateLektionItems } from '../lib/ai.js';
 import { getLektion } from '../lib/kursbuch/index.js';
+import { pickKasus, porEn } from '../lib/kasus.js';
 // Alias: en este archivo `pick` ya es el de rng.js (elige al azar), así que el
 // del idioma entra con otro nombre para no confundirlos.
-import { pick as enIdioma } from '../lib/i18n.js';
+import { pick as enIdioma, codigoIdioma } from '../lib/i18n.js';
 
 export function itemKey(topicId, it) {
   return `${topicId}:${it.sentence || it.display || ''}|${it.solution ? it.solution.join(' ') : ''}`;
@@ -43,45 +44,117 @@ function candidatePool(topic, rng, n) {
   return out;
 }
 
-// Convierte un item (mc u order) en uno de "¿correcto o no?".
-function toJudge(rng, it) {
-  const wantCorrect = rng() < 0.5;
+// Frases que hablan SOBRE el alemán en vez de ser alemán: pronunciación,
+// ortografía, terminaciones, reglas... («In „Zimmer“ ist das „i“ ___»,
+// «Der Akzent liegt auf der ___ Silbe», «64 = ___»). Rellenadas no son una
+// frase que se pueda juzgar como correcta o con error.
+const TERMINOS_META = [
+  'Silbe\\p{L}*', 'Wort(anfang|ende|mitte)', 'Vokale?', 'Konsonanten?', 'Buchstaben?', 'chs?', 'Endung(en)?', 'Akzent', 'betont',
+  'spricht man', 'schreibt man', 'Position', 'W-Frage', 'Ja-/Nein-Frage', 'Wort', '\\p{L}*wörter',
+  'Nomen', 'Genus', 'Artikel', 'Verb', 'Infinitiv', 'Subjekt', 'Pronomen', 'Adjektiv', 'Präposition',
+  'Singular', 'Plural', 'Konjunktiv', 'Nominativ', 'Akkusativ', 'Dativ', 'Genitiv'
+];
+const FRASE_META = new RegExp(
+  [
+    '[„“”"«»→=()]', // citas, flechas, ecuaciones y aclaraciones
+    '\\d\\s+\\d', // cifras sueltas («1 0 ___ 0»)
+    '^\\s*Ordne\\b',
+    '\\bklingt\\b[^.!?]*___', // «Eine höfliche Bitte klingt ___»
+    `\\b(${TERMINOS_META.join('|')})\\b`
+  ].join('|'),
+  'iu'
+);
+// Una pista final entre paréntesis («(wohin?)», «(a nosotros)») no hace meta
+// la frase: sigue siendo alemán normal.
+const PISTA_FINAL = /\s*\([^()]*\)\s*$/;
+
+// Lo que no es una palabra que pueda ir en el hueco: terminaciones sueltas
+// («-st», «arbeite-»), huecos dobles («aus … in») o frases enteras.
+function rellenoValido(o) {
+  const s = String(o ?? '').trim();
+  return !!s && !/^-|-$|…|\.\.\.|[.?!]$/.test(s);
+}
+
+function distractores(it) {
+  return it.options.filter((o) => o !== it.answer && rellenoValido(o));
+}
+
+// ¿Se puede convertir en "¿correcto o no?"? Solo frases alemanas de verdad:
+// un "order" de al menos tres piezas, o un test con UN hueco cuya frase
+// rellena sea alemán normal. Las preguntas de comprensión sin hueco
+// («Welches Wort klingt wie „ai“?») salían tal cual, sin opciones, y no
+// había nada que juzgar.
+function sePuedeJuzgar(it) {
+  if (it?.type === 'order') return Array.isArray(it.solution) && it.solution.length >= 3;
+  if (it?.type !== 'mc' || !Array.isArray(it.options)) return false;
+  const frase = String(it.sentence || '');
+  return (
+    (frase.match(/___/g) || []).length === 1 &&
+    !FRASE_META.test(frase.replace(PISTA_FINAL, '')) &&
+    rellenoValido(it.answer) &&
+    distractores(it).length > 0
+  );
+}
+
+// Convierte un item (mc u order) en uno de "¿correcto o no?", o null si no
+// hay frase que juzgar. Sin `wantCorrect`, a cara o cruz; luego
+// equilibrarJuicios reparte la tanda a medias.
+function toJudge(rng, it, wantCorrect = rng() < 0.5) {
+  if (!sePuedeJuzgar(it)) return null;
+  let display, correctForm;
   if (it.type === 'order') {
-    const solStr = it.solution.join(' ');
-    let tokens = [...it.solution];
-    if (!wantCorrect && tokens.length >= 3) {
+    correctForm = it.solution.join(' ');
+    const tokens = [...it.solution];
+    if (!wantCorrect) {
+      // Se cambian dos piezas contiguas; la primera nunca se mueve.
       const i = 1 + Math.floor(rng() * (tokens.length - 2));
       [tokens[i], tokens[i + 1]] = [tokens[i + 1], tokens[i]];
     }
-    const shown = tokens.join(' ');
-    return {
-      id: it.id,
-      type: 'judge',
-      conceptId: it.conceptId,
-      display: shown,
-      isCorrect: shown === solStr,
-      correctForm: solStr,
-      translation: it.translation,
-      explanation: it.explanation,
-      source: it.source
-    };
+    display = tokens.join(' ');
+  } else {
+    const filler = wantCorrect ? it.answer : pick(rng, distractores(it));
+    display = String(it.sentence).replace('___', filler);
+    correctForm = String(it.sentence).replace('___', it.answer);
   }
-  // mc
-  const filler = wantCorrect
-    ? it.answer
-    : pick(rng, it.options.filter((o) => o !== it.answer)) || it.answer;
-  const shown = String(it.sentence).replace('___', filler);
   return {
     id: it.id,
     type: 'judge',
     conceptId: it.conceptId,
-    display: shown,
-    isCorrect: filler === it.answer,
-    correctForm: String(it.sentence).replace('___', it.answer),
+    display,
+    // Por texto y no por el sorteo: si el cambio deja la frase igual (dos
+    // piezas iguales), es correcta.
+    isCorrect: display === correctForm,
+    correctForm,
     translation: it.translation,
     explanation: it.explanation,
-    source: it.source
+    source: it.source,
+    // El ejercicio de partida, para poder rehacerlo del otro lado al
+    // equilibrar la tanda. No sale de buildSessionSmart.
+    _origen: it
   };
+}
+
+// A cara o cruz por frase, una tanda de 10 podía traer 8 correctas y 2 con
+// error. Esto deja la mitad de cada (la que sobra en tandas impares, al azar).
+// Los juicios sin _origen (ya repartidos) cuentan pero no se tocan.
+function equilibrarJuicios(rng, items) {
+  const juicios = items.filter((it) => it.type === 'judge');
+  const libres = shuffle(rng, juicios.filter((it) => it._origen));
+  const fijosBien = juicios.filter((it) => !it._origen && it.isCorrect).length;
+  const objetivo = Math.floor(juicios.length / 2) + (juicios.length % 2 && rng() < 0.5 ? 1 : 0);
+  const faltanBien = Math.max(0, Math.min(libres.length, objetivo - fijosBien));
+  const rehechos = new Map(
+    libres.map((it, i) => [it, toJudge(rng, it._origen, i < faltanBien) || it])
+  );
+  return items.map((it) => rehechos.get(it) || it);
+}
+
+function quitarOrigen(items) {
+  return items.map((it) => {
+    if (!('_origen' in it)) return it;
+    const { _origen, ...limpio } = it;
+    return limpio;
+  });
 }
 
 // Convierte un item de opción múltiple en uno de ordenar: se rellena el hueco
@@ -114,6 +187,16 @@ function toOrder(rng, it) {
   };
 }
 
+// «Type it» necesita un hueco único y una respuesta única. Las preguntas de
+// comprensión sin hueco (p. ej. «¿Qué caso rige mit?») y los ejercicios con
+// varios huecos no se pueden pasar a un único campo de texto sin volverlos
+// ambiguos o imposibles de corregir.
+function sePuedeEscribir(it) {
+  if (!['mc', 'write'].includes(it?.type) || !String(it.sentence || '').trim() || !String(it.answer || '').trim()) return false;
+  const huecos = String(it.sentence).match(/___/g) || [];
+  return huecos.length === 1 && !/\.\.\./.test(String(it.answer));
+}
+
 // Filtra/transforma el pool según el tipo de juego elegido.
 function applyGameType(rng, items, gameType, size = 10) {
   if (!gameType || gameType === 'mixed') return items;
@@ -124,22 +207,24 @@ function applyGameType(rng, items, gameType, size = 10) {
     if (nativos.length >= size * 2) return nativos;
     return [...nativos, ...convertidos];
   }
-  // Un texto con varios huecos no se puede convertir en "¿correcto o no?": no
-  // hay UNA palabra que enseñar bien o mal. Se quedan fuera, y toJudge sigue
-  // viendo solo lo que sabe convertir (sin este filtro reventaba al leer
-  // it.options, que un cloze no tiene).
-  if (gameType === 'judge') return items.filter((it) => it.type !== 'cloze').map((it) => toJudge(rng, it));
+  // Solo lo que es una frase alemana con UNA cosa que pueda estar bien o mal
+  // (ver sePuedeJuzgar): fuera textos con varios huecos, preguntas de
+  // comprensión y reglas sobre el idioma.
+  if (gameType === 'judge') return items.filter(sePuedeJuzgar).map((it) => toJudge(rng, it));
   // Escribir y contrarreloj no necesitan material nuevo: son los mismos huecos
   // de test, uno sin las opciones y el otro con un reloj encima.
   if (gameType === 'write') {
-    return items.filter((it) => it.type === 'mc').map((it) => ({ ...it, type: 'write' }));
+    return items.filter(sePuedeEscribir).map((it) => ({ ...it, type: 'write' }));
   }
   if (gameType === 'blitz') return items.filter((it) => it.type === 'mc');
   return items;
 }
 
-export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mixed' } = {}) {
+export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mixed', difficultyIds = [] } = {}) {
   const rng = makeRng(randomSeed());
+  const esTemaMezcla = topic.id === 'mix' || String(topic.id || '').startsWith('mix:');
+  const esMezclaGramatica = gameType === 'grammar-mixed' && esTemaMezcla;
+  const esTandaMixta = gameType === 'mixed' || esMezclaGramatica;
   const ids = topic.concepts.map((c) => c.id);
   const weak = new Set(mode === 'learn' ? [] : weakConcepts(ids));
   const fresh = new Set(freshConcepts(ids));
@@ -147,11 +232,47 @@ export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mix
   const faltan = new Set(mode === 'faltan' ? conceptosQueFaltan(ids) : []);
 
   let pool = candidatePool(topic, rng, size * 10);
+  // «Mezcla de gramática» comparte el tema virtual con «De todo un poco»,
+  // pero los marcos de diálogo pertenecen a Comunicación. Se filtran antes
+  // del sorteo para que tampoco reaparezcan al rellenar preguntas recientes.
+  if (esMezclaGramatica) {
+    pool = pool.filter((it) => !String(it.conceptId || '').startsWith('komm:'));
+  }
+  const soloFacil = difficultyIds.includes('easy') && !difficultyIds.includes('hard');
+  const soloDificil = difficultyIds.includes('hard') && !difficultyIds.includes('easy');
+  // En Fácil quitamos los formatos de respuesta libre. Las preguntas de
+  // opción múltiple siguen en la selección y conservan sus distractores.
+  if (soloFacil) {
+    pool = pool.filter((it) => !['write', 'open', 'cloze'].includes(it.type));
+  }
+  // Ordenar palabras es un formato fácil; no debe entrar en una tanda difícil.
+  if (soloDificil) {
+    pool = pool.filter((it) => it.type !== 'order');
+  }
+  // Una pregunta de Kasus Trainer entra tanto en «De todo un poco» como en
+  // Gramática mixta. Se usa el mismo banco y las mismas opciones que el juego.
+  if ((topic.id === 'mix' && gameType === 'mixed') || esMezclaGramatica) {
+    pool.push(...pickKasus(Math.max(4, size)).map((f) => ({
+      id: `mix-kasus-${f.id}`,
+      type: 'mc',
+      conceptId: 'kasus:trainer',
+      prompt: enIdioma('Kasus Trainer · elige el artículo correcto', 'Kasus Trainer · choose the correct article'),
+      sentence: `${f.vor ? f.vor + ' ' : ''}___ ${f.nach}`,
+      options: f.options,
+      answer: f.art,
+      translation: f.es,
+      explanation: codigoIdioma() === 'en' ? porEn(f.por) : f.por
+    })));
+  }
   pool = applyGameType(rng, pool, gameType, size);
 
   const seen = new Set();
   const uniq = [];
   for (const it of pool) {
+    // «Finish the topic» tiene que poder encontrar todas las preguntas de las
+    // reglas pendientes. Si primero se llena `uniq` con reglas ya completas,
+    // el límite de size*3 puede cortar el pool antes de llegar a ellas.
+    if (mode === 'faltan' && !faltan.has(it.conceptId)) continue;
     const k = itemKey(topic.id, it);
     if (seen.has(k)) continue;
     seen.add(k);
@@ -159,9 +280,33 @@ export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mix
     it._key = k;
     uniq.push(it);
   }
+  if (topic.id === 'mix' && gameType === 'mixed') {
+    const asegurarContenido = (match) => {
+      if (uniq.some(match)) return;
+      const it = pool.find(match);
+      if (!it) return;
+      it._key = itemKey(topic.id, it);
+      uniq.push(it);
+    };
+    asegurarContenido((it) => it.conceptId === 'kasus:trainer');
+    asegurarContenido((it) => String(it.conceptId || '').startsWith('komm:'));
+    // El diálogo que pregunta qué habías dicho se renderiza como bocadillos.
+    // Garantízalo también aunque el filtro de repetición haya agotado esas
+    // preguntas; incluir cualquier otro ejercicio de Kommunikation no basta.
+    asegurarContenido((it) => String(it.id || '').startsWith('komm-understand-'));
+    asegurarContenido((it) => String(it.id || '').startsWith('komm-reply-'));
+  }
+  if (esMezclaGramatica && !uniq.some((it) => it.conceptId === 'kasus:trainer')) {
+    const kasus = pool.find((it) => it.conceptId === 'kasus:trainer');
+    if (kasus) {
+      kasus._key = itemKey(topic.id, kasus);
+      uniq.push(kasus);
+    }
+  }
   // Si el filtro "visto hace poco" deja pocos, rellena con el pool completo.
   if (uniq.length < size) {
     for (const it of pool) {
+      if (mode === 'faltan' && !faltan.has(it.conceptId)) continue;
       const k = itemKey(topic.id, it);
       if (uniq.some((x) => x._key === k)) continue;
       it._key = k;
@@ -214,8 +359,54 @@ export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mix
     }
   };
 
-  // El sitio reservado, antes de repartir el resto.
-  if (gameType === 'mixed' && size >= 4) {
+  if (mode === 'weak') {
+    // El repaso de fallos lleva una pregunta por cada regla que aparece en el
+    // botón. No lo rellenes con reglas sanas ni con preguntas extra.
+    for (const conceptId of weak) {
+      let candidates = uniq.filter((it) => it.conceptId === conceptId);
+      if (!candidates.length) {
+        candidates = pool
+          .filter((it) => it.conceptId === conceptId)
+          .map((it) => ({ ...it, _key: it._key || itemKey(topic.id, it) }));
+      }
+      if (candidates.length) take([pick(rng, candidates)], 1);
+    }
+    return chosen;
+  }
+
+  // Reserva categorías antes del reparto aleatorio: si se hace después, el
+  // cupo ya está lleno y Comunicación desaparece entre tantos frames de gramática.
+  if (esMezclaGramatica) {
+    take(uniq.filter((it) => it.conceptId === 'kasus:trainer'), 1);
+  }
+  if (gameType === 'mixed' && topic.id === 'mix') {
+    // El tamaño de la tanda se configura entre 4 y 30. Comunicación ocupa
+    // aproximadamente la mitad del cupo no vocabulario, con un mínimo de las
+    // dos direcciones de diálogo en tandas pequeñas y sin un tope fijo en las
+    // grandes.
+    const plazasKomm = Math.min(size - 1, Math.max(2, Math.floor(size / 2)));
+    if (plazasKomm >= 2) {
+      take(uniq.filter((it) => String(it.id || '').startsWith('komm-understand-')), 1);
+      take(uniq.filter((it) => String(it.id || '').startsWith('komm-reply-')), 1);
+    } else {
+      const dialogos = [
+        uniq.filter((it) => String(it.id || '').startsWith('komm-understand-')),
+        uniq.filter((it) => String(it.id || '').startsWith('komm-reply-'))
+      ].filter((grupo) => grupo.length);
+      if (dialogos.length) take(pick(rng, dialogos), 1);
+    }
+    if (plazasKomm >= 3) {
+      const prefixes = ['komm-write-', 'komm-order-', 'komm-q-', 'komm-r-'];
+      const gruppen = prefixes
+        .map((prefix) => uniq.filter((it) => String(it.id || '').startsWith(prefix)))
+        .filter((gruppe) => gruppe.length);
+      if (gruppen.length) take(pick(rng, gruppen), 1);
+    }
+    // El resto mantiene variedad gramatical y visual: huecos y Kasus cuando
+    // el tamaño deja sitio, y después el reparto cubre los otros formatos.
+    if (size >= 4) take(uniq.filter((it) => it.type === 'cloze'), RESERVA_CLOZE);
+    if (size >= 5) take(uniq.filter((it) => it.conceptId === 'kasus:trainer'), 1);
+  } else if (esTandaMixta && size >= 4) {
     take(uniq.filter((it) => it.type === 'cloze'), RESERVA_CLOZE);
   }
 
@@ -226,7 +417,12 @@ export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mix
   } else if (mode === 'learn') {
     take([...fItems, ...rItems], size);
   } else if (mode === 'random') {
-    take([...wItems, ...fItems, ...rItems], size);
+    take(
+      [...wItems, ...fItems, ...rItems].filter((it) =>
+        topic.id !== 'mix' || it.conceptId !== 'kasus:trainer'
+      ),
+      size
+    );
   } else {
     // Evita saturar con un único concepto débil limitando a máx 2 por concepto
     take(wItems, weak.size ? Math.min(Math.round(size * 0.4), weak.size * 2) : 0);
@@ -236,35 +432,31 @@ export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mix
   take(rItems, size - chosen.length);
   take([...wItems, ...fItems], size - chosen.length);
 
-  // En tandas mixtas ("De todo un poco"), diversifica los ejercicios para que
-  // haya una mezcla real y equilibrada de tipos: test, ordenar, escribir y cazar el error.
-  if (gameType === 'mixed' && chosen.length >= 3) {
+  // En tandas mixtas, garantiza los formatos que admite una pregunta normal:
+  // escribir, ordenar y juzgar, además de los huecos y test seleccionados arriba.
+  if (esTandaMixta && chosen.length >= 3) {
     const mcIndices = [];
     chosen.forEach((it, idx) => {
-      if (it.type === 'mc' && it.sentence && it.answer && !it.sentence.startsWith('—')) {
+      if (sePuedeEscribir(it) && !it.sentence.startsWith('—') && it.conceptId !== 'kasus:trainer' && !String(it.conceptId || '').startsWith('komm:')) {
         mcIndices.push(idx);
       }
     });
     const shuffled = shuffle(rng, mcIndices);
-    const nWrite = Math.max(1, Math.floor(chosen.length * 0.25));
-    const nOrder = Math.max(1, Math.floor(chosen.length * 0.20));
-    const nJudge = Math.max(1, Math.floor(chosen.length * 0.20));
-
-    let pos = 0;
-    for (let w = 0; w < nWrite && pos < shuffled.length; w++) {
-      const idx = shuffled[pos++];
-      chosen[idx] = { ...chosen[idx], type: 'write' };
-    }
-    for (let o = 0; o < nOrder && pos < shuffled.length; o++) {
-      const idx = shuffled[pos++];
-      const ord = toOrder(rng, chosen[idx]);
-      if (ord) chosen[idx] = ord;
-    }
-    for (let j = 0; j < nJudge && pos < shuffled.length; j++) {
-      const idx = shuffled[pos++];
-      const jud = toJudge(rng, chosen[idx]);
-      if (jud) chosen[idx] = jud;
-    }
+    const usadosParaFormato = new Set();
+    const asegurar = (tipo, convertir) => {
+      if (chosen.some((it) => it.type === tipo)) return;
+      for (const idx of shuffled) {
+        if (usadosParaFormato.has(idx)) continue;
+        const convertido = convertir(chosen[idx]);
+        if (!convertido) continue;
+        chosen[idx] = convertido;
+        usadosParaFormato.add(idx);
+        return;
+      }
+    };
+    if (!soloFacil) asegurar('write', (it) => ({ ...it, type: 'write' }));
+    if (!soloDificil) asegurar('order', (it) => toOrder(rng, it));
+    asegurar('judge', (it) => toJudge(rng, it));
   }
 
   // Espaciado inteligente para evitar que dos ejercicios del mismo tipo o concepto salgan seguidos
@@ -282,7 +474,7 @@ export function buildSession(topic, { size = 10, mode = 'mixed', gameType = 'mix
     espaciados.push(pendientes.splice(bestIdx, 1)[0]);
   }
 
-  return espaciados.map(stripInternal);
+  return equilibrarJuicios(rng, espaciados.map(stripInternal));
 }
 
 function stripInternal(it) {
@@ -308,9 +500,20 @@ function stripInternal(it) {
 const ESPERA_RETO = 180000;
 const ESPERA_MEZCLA = 30000;
 
+// La tanda final puede mezclar plantillas e IA: se reparte a medias aquí, con
+// todo ya junto, y no antes.
 export async function buildSessionSmart(topic, opts = {}) {
+  const sesion = await armarSesion(topic, opts);
+  const rng = makeRng(randomSeed());
+  return { ...sesion, items: quitarOrigen(equilibrarJuicios(rng, sesion.items || [])) };
+}
+
+async function armarSesion(topic, opts) {
   const gt = opts.gameType || 'mixed';
   const size = opts.size || 10;
+  const weakReviewIds = opts.mode === 'weak'
+    ? weakConcepts((topic?.concepts || []).map((concept) => concept.id), size)
+    : [];
 
   // Tema de usuario generado con IA: usa directamente sus ejercicios guardados
   if (topic.custom && topic.userItems?.length) {
@@ -336,14 +539,20 @@ export async function buildSessionSmart(topic, opts = {}) {
       const items = await generateLektionItems({
         lektion: getLektion(topic.lektionId),
         focus: 'grammatik',
-        count: size
+        count: size,
+        notes: opts.mode === 'weak'
+          ? `Für die Fehlerwiederholung: Erstelle genau eine Frage zu jeder aufgeführten Regel und in derselben Reihenfolge. Regel-IDs und Regeln: ${weakReviewIds.map((id) => `${id}: ${topic.concepts.find((concept) => concept.id === id)?.name || id}`).join(' | ')}`
+          : ''
       });
       // La IA devuelve opción múltiple; si has pedido escribir o cazar el
       // error, se convierten igual que los de plantilla. Sin esto, en las
       // lecciones sin plantillas propias el botón de Escribir daba un test.
       const rng = makeRng(randomSeed());
+      const prepared = applyGameType(rng, items, gt).slice(0, size);
       return {
-        items: shuffleArray(applyGameType(rng, items, gt)),
+        items: opts.mode === 'weak'
+          ? prepared.map((item, index) => ({ ...item, conceptId: weakReviewIds[index] || item.conceptId }))
+          : shuffleArray(prepared),
         aiUsed: true,
         aiCount: items.length
       };
@@ -351,6 +560,10 @@ export async function buildSessionSmart(topic, opts = {}) {
       return { items: [], aiUsed: false, aiError: e.message };
     }
   }
+
+  // El repaso de fallos es una cola cerrada: no la rellenes con ejercicios de
+  // IA ni con reglas que no estaban en la cifra del botón.
+  if (opts.mode === 'weak') return { items: base, aiUsed: false };
 
   // La IA genera opción múltiple; solo la mezclamos en juegos que la admiten.
   //
@@ -373,7 +586,8 @@ export async function buildSessionSmart(topic, opts = {}) {
   // La IA devuelve opción múltiple y de ahí salen los demás: escribir es el
   // mismo hueco sin opciones, cazar el error enseña la frase con una pieza
   // cambiada y ordenar reparte la frase entera en piezas.
-  if (!aiAvailable() || share <= 0 || (topic.id === 'mix' && !aiMode)) {
+  const temaMezcla = topic.id === 'mix' || String(topic.id || '').startsWith('mix:');
+  if (!aiAvailable() || share <= 0 || (temaMezcla && !aiMode && (topic.id === 'mix' || gt === 'grammar-mixed'))) {
     return { items: aiMode ? buildSession(topic, { ...opts, mode: 'weak' }) : base, aiUsed: false };
   }
 
@@ -433,7 +647,9 @@ const ETIQUETAS_VOCAB = {
   'vocab:artikel': ['El artículo (der/die/das)', 'The article (der/die/das)'],
   'vocab:bedeutung': ['Qué significa la palabra', 'What the word means'],
   'vocab:ausdruck': ['Cómo se dice en alemán', 'How to say it in German'],
-  'vocab:schreibung': ['Cómo se escribe', 'How it is spelled']
+  'vocab:schreibung': ['Cómo se escribe', 'How it is spelled'],
+  'vocab:match': ['Emparejar palabras', 'Match the words'],
+  'vocab:hangman': ['Ahorcado', 'Hangman']
 };
 
 export function conceptLabel(topic, id) {

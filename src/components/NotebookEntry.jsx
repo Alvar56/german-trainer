@@ -11,6 +11,152 @@ import { ensureJob, clearJob } from '../lib/aiJobs.js';
 import { useAiJob } from '../lib/useAiJob.js';
 import Umlaut from './Umlaut.jsx';
 
+function parseCleanNotes(value) {
+  const sections = [];
+  const labels = [
+    { id: 'summary', match: /^(summary|resumen|zusammenfassung|überblick|overview)$/i },
+    { id: 'grammar', match: /^(grammar|gramática|gramatica|grammatik)$/i },
+    { id: 'vocabulary', match: /^(vocabulary|vocabulario|wortschatz|vokabeln)$/i },
+    { id: 'communication', match: /^(communication|comunicación|comunicacion|kommunikation|kommunikative ausdrücke)$/i },
+    { id: 'useful', match: /^(questions?|useful notes?|useful info(?:rmation)?|key points|información útil|informacion util|puntos clave|claves útiles|claves utiles|merkhilfen)$/i },
+    { id: 'doubts', match: /^(doubts?|dudas|fragen|zweifel|uncertainties)$/i }
+  ];
+  let current = null;
+
+  for (const sourceLine of String(value || '').split(/\r?\n/)) {
+    const line = sourceLine.trim();
+    if (!line) continue;
+    const cells = line.includes('|')
+      ? line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim())
+      : /\t/.test(line) ? line.split(/\t+/).map((cell) => cell.trim()) : null;
+    const heading = (cells?.length === 1 ? cells[0] : line).replace(/^#{1,6}\s*/, '').replace(/:$/, '').trim();
+    const sectionType = labels.find(({ match }) => match.test(heading));
+    if (sectionType) {
+      current = { id: sectionType.id, items: [] };
+      sections.push(current);
+      continue;
+    }
+
+    if (cells?.length > 1) {
+      const values = cells.filter(Boolean);
+      if (!values.length || values.every((cell) => /^:?-{2,}:?$/.test(cell))) continue;
+      const header = values.join(' ').toLowerCase();
+      if (/^(german|deutsch|word|term)\s+(translation|meaning|übersetzung|significado)$/.test(header)) continue;
+      if (/^(question|questions|original|wrong term)\s+(answer|correction|correct form|meaning)$/.test(header)) continue;
+      if (!current) {
+        current = { id: 'notes', items: [] };
+        sections.push(current);
+      }
+      const item = current.id === 'vocabulary'
+        ? `${values[0]} = ${values.slice(1).join(' — ')}`
+        : current.id === 'useful' && values.length > 1
+          ? `${values.slice(0, -1).join(' — ')} → ${values.at(-1)}`
+          : values.join(' — ');
+      if (item) current.items.push(item);
+      continue;
+    }
+    if (!current) {
+      current = { id: 'notes', items: [] };
+      sections.push(current);
+    }
+    const item = line.replace(/^(?:[-*•]|\d+[.)])\s+/, '').trim();
+    if (item) current.items.push(item);
+  }
+
+  return sections.filter((section) => section.items.length > 0);
+}
+
+function renderCleanExamples(value, fromStart = false) {
+  const text = String(value || '');
+  // En las reglas, los ejemplos alemanes van después de dos puntos o una
+  // barra y su traducción aparece justo después, entre paréntesis. En
+  // Información útil, el texto a la derecha de la flecha ya empieza por el
+  // ejemplo, por eso también se permite reconocerlo desde el principio.
+  const pattern = fromStart
+    ? /(^|[:/]\s*)([^:()/]*?[.!?])(\s*)(\([^()]*\))/g
+    : /([:/]\s*)([^:()/]*?[.!?])(\s*)(\([^()]*\))/g;
+  const parts = [];
+  let cursor = 0;
+  let key = 0;
+  for (const match of text.matchAll(pattern)) {
+    const [whole, boundary, example, gap, translation] = match;
+    const start = match.index;
+    if (start > cursor) parts.push(text.slice(cursor, start));
+    parts.push(
+      boundary,
+      <em key={'example-' + key++}>{example}</em>,
+      gap,
+      translation
+    );
+    cursor = start + whole.length;
+  }
+  if (!parts.length) return text;
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return parts;
+}
+
+function CleanNotesView({ value }) {
+  const sections = parseCleanNotes(value);
+  const labels = {
+    summary: pick('Resumen', 'Summary'),
+    grammar: pick('Gramática', 'Grammar'),
+    vocabulary: pick('Vocabulario', 'Vocabulary'),
+    communication: pick('Comunicación', 'Communication'),
+    useful: pick('Información útil', 'Useful info'),
+    doubts: pick('Dudas', 'Doubts'),
+    notes: pick('Apuntes', 'Notes')
+  };
+
+  return (
+    <div className="nb-clean-sections">
+      {sections.map((section, sectionIndex) => {
+        const label = labels[section.id] || labels.notes;
+        return (
+          <section className={'nb-clean-section nb-clean-section-' + section.id} key={section.id + sectionIndex}>
+            <h4 className="nb-clean-heading">
+              <span className={'nb-clean-label nb-clean-label-' + section.id}>{label}</span>
+            </h4>
+            {section.id === 'vocabulary' ? (
+              <table className="nb-clean-table">
+                <thead>
+                  <tr>
+                    <th scope="col">{pick('Alemán', 'German')}</th>
+                    <th scope="col">{pick('Traducción', 'Translation')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.items.map((item, itemIndex) => {
+                    const splitAt = item.search(/\s(?:=|→)\s/);
+                    const word = splitAt < 0 ? item : item.slice(0, splitAt).trim();
+                    const meaning = splitAt < 0 ? '' : item.slice(splitAt).replace(/^\s*(?:=|→)\s*/, '').trim();
+                    return <tr key={itemIndex}><td>{word}</td><td>{meaning}</td></tr>;
+                  })}
+                </tbody>
+              </table>
+            ) : (
+              <div className="nb-clean-items">
+                {section.items.map((item, itemIndex) => {
+                  const arrowAt = section.id === 'useful' ? item.indexOf('→') : -1;
+                  if (arrowAt >= 0) {
+                    return (
+                      <p className="nb-clean-item nb-clean-useful-item" key={itemIndex}>
+                        <span>{item.slice(0, arrowAt).trim()}</span>
+                        <span className="nb-clean-useful-arrow">→</span>
+                        <span>{renderCleanExamples(item.slice(arrowAt + 1).replace(/^\s*/, ''), true)}</span>
+                      </p>
+                    );
+                  }
+                  return <p className="nb-clean-item" key={itemIndex}>{renderCleanExamples(item)}</p>;
+                })}
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function NotebookEntry({ noteId, onBack, onDeleted, onReview }) {
   const [note, setNote] = useState(() => getNote(noteId));
   const [raw, setRaw] = useState(note?.raw || '');
@@ -103,7 +249,7 @@ export default function NotebookEntry({ noteId, onBack, onDeleted, onReview }) {
       )
     );
     ensureJob(JOB_ITEMS, () =>
-      generateNotebookItems({ raw, clean: note.clean, lektion, count: 8, ejercicios })
+      generateNotebookItems({ raw, clean: note.clean, lektion, count: 20, ejercicios })
     );
   }
 
@@ -150,7 +296,7 @@ export default function NotebookEntry({ noteId, onBack, onDeleted, onReview }) {
         {/* Borrar, en la fila de la fecha y a la derecha. Estaba al final de
             la página, donde en la versión sin IA se quedaba solo en una fila
             entera para él y había que bajar hasta abajo para verlo. */}
-        <button className="btn-ghost btn-sm nb-borrar" onClick={remove}>{t('delete')}</button>
+        <button className="btn-ghost btn-sm danger nb-borrar" onClick={remove}>{t('delete')}</button>
       </div>
 
       {lektion && (lektion.grammatik.length > 0 || lektion.woerter.length > 0) && (
@@ -267,10 +413,10 @@ export default function NotebookEntry({ noteId, onBack, onDeleted, onReview }) {
               {t('nb.regen')}
             </button>
           </div>
+          <CleanNotesView value={note.clean} />
           {esOtroIdioma(note.cleanLang) && (
-            <p className="aviso-idioma">⚠ {t('otroIdioma')}</p>
+            <p className="aviso-idioma nb-clean-language-warning">⚠ {t('otroIdioma')}</p>
           )}
-          <pre className="nb-clean-text">{note.clean}</pre>
         </div>
       )}
 
@@ -292,28 +438,23 @@ export default function NotebookEntry({ noteId, onBack, onDeleted, onReview }) {
           </button>
         </div>
       )}
-      {/* Los dos bloques de foto -resolver un ejercicio fotografiado y
-          describir una imagen- necesitan que alguien MIRE la foto. Sin IA no
-          hay quien, asi que no se pintan ni viajan en el fichero. */}
-      {!SIN_IA && (
-        <>
-          <NotePhoto
-            noteId={note.id}
-            modo="aufgabe"
-            lektion={lektion}
-            analisis={listaFotos(note, 'aufgabe')}
-            onCambio={(lista) => persist({ fotoAufgaben: lista, fotoAufgabe: null, fotoAnalyse: null })}
-          />
+      {/* Guardar fotos es una función local; la IA solo hace falta si se quieren
+          resolver los ejercicios o describir las imágenes. */}
+      <NotePhoto
+        noteId={note.id}
+        modo="aufgabe"
+        lektion={lektion}
+        analisis={listaFotos(note, 'aufgabe')}
+        onCambio={(lista) => persist({ fotoAufgaben: lista, fotoAufgabe: null, fotoAnalyse: null })}
+      />
 
-          <NotePhoto
-            noteId={note.id}
-            modo="bild"
-            lektion={lektion}
-            analisis={listaFotos(note, 'bild')}
-            onCambio={(lista) => persist({ fotoBilder: lista, fotoBild: null, fotoAnalyse: null })}
-          />
-        </>
-      )}
+      <NotePhoto
+        noteId={note.id}
+        modo="bild"
+        lektion={lektion}
+        analisis={listaFotos(note, 'bild')}
+        onCambio={(lista) => persist({ fotoBilder: lista, fotoBild: null, fotoAnalyse: null })}
+      />
 
     </div>
   );

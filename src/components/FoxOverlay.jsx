@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import FoxFace, { EMPIEZA } from './FoxFace.jsx';
 import { getFuchs } from '../lib/fuchs.js';
+import { useExerciseActive } from '../lib/teclas.js';
 
 // La mascota que acompaña en los ejercicios, abajo a la derecha.
 //
@@ -152,17 +154,20 @@ export function useFox() {
 // `racha` son los aciertos seguidos que llevas ahora mismo. Las chispas del
 // zorro salen a partir de dos, a la vez que el rayito de la cabecera: asi
 // premian algo en vez de estar puestas siempre.
-export default function FoxOverlay({ fox, mudo = false, racha = 0 }) {
+export default function FoxOverlay({ fox, mudo = false, racha = 0, className = '', fondoFeedback = false }) {
+  const activa = useExerciseActive();
+  if (!activa) return null;
+
   const f = getFuchs();
   const fondo = f.fondo || 'nadaFondo';
 
-  return (
+  const overlay = (
     <>
       {/* Difuminado suave inferior con la tonalidad del fondo elegido */}
-      <div className={'fox-difuminado-suelo fox-difuminado-' + fondo} aria-hidden="true" />
+      <div className={'fox-difuminado-suelo fox-difuminado-' + fondo + (fondoFeedback ? ' fox-difuminado-feedback' : '')} aria-hidden="true" />
 
       <div
-        className="fox-overlay"
+        className={'fox-overlay' + (fondoFeedback ? ' fox-overlay-feedback' : '') + (className ? ' ' + className : '')}
         style={{ transform: fox.salta ? 'translateY(-15px)' : 'none' }}
       >
         {fox.msg && <div className={'fox-burbuja-dice' + (mudo ? ' estorba' : '')}>{fox.msg}</div>}
@@ -180,4 +185,6 @@ export default function FoxOverlay({ fox, mudo = false, racha = 0 }) {
       </div>
     </>
   );
+
+  return createPortal(overlay, document.body);
 }

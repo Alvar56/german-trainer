@@ -29,6 +29,21 @@ import { transformSync } from 'esbuild';
 
 registerHooks({
   load(url, ctx, next) {
+    // El render de servidor de React no admite createPortal. Para revisar el
+    // contenido de los ejercicios, la mascota decorativa se sustituye aquí
+    // por un stub sin portal.
+    if (url.endsWith('/FoxOverlay.jsx')) {
+      return {
+        format: 'module',
+        shortCircuit: true,
+        source: `export function useFox() { return { msg: '', gesto: 'normal', salta: false, acierto() {}, sigue() {} }; }\nexport default function FoxOverlay() { return null; }`
+      };
+    }
+    // La celebración también se monta en un portal. No forma parte del HTML
+    // del resumen que se comprueba aquí, así que se sustituye igual que Felix.
+    if (url.endsWith('/Confeti.jsx')) {
+      return { format: 'module', shortCircuit: true, source: 'export default function Confeti() { return null; }' };
+    }
     if (!url.startsWith('file:') || !url.endsWith('.jsx')) return next(url, ctx);
     const codigoJsx = fs.readFileSync(fileURLToPath(url), 'utf8');
     const { code } = transformSync(codigoJsx, {
@@ -109,6 +124,9 @@ async function pinta(nombre, fichero, props) {
 }
 
 const cuantos = (html, trozo) => html.split(trozo).length - 1;
+const cuantosEnClase = (html, clase) =>
+  [...html.matchAll(/class="([^"]*)"/g)]
+    .filter(([, clases]) => clases.split(/\s+/).includes(clase)).length;
 
 // ---------------------------------------------------------------------------
 grupo('Test de opciones');
@@ -116,13 +134,13 @@ grupo('Test de opciones');
   const item = {
     id: 'mc1',
     prompt: 'Completa',
-    sentence: 'Ich ___ Brot.',
+    sentence: 'ich ___ Brot.',
     answer: 'esse',
     options: ['esse', 'isst', 'essen']
   };
   const html = await pinta('MultipleChoice', 'MultipleChoice', { item, onAnswer() {} });
   comprobar('sale el enunciado', html.includes('Completa'));
-  comprobar('sale la frase partida por el hueco', html.includes('Ich ') && html.includes(' Brot.'));
+  comprobar('capitaliza el inicio y parte la frase por el hueco', html.includes('Ich ') && html.includes(' Brot.'));
   comprobar('sale un boton por opcion', cuantos(html, 'class="option"') === 3, html);
   for (const o of item.options) comprobar(`sale la opcion "${o}"`, html.includes('>' + o + '</button>'));
   // El hueco no puede venir ya relleno: se resolveria mirando.
@@ -151,7 +169,7 @@ grupo('Ordenar la frase');
     solution: ['Ich', 'esse', 'gern', 'Brot']
   };
   const html = await pinta('WordOrder', 'WordOrder', { item, onAnswer() {} });
-  comprobar('sale una ficha por palabra', cuantos(html, 'class="wo-word"') === 4, html);
+  comprobar('sale una ficha por palabra', cuantosEnClase(html, 'wo-word') === 4, html);
   for (const p of item.tokens) comprobar(`sale la palabra "${p}"`, html.includes('>' + p + '</button>'));
   // Si empezara resuelta no habria nada que ordenar. El componente lo evita
   // cambiando las dos primeras.
@@ -199,7 +217,8 @@ grupo('¿Correcta o no?');
   const item = { id: 'j1', display: 'Ich habe gegessen Brot.', isCorrect: false };
   const html = await pinta('JudgeCard', 'JudgeCard', { item, onAnswer() {} });
   comprobar('sale la frase a juzgar', html.includes('Ich habe gegessen Brot.'));
-  comprobar('hay dos botones', cuantos(html, 'class="judge-btn"') === 2, html);
+  comprobar('hay dos botones con borde verde y rojo suave',
+    html.includes('class="judge-btn yes"') && html.includes('class="judge-btn no"'), html);
   // Antes de contestar ninguno puede ir pintado de verde ni de rojo.
   comprobar('ningun boton se chiva', !/judge-btn (good|bad|dim)/.test(html), html);
 }
@@ -222,6 +241,23 @@ grupo('Piezas sueltas');
 
   const um = await pinta('Umlaut', 'Umlaut', { campo: { current: null }, onTexto() {} });
   for (const letra of ['ä', 'ö', 'ü', 'ß']) comprobar(`el teclado trae la ${letra}`, um.includes('>' + letra + '</button>'));
+}
+
+// ---------------------------------------------------------------------------
+grupo('Ahorcado');
+{
+  const deck = {
+    id: 'test-hangman',
+    name: 'Test',
+    emoji: '📚',
+    cards: [{ id: 'haus', de: 'das Haus', es: 'la casa' }]
+  };
+  const html = await pinta('HangmanGame', 'HangmanGame', { deck, onExit() {}, onFinish() {} });
+  const hints = html.indexOf('class="hang-pistas"');
+  const giveUp = html.indexOf('class="btn-ghost hang-give-up"');
+  const puzzle = html.indexOf('class="hang-reto"');
+  comprobar('Give up queda debajo de las pistas y antes del teclado', hints >= 0 && giveUp > hints && puzzle > giveUp, html);
+  comprobar('Give up muestra el atajo de teclado', html.includes('Intro / Espacio'));
 }
 
 // ---------------------------------------------------------------------------
@@ -276,7 +312,7 @@ grupo('Blitz');
   const html = await pinta('BlitzGame', 'BlitzGame', {
     deck: { id: 'd', name: 'Prueba', emoji: '🧪', cards: cartas }, onExit() {}, onFinish() {}
   });
-  comprobar('sale la cruz de salir', html.includes('✕'));
+  comprobar('sale el boton de salir', html.includes('title="Salir (Esc)"') && html.includes('<svg'));
   // El boton de reiniciar comparte fila con la cruz. Ademas su estado (ronda)
   // se declara ANTES del barajado que lo lee: al reves, el array de
   // dependencias lo tocaba antes de existir y la pantalla se caia con

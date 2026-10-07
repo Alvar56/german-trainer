@@ -89,7 +89,7 @@ export default function Estadisticas() {
           pista={pick('Minutos por día. Los huecos son los días que no tocaste nada.',
                       'Minutes per day. The gaps are the days you did nothing.')}
           accion={
-            <div className="est-botones">
+            <div className="est-botones" data-days={ventana}>
               {[7, 30, 90].map((n) => (
                 <button
                   key={n}

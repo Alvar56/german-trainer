@@ -11,18 +11,58 @@
 //
 // Para anadir un idioma: crea `<codigo>.js` con el mismo formato que en.js,
 // importalo aqui y metelo en IDIOMAS. Nada mas.
-import { getLang } from '../i18n.js';
-import { EN } from './en.js';
+import { getLang, onLangChange } from '../i18n.js';
 
-const IDIOMAS = { en: EN };
+const IDIOMAS = {};
+const oyentesListo = new Set();
+let cargaEN = null;
+let origenesEN = null;
+let traduccionesEN = null;
+
+function cargarIdiomaActivo() {
+  if (getLang() !== 'en' || IDIOMAS.en || cargaEN) return;
+  cargaEN = import('./en.js').then(({ EN }) => {
+    IDIOMAS.en = EN;
+    const origenes = new Map();
+    const ambiguas = new Set();
+    const traducciones = new Set();
+    for (const [original, traducido] of Object.entries(EN)) {
+      if (typeof traducido !== 'string' || !traducido || traducido === original) continue;
+      traducciones.add(traducido);
+      if (origenes.has(traducido) && origenes.get(traducido) !== original) {
+        ambiguas.add(traducido);
+      } else {
+        origenes.set(traducido, original);
+      }
+    }
+    ambiguas.forEach((texto) => origenes.delete(texto));
+    origenesEN = origenes;
+    traduccionesEN = traducciones;
+    oyentesListo.forEach((fn) => fn());
+  }).catch(() => {
+    // El original en castellano sigue disponible si falla la descarga.
+    cargaEN = null;
+  });
+}
+
+onLangChange(cargarIdiomaActivo);
+cargarIdiomaActivo();
+
+export function onContenidoIdiomaListo(fn) {
+  oyentesListo.add(fn);
+  return () => oyentesListo.delete(fn);
+}
 
 // Traduce un texto del contenido. Si no hay traduccion, devuelve el original:
 // mas vale leerlo en castellano que ver un hueco o una clave suelta.
 export function tc(texto) {
   if (texto == null) return texto;
+  cargarIdiomaActivo();
   const dic = IDIOMAS[getLang()];
   if (!dic) return texto;
-  const out = dic[texto] ?? texto;
+  const out = getLang() === 'en'
+    ? (traduccionesEN?.has(texto) ? texto : dic[texto] ?? texto)
+    : (Object.prototype.hasOwnProperty.call(dic, texto) ? texto : origenesEN?.get(texto) ?? texto);
   if (observador) observador(texto, out);
   return out;
 }

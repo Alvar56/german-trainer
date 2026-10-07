@@ -61,7 +61,7 @@ export default function ExamSchreiben({ typ, onBack }) {
         total: r.punkte.length || aufgabe.punkte.length,
         seconds: Math.round((Date.now() - inicio.current) / 1000)
       });
-      recordActivity(Math.round(r.punktzahl / 5));
+      recordActivity(Math.round(r.punktzahl / 5), Date.now() - inicio.current);
       // punktzahl viene en % , así que el premio sale solo
       ganar(Math.round((MONEDAS_EXAMEN * r.punktzahl) / 100));
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -199,7 +199,7 @@ export default function ExamSchreiben({ typ, onBack }) {
       {!res ? (
         <>
           <div className="row" style={{ gap: 12, flexWrap: 'wrap' }}>
-            <button className="btn-primary" onClick={corregir} disabled={!text.trim() || corrigiendo}>
+            <button className="btn-primary btn-corregir" onClick={corregir} disabled={!text.trim() || corrigiendo}>
               {corrigiendo ? t('tb.correcting') : t('ex.finish')}
             </button>
             <button className="btn-ghost" onClick={cargar} disabled={corrigiendo}>{t('ex.otherTask')}</button>

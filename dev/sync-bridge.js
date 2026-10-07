@@ -37,55 +37,93 @@ export function syncBridge() {
     return r;
   };
 
+  // Lee el cuerpo entero de un POST, con tope. El payload completo lleva todo
+  // el progreso (mazos, fotos del cuaderno…), asi que el tope es generoso.
+  const leerCuerpo = (req, alAcabar) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk.toString();
+      if (body.length > 32 * 1024 * 1024) req.destroy();
+    });
+    req.on('end', () => enCola(() => alAcabar(body)));
+  };
+
+  // La parte comun de los dos POST: comprobar que el cliente no va con datos
+  // viejos, guardar lo que salga de `nuevosDatos` y contestar con la marca.
+  const guardarSiAlDia = (res, body, nuevosDatos) => {
+    res.setHeader('Content-Type', 'application/json');
+    try {
+      const reqData = JSON.parse(body);
+      const clientTs = reqData.localTs || 0;
+      const actual = leer();
+      const backendTs = actual.timestamp || 0;
+
+      if (clientTs > 0 && clientTs < backendTs) {
+        res.statusCode = 409;
+        res.end(JSON.stringify({ error: 'Stale sync', timestamp: backendTs }));
+        return;
+      }
+
+      // Date.now() puede repetirse si dos escrituras caen en el mismo
+      // milisegundo, y entonces la marca no distingue una de otra.
+      const timestamp = Math.max(Date.now(), backendTs + 1);
+      guardar({ timestamp, data: nuevosDatos(reqData, actual.data || {}) });
+      res.end(JSON.stringify({ success: true, timestamp }));
+    } catch {
+      res.statusCode = 400;
+      res.end(JSON.stringify({ error: 'Invalid JSON' }));
+    }
+  };
+
+  // Igual en `vite` (desarrollo) que en `vite preview` (la app compilada).
+  const montar = (server) => {
+    // Solo lo que ha cambiado: { localTs, cambios: { clave: valor | null } },
+    // con null para lo borrado. Antes cada respuesta subia el progreso
+    // entero (~3 MB con las fotos): el navegador se paraba a juntarlo y
+    // convertirlo cada vez.
+    //
+    // Ruta APARTE a proposito, y no un formato nuevo en /api/sync: un
+    // servidor de antes guardaria esto como si fuera TODO el progreso y
+    // borraria el resto. A esta ruta, uno viejo contesta 404 y el cliente
+    // vuelve a mandarlo entero.
+    server.middlewares.use('/api/sync-cambios', (req, res, next) => {
+      if (req.method !== 'POST') return next();
+      leerCuerpo(req, (body) =>
+        guardarSiAlDia(res, body, (reqData, datos) => {
+          const cambios = reqData.cambios;
+          if (!cambios || typeof cambios !== 'object') throw new Error('sin cambios');
+          const nuevos = { ...datos };
+          for (const [k, v] of Object.entries(cambios)) {
+            if (v === null) delete nuevos[k];
+            else nuevos[k] = v;
+          }
+          return nuevos;
+        })
+      );
+    });
+
+    server.middlewares.use('/api/sync', (req, res, next) => {
+      if (req.method === 'GET') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        enCola(() => res.end(JSON.stringify(leer())));
+        return;
+      }
+
+      // El progreso entero: lo que mandan las versiones de antes (el movil
+      // puede tener una en cache) y el cliente nuevo si la otra ruta falla.
+      if (req.method === 'POST') {
+        leerCuerpo(req, (body) => guardarSiAlDia(res, body, (reqData) => reqData.payload || reqData));
+        return;
+      }
+
+      next();
+    });
+  };
+
   return {
     name: 'dtrainer-sync',
-    configureServer(server) {
-      server.middlewares.use('/api/sync', (req, res, next) => {
-        if (req.method === 'GET') {
-          res.setHeader('Content-Type', 'application/json');
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-          enCola(() => res.end(JSON.stringify(leer())));
-          return;
-        }
-
-        if (req.method === 'POST') {
-          let body = '';
-          req.on('data', (chunk) => {
-            body += chunk.toString();
-            // El payload lleva todo el progreso (mazos, fotos del cuaderno…),
-            // asi que el tope tiene que ser generoso, pero tope al fin y al cabo.
-            if (body.length > 32 * 1024 * 1024) req.destroy();
-          });
-          req.on('end', () => {
-            enCola(() => {
-              res.setHeader('Content-Type', 'application/json');
-              try {
-                const reqData = JSON.parse(body);
-                const clientTs = reqData.localTs || 0;
-                const backendTs = leer().timestamp || 0;
-
-                if (clientTs > 0 && clientTs < backendTs) {
-                  res.statusCode = 409;
-                  res.end(JSON.stringify({ error: 'Stale sync', timestamp: backendTs }));
-                  return;
-                }
-
-                // Date.now() puede repetirse si dos escrituras caen en el mismo
-                // milisegundo, y entonces la marca no distingue una de otra.
-                const timestamp = Math.max(Date.now(), backendTs + 1);
-                guardar({ timestamp, data: reqData.payload || reqData });
-                res.end(JSON.stringify({ success: true, timestamp }));
-              } catch {
-                res.statusCode = 400;
-                res.end(JSON.stringify({ error: 'Invalid JSON' }));
-              }
-            });
-          });
-          return;
-        }
-
-        next();
-      });
-    }
+    configureServer: montar,
+    configurePreviewServer: montar
   };
 }

@@ -16,7 +16,7 @@ import { useTeclas } from '../lib/teclas.js';
 // aquí es hablar con alguien, así que un ejercicio que ignore lo que te
 // contestan se queda a medias; y con el par delante la IA puede preguntar por
 // cualquiera de los dos lados.
-export default function KommReto({ lektionId, onExit, onFinish }) {
+export default function KommReto({ lektionId, itemsFijos = null, onExit, onFinish }) {
   useTeclas({ Escape: onExit });
   const [items, setItems] = useState(null);
   const [err, setErr] = useState('');
@@ -25,6 +25,10 @@ export default function KommReto({ lektionId, onExit, onFinish }) {
   const nombre = lektion ? lektionLabel(lektion) : '';
 
   useEffect(() => {
+    if (itemsFijos?.length) {
+      setItems(itemsFijos);
+      return;
+    }
     if (pedido.current || !lektion) return;
     pedido.current = true;
     const lineas = [];
@@ -40,7 +44,7 @@ export default function KommReto({ lektionId, onExit, onFinish }) {
       lektion: { bandName: lektion.bandId || 'A2' },
       count: 8
     }).then(setItems, (e) => setErr(e.message));
-  }, [lektionId]);
+  }, [lektionId, itemsFijos]);
 
   const volver = (
     <button className="btn-ghost" onClick={onExit}>

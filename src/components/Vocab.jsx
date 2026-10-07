@@ -7,12 +7,13 @@ import { KURSBUCH, getLektion, lektionLabel, lektionDecks, lektionDeckTodo } fro
 import { generateVocab, generateConjugation } from '../lib/ai.js';
 import { aiAvailable } from '../lib/settings.js';
 import { t, pick } from '../lib/i18n.js';
-import { getStarredItems, useStars } from '../lib/stars.js';
+import { getStarredItems, groupStarredVocab, useStars } from '../lib/stars.js';
 import Cargando from './Cargando.jsx';
 import Sugerencias from './Sugerencias.jsx';
 import CoronaPanel, { BarrasTema } from './ProgresoTema.jsx';
 import AmpliarTema from './AmpliarTema.jsx';
 import { UMBRAL_TERMINAR } from '../lib/progress.js';
+import { crucigramasResueltos, MAX_CRUCIGRAMAS_VOCAB, UMBRAL_CRUCIGRAMA_VOCAB } from '../lib/vocabRewards.js';
 import Escuchar from './Escuchar.jsx';
 import MezclaVocab from './MezclaVocab.jsx';
 import PuntoColor from './PuntoColor.jsx';
@@ -20,41 +21,32 @@ import ModalConjugacion from './ModalConjugacion.jsx';
 import EtiquetaChip from './EtiquetaChip.jsx';
 import FotosVocab from './FotosVocab.jsx';
 import Tabs from './Tabs.jsx';
+import Desplegable from './Desplegable.jsx';
 function CustomDropdown({ options, value, onChange }) {
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value) || options[0];
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="voc-deck-dropdown-anchor">
       <button
         className="link-btn"
         style={{ fontSize: '0.82rem', padding: 0 }}
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
         {selected.label} ▾
       </button>
 
-      {open && (
-        <div
-          className="card"
-          style={{
-            position: 'absolute',
-            right: 0,
-            bottom: '100%',
-            marginBottom: 4,
-            zIndex: 10,
-            padding: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            minWidth: 160,
-            boxShadow: '0 -4px 12px rgba(0,0,0,0.1)'
-          }}
-        >
+      <div className="voc-deck-dropdown-popup">
+        <Desplegable abierto={open} className="voc-deck-dropdown-menu">
+          <div className="card voc-deck-dropdown-card" role="listbox">
           {options.map((o) => (
             <button
               key={o.value}
               className="link-btn"
+              role="option"
+              aria-selected={o.value === value}
               style={{
                 textAlign: 'right',
                 padding: '6px 12px',
@@ -72,11 +64,12 @@ function CustomDropdown({ options, value, onChange }) {
               {o.label}
             </button>
           ))}
-        </div>
-      )}
+          </div>
+        </Desplegable>
+      </div>
       {open && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 9 }}
+          className="voc-deck-dropdown-overlay"
           onClick={() => setOpen(false)}
         />
       )}
@@ -210,7 +203,12 @@ function LektionVocab({ lektionId, tab = 'teoria', onTab, onStart, onReto, onBac
   const todo = lektionDeckTodo(lektion);
   const total = decks.reduce((s2, d) => s2 + d.cards.length, 0);
   const st = todo ? deckStats(todo) : { pct: 0, known: 0 };
+  const tarjetasPendientes = todo ? cartasQueFaltan(todo) : [];
+  // Mantener el desbloqueo alineado con el porcentaje que se muestra arriba,
+  // que se redondea y puede llegar a 100 % antes de agotar cada acierto.
+  const crucigramaBloqueado = !todo?.cards?.length || st.pct < UMBRAL_CRUCIGRAMA_VOCAB;
   const fallos = todo ? cartasFalladas(todo) : [];
+  const crucigramasHechos = todo ? crucigramasResueltos(todo.id) : 0;
   const aiOn = aiAvailable();
 
   const allStarredVocab = getStarredItems('vocab');
@@ -221,6 +219,7 @@ function LektionVocab({ lektionId, tab = 'teoria', onTab, onStart, onReto, onBac
         (i.de || i.id || String(i.id).replace('vocab:', '')).toLowerCase()
     )
   );
+  const starredVocabGroups = groupStarredVocab(starredVocab);
 
   const activeDeckId = selectedDeckId || (todo ? todo.id : null);
 
@@ -250,7 +249,7 @@ function LektionVocab({ lektionId, tab = 'teoria', onTab, onStart, onReto, onBac
         <div className="min0">
           <h1><button type="button" className="titulo-volver" onClick={onBack}>{lektionLabel(lektion)}</button></h1>
           <p className="muted" style={{ marginTop: 4, fontSize: '0.9rem' }}>
-            {lektion.bandName} · {total} {t('words')} · {st.known} {t('voc.known')} ({st.pct}%)
+            {lektion.bandName} · {total} {t('words')} · {st.known}/{total} {t('voc.known')} ({st.pct}%)
           </p>
         </div>
         <button className="link-btn" onClick={onBack} style={{ flexShrink: 0 }}><span className="fl-atras">◂</span> Wortschatz</button>
@@ -394,28 +393,27 @@ function LektionVocab({ lektionId, tab = 'teoria', onTab, onStart, onReto, onBac
             </p>
 
             <div className="btn-row" style={{ marginTop: 12 }}>
-              {starredVocab.length > 0 && (
+              {starredVocabGroups.map((group) => {
+                return (
+                  <button
+                    className="btn-ghost btn-sm"
+                    key="starred-vocab"
+                    onClick={() => onStart(todo.id, group.mode, false, group.dir, group.items, null, 'marked')}
+                  >
+                    {t('star.review', { n: group.items.length })}
+                  </button>
+                );
+              })}
+              {fallos.length > 0 && (
                 <button
                   className="btn-ghost btn-sm"
-                  onClick={() => onStart(todo.id, 'quiz', false, null, starredVocab)}
+                  onClick={() => onStart(todo.id, 'quiz', true)}
+                  title={t('gr.reviewWeakHint')}
                 >
-                  {t('star.review', { n: starredVocab.length })}
+                  {t('gr.reviewWeakN', { n: fallos.length })}
                 </button>
               )}
-              <button
-                className="btn-ghost btn-sm"
-                onClick={() => onStart(todo.id, 'quiz', true)}
-                disabled={fallos.length === 0}
-                title={fallos.length ? t('gr.reviewWeakHint') : t('gr.reviewWeakNone')}
-              >
-                {fallos.length ? t('gr.reviewWeakN', { n: fallos.length }) : t('gr.reviewWeak')}
-              </button>
-              {/* Solo a partir del 70%: antes de eso falta casi todo y este
-                  boton seria la sesion normal con otro nombre. */}
-              {/* Se ve siempre por debajo del 100%, pero apagado hasta el 70%:
-                  un boton que aparece de la nada no se entiende, y asi sabes
-                  que existe y cuanto te falta para abrirlo. */}
-              {st.pct < 100 && (
+              {tarjetasPendientes.length > 0 && (
                 <button
                   className="btn-ghost btn-sm"
                   onClick={() => onStart(todo.id, 'quiz', 'faltan')}
@@ -424,9 +422,24 @@ function LektionVocab({ lektionId, tab = 'teoria', onTab, onStart, onReto, onBac
                 >
                   {st.pct < UMBRAL_TERMINAR
                     ? t('voc.finishLocked', { p: UMBRAL_TERMINAR })
-                    : t('voc.finish', { n: cartasQueFaltan(todo).length })}
+                    : t('voc.finish', { n: tarjetasPendientes.length })}
                 </button>
               )}
+              {/* El crucigrama se abre al dominar todas las palabras del tema. */}
+              <button
+                className="btn-ghost btn-sm"
+                onClick={() => onStart(todo.id, 'crossword')}
+                disabled={crucigramaBloqueado || crucigramasHechos >= MAX_CRUCIGRAMAS_VOCAB}
+                title={crucigramaBloqueado
+                  ? t('voc.crosswordLockedHint', { p: UMBRAL_CRUCIGRAMA_VOCAB })
+                  : crucigramasHechos >= MAX_CRUCIGRAMAS_VOCAB
+                    ? t('voc.crosswordFinishedHint')
+                    : t('voc.crosswordHint')}
+              >
+                {crucigramaBloqueado
+                  ? t('voc.crosswordLocked', { p: UMBRAL_CRUCIGRAMA_VOCAB })
+                  : t('voc.crosswordProgress', { n: crucigramasHechos, total: MAX_CRUCIGRAMAS_VOCAB })}
+              </button>
               {aiOn && (
                 <button className="btn-ghost btn-sm" onClick={() => onReto(todo.id)}>
                   {t('gr.aiChallenge')}
@@ -438,10 +451,9 @@ function LektionVocab({ lektionId, tab = 'teoria', onTab, onStart, onReto, onBac
                 {t(fallos.length === 1 ? 'voc.missedWords' : 'voc.missedWordsPl', { n: fallos.length })}
               </p>
             )}
-            <div style={{ marginTop: 14 }}>
-              <CoronaPanel topicId={'vocab:' + todo.id} pct={st.pct} />
-            </div>
+            {st.pct < 100 && <CoronaPanel topicId={'vocab:' + todo.id} pct={st.pct} />}
           </div>
+          {st.pct >= 100 && <CoronaPanel topicId={'vocab:' + todo.id} pct={st.pct} />}
         </div>
       )}
 
@@ -488,7 +500,8 @@ function VocabHome({ onOpenLektion, onOpen, onGenderGame, onChanged, onStart }) 
   const byId = Object.fromEntries(decks.map((d) => [d.id, d]));
 
   const extra = (
-    <div className="juego-seccion">
+    <>
+    <div className="juego-seccion vocab-home-seccion">
       <button className={'gender-cta' + (gs.pct >= 100 ? ' dominado' : '')} onClick={() => onGenderGame(nivelGen)}>
         <span className="gc-emoji">🎯</span>
         <span style={{ flex: 1 }}>
@@ -565,11 +578,11 @@ function VocabHome({ onOpenLektion, onOpen, onGenderGame, onChanged, onStart }) 
                   como en gramatica y en conversacion. La rejilla en si es
                   grande y se sigue pintando debajo. */}
               {userDecks.length > 0 && (
-                <button className="link-btn pie-abrir" onClick={() => setShowMine(!showMine)}>
+                <button className="link-btn pie-abrir" onClick={() => setShowMine(!showMine)} aria-expanded={showMine}>
                   {showMine ? t('voc.hideMine') : t('voc.showMine', { n: userDecks.length })}
                 </button>
               )}
-              <button className="link-btn pie-abrir" onClick={() => setShowExtra(!showExtra)}>
+              <button className="link-btn pie-abrir" onClick={() => setShowExtra(!showExtra)} aria-expanded={showExtra}>
                 {showExtra ? t('voc.hideExtra') : t('voc.showExtra')}
               </button>
             </div>
@@ -589,7 +602,8 @@ function VocabHome({ onOpenLektion, onOpen, onGenderGame, onChanged, onStart }) 
 
       {err && <p style={{ color: 'var(--bad)', fontSize: '0.9rem' }}>{err}</p>}
 
-      {showMine && userDecks.length > 0 && (
+      <div className={'vocab-extra-desplegables' + ((showMine && userDecks.length > 0 || showExtra) ? ' abierto' : '')}>
+      <Desplegable abierto={showMine && userDecks.length > 0} className="vocab-extra-lista">
         <div style={{ marginTop: 22 }}>
           <div className="sec-title">
             <h2>{t('voc.myDecks')}</h2>
@@ -599,9 +613,9 @@ function VocabHome({ onOpenLektion, onOpen, onGenderGame, onChanged, onStart }) 
             {userDecks.map((d) => <DeckCard key={d.id} deck={d} onOpen={onOpen} />)}
           </div>
         </div>
-      )}
+      </Desplegable>
 
-      {showExtra && (
+      <Desplegable abierto={showExtra} className="vocab-extra-lista">
           <div className="stack" style={{ gap: 22, marginTop: 14 }}>
             {vocabSections().map((sec) => (
               <div key={sec.title}>
@@ -612,11 +626,13 @@ function VocabHome({ onOpenLektion, onOpen, onGenderGame, onChanged, onStart }) 
               </div>
             ))}
           </div>
-        )}
+      </Desplegable>
+      </div>
+    </div>
 
       {/* Al final del todo: cuando ya tienes los temas sueltos, mezclarlos. */}
       <MezclaVocab onStart={onStart} />
-    </div>
+    </>
   );
 
   return (
@@ -637,6 +653,10 @@ function VocabTableRow({ c, deckId, lektionId, onConjugate, loadingVerb }) {
 
   const word = c.de.split(' ')[0].replace(/[^a-zA-ZäöüÄÖÜß]/g, '');
   const isVerb = esVerbo(c.de);
+  // En la lección del alfabeto las comas separan nombres de letras; no son
+  // la marca de plural del diccionario que Escuchar normalmente quita.
+  const esDeletreo = /^(?:[a-zäöüß]+,\s*){2,}[a-zäöüß]+(?:\s+\([^)]*\))?$/i.test(c.de);
+  const textoAudio = esDeletreo ? c.de.replace(/\s*\([^)]*\)/g, '').trim() : c.de;
 
   const handleColor = (col) => {
     setColorState(col);
@@ -686,7 +706,7 @@ function VocabTableRow({ c, deckId, lektionId, onConjugate, loadingVerb }) {
               que es cuando sabes si se te resiste. */}
           {/* El altavoz, pegado al punto de color: los dos son cosas que le
               haces a esa palabra concreta. */}
-          <Escuchar texto={c.de} />
+          <Escuchar texto={textoAudio} frase={esDeletreo} />
           <PuntoColor color={computedColor} onElegir={handleColor} />
         </div>
       </td>

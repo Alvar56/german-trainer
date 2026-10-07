@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { t } from '../lib/i18n.js';
 import { useTeclas } from '../lib/teclas.js';
 
@@ -9,10 +9,29 @@ import { useTeclas } from '../lib/teclas.js';
 // con una ✕ en un sitio y con un enlace "Cerrar" en el otro, segun por donde
 // hubieras entrado. Ahora hay una sola y se cierra igual siempre.
 export default function ModalConjugacion({ conjugation, onClose }) {
+  const [cerrando, setCerrando] = useState(false);
+  const cierreIniciado = useRef(false);
+  const cierreTimer = useRef(null);
+  useEffect(() => {
+    cierreIniciado.current = false;
+    setCerrando(false);
+    return () => window.clearTimeout(cierreTimer.current);
+  }, [conjugation]);
+
+  function cerrar() {
+    if (!conjugation || cierreIniciado.current) return;
+    cierreIniciado.current = true;
+    setCerrando(true);
+    cierreTimer.current = window.setTimeout(() => {
+      cierreIniciado.current = false;
+      onClose();
+    }, 320);
+  }
+
   // Escape cierra, igual que la ✕ y que pinchar en el gris de fuera. Va antes
   // del return de abajo a propósito: un hook no puede quedarse sin llamar
   // según el caso.
-  useTeclas({ Escape: () => onClose() }, !!conjugation);
+  useTeclas({ Escape: cerrar }, !!conjugation);
 
   if (!conjugation) return null;
   const tiempos = Array.isArray(conjugation.tenses) ? conjugation.tenses : [];
@@ -20,8 +39,8 @@ export default function ModalConjugacion({ conjugation, onClose }) {
 
   return (
     <div
-      className="modal-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className={'modal-overlay modal-conj-overlay' + (cerrando ? ' modal-saliendo' : '')}
+      onClick={(e) => { if (!cerrando && e.target === e.currentTarget) cerrar(); }}
     >
       <div className="modal card modal-conj">
         <div className="row spread conj-head">
@@ -29,7 +48,7 @@ export default function ModalConjugacion({ conjugation, onClose }) {
             <h2 className="conj-verbo">{conjugation.verb}</h2>
             <div className="muted conj-trad">{conjugation.translation}</div>
           </div>
-          <button className="btn-ghost" onClick={onClose} title={t('voc.close')}>✕</button>
+          <button className="btn-ghost" onClick={cerrar} title={t('voc.close')}>✕</button>
         </div>
 
         <div className="conj-grid">

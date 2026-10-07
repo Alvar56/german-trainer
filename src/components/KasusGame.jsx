@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
+import GameModePill from './GameModePill.jsx';
 import { t, codigoIdioma } from '../lib/i18n.js';
 import { pickKasus, recordKasus, OPCIONES, porEn } from '../lib/kasus.js';
-import { useTeclas, teclasDeOpciones, esOrdenador } from '../lib/teclas.js';
+import { useExerciseActive, useTeclas, teclasDeOpciones, esOrdenador } from '../lib/teclas.js';
 import { recordActivity } from '../lib/streak.js';
 import { cobrarEjercicio, RECONOCER } from '../lib/monedas.js';
 import { bumpSessions } from '../lib/progress.js';
@@ -14,6 +15,7 @@ import { apuntarRespuesta, currentStreak } from '../lib/rachas.js';
 import Reloj from './Reloj.jsx';
 import RachaPill from './RachaPill.jsx';
 import KasusTabelle from './KasusTabelle.jsx';
+import PistaRevelable from './PistaRevelable.jsx';
 
 // Kasus Trainer: elegir el artículo / determinante correcto dentro de una frase.
 //
@@ -24,6 +26,7 @@ import KasusTabelle from './KasusTabelle.jsx';
 // Ahora incluye además una tabla desplegable de consulta rápida accesible
 // durante el ejercicio en la esquina superior derecha.
 export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
+  const activa = useExerciseActive();
   const fox = useFox();
   const size = getSettings().sessionSize || 10;
   const frases = useMemo(() => pickKasus(size, filtro), [filtro, size]);
@@ -31,6 +34,7 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
   const [picked, setPicked] = useState(null);
   const [pistas, setPistas] = useState({ genero: false, kasus: false });
   const [showTable, setShowTable] = useState(false);
+  const [cerrandoTabla, setCerrandoTabla] = useState(false);
   const results = useRef([]);
   const [seguidas, setSeguidas] = useState(() => currentStreak());
   const mejorSeguidas = useRef(0);
@@ -39,10 +43,39 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
   const started = useRef(Date.now());
   const advancing = useRef(false);
   const timer = useRef(null);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const tablaCierreTimer = useRef(null);
+  useEffect(() => () => {
+    clearTimeout(timer.current);
+    clearTimeout(tablaCierreTimer.current);
+  }, []);
+
+  function cerrarTabla() {
+    if (!showTable || cerrandoTabla) return;
+    setCerrandoTabla(true);
+    clearTimeout(tablaCierreTimer.current);
+    tablaCierreTimer.current = setTimeout(() => {
+      setShowTable(false);
+      setCerrandoTabla(false);
+    }, 320);
+  }
+
+  function alternarTabla() {
+    if (showTable) cerrarTabla();
+    else {
+      clearTimeout(tablaCierreTimer.current);
+      setCerrandoTabla(false);
+      setShowTable(true);
+    }
+  }
 
   const cur = frases[idx];
   const currentOptions = cur?.options || OPCIONES;
+
+  useEffect(() => {
+    if (!activa || esOrdenador() || !picked || !advancing.current) return;
+    timer.current = setTimeout(siguiente, picked === cur?.art ? 800 : 3800);
+    return () => clearTimeout(timer.current);
+  }, [activa, picked, idx, cur?.art]);
 
   const pedirSiguientePista = () => {
     if (!pistas.genero) setPistas((p) => ({ ...p, genero: true }));
@@ -54,7 +87,7 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
       ? {
           Enter: saltarEspera,
           ' ': saltarEspera,
-          Escape: () => (showTable ? setShowTable(false) : onExit())
+          Escape: () => (showTable ? cerrarTabla() : onExit())
         }
       : {
           ...teclasDeOpciones(currentOptions, (a) => choose(a)),
@@ -66,9 +99,9 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
           G: () => setPistas((p) => ({ ...p, genero: true })),
           k: () => (filtro === 'all' ? setPistas((p) => ({ ...p, kasus: true })) : undefined),
           K: () => (filtro === 'all' ? setPistas((p) => ({ ...p, kasus: true })) : undefined),
-          t: () => setShowTable((s) => !s),
-          T: () => setShowTable((s) => !s),
-          Escape: () => (showTable ? setShowTable(false) : onExit())
+          t: alternarTabla,
+          T: alternarTabla,
+          Escape: () => (showTable ? cerrarTabla() : onExit())
         },
     frases.length > 0
   );
@@ -112,9 +145,6 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
     ultimaSeguidas.current = rSeg;
     fox.acierto(ok);
     advancing.current = true;
-    if (!esOrdenador()) {
-      timer.current = setTimeout(siguiente, ok ? 800 : 3800);
-    }
   }
 
   function atras() {
@@ -145,7 +175,7 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
     let xp = results.current.reduce((s, r) => s + (r.ok ? 10 : 2), 0);
     if (acc >= 0.9) xp += 5;
     bumpSessions();
-    const streak = recordActivity(xp);
+    const streak = recordActivity(xp, Date.now() - started.current);
     saveRun({
       topicId: 'kasus', topicName: 'Kasus Trainer', mode: 'kasus', game: 'kasus',
       correct, total, accuracy: Math.round(acc * 100) / 100, seconds, xp
@@ -178,7 +208,7 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
     <div className="vocab-session kasus-session-container">
       <div className="progress-top">
         <button className="btn-ghost" onClick={onExit} title={t('back')}>✕</button>
-        <div className="bar"><span style={{ width: ((idx + (picked ? 1 : 0)) / frases.length) * 100 + '%' }} /></div>
+        <div className="bar"><span style={{ width: (idx / frases.length) * 100 + '%' }} /></div>
         {idx > 0 && results.current[idx - 1] && (
           <button className="btn-ghost ses-atras ses-icon-btn" onClick={atras} title={t('ses.prev')}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -190,12 +220,12 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
       </div>
 
       <div className="ctx-fila">
-        <span className="pill ctx-tema">🧭 Kasus Trainer</span>
+        <GameModePill mode="kasus" />
         <span className="row" style={{ gap: 8, alignItems: 'center' }}>
           <button
             type="button"
             className={'btn-tabla-toggle' + (showTable ? ' active' : '')}
-            onClick={() => setShowTable((v) => !v)}
+            onClick={alternarTabla}
             title="Mostrar u ocultar la tabla de casos y artículos (Atajo: T)"
           >
             📋 {showTable ? 'Ocultar tabla' : 'Tabla de casos'} <span className="op-tecla" style={{ marginLeft: 4 }}>T</span>
@@ -206,7 +236,7 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
       </div>
 
       {/* Tabla de casos flotante en la esquina derecha / lateral */}
-      {showTable && <KasusTabelle onClose={() => setShowTable(false)} />}
+      {showTable && <KasusTabelle onClose={cerrarTabla} cerrando={cerrandoTabla} />}
 
       <div className="fc-wrap">
         <div className="kasus-frase">
@@ -221,23 +251,31 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
         {/* Las pistas, a un toque */}
         {!picked && (
           <div className="kasus-pistas">
-            <button
-              className={'ask-chip' + (pistas.genero ? ' on' : '')}
-              onClick={() => setPistas((p) => ({ ...p, genero: true }))}
+            <PistaRevelable
+              key={`${idx}-genero`}
+              revealed={pistas.genero}
+              onReveal={() => setPistas((p) => ({ ...p, genero: true }))}
               title="Atajo: G o P"
+              className="kasus-pista-slot"
+              buttonClassName="ask-chip"
+              label={<>💡 {t('kasus.pistaGenero')} <span className="op-tecla" style={{ marginLeft: 4 }}>G</span></>}
             >
-              {pistas.genero
-                ? t('kasus.pistaGeneroVal', { art: cur.pistaGenero, nomen: cur.nomen })
-                : <>💡 {t('kasus.pistaGenero')} <span className="op-tecla" style={{ marginLeft: 4 }}>G</span></>}
-            </button>
+              <span className="ask-chip on kasus-pista-revelada">
+                {t('kasus.pistaGeneroVal', { art: cur.pistaGenero, nomen: cur.nomen })}
+              </span>
+            </PistaRevelable>
             {filtro === 'all' && (
-              <button
-                className={'ask-chip' + (pistas.kasus ? ' on' : '')}
-                onClick={() => setPistas((p) => ({ ...p, kasus: true }))}
+              <PistaRevelable
+                key={`${idx}-kasus`}
+                revealed={pistas.kasus}
+                onReveal={() => setPistas((p) => ({ ...p, kasus: true }))}
                 title="Atajo: K o P"
+                className="kasus-pista-slot"
+                buttonClassName="ask-chip"
+                label={<>💡 {t('kasus.pistaKasus')} <span className="op-tecla" style={{ marginLeft: 4 }}>K</span></>}
               >
-                {pistas.kasus ? cur.kasus : <>💡 {t('kasus.pistaKasus')} <span className="op-tecla" style={{ marginLeft: 4 }}>K</span></>}
-              </button>
+                <span className="ask-chip on kasus-pista-revelada">{cur.kasus}</span>
+              </PistaRevelable>
             )}
           </div>
         )}
@@ -275,7 +313,7 @@ export default function KasusGame({ onExit, onFinish, filtro = 'all' }) {
           </div>
         )}
 
-        <FoxOverlay fox={fox} mudo={!!picked} racha={seguidas} />
+        {!showTable && <FoxOverlay fox={fox} mudo={!!picked} racha={seguidas} />}
       </div>
     </div>
   );

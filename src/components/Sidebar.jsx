@@ -1,6 +1,7 @@
 import React from 'react';
 import { getLang, setLang, LANGS, pick } from '../lib/i18n.js';
 import { SIN_IA, PORTABLE } from '../lib/modo.js';
+import Pomodoro from './Pomodoro.jsx';
 
 // El menú va en alemán. La traducción se queda en el tooltip, no en pantalla.
 // Examen, noticias y canciones se generan enteras con IA: sin ella no son
@@ -52,12 +53,17 @@ export default function Sidebar({ current, onNavigate }) {
 
       <div className="sep" />
 
-      <div className="lang-box">
+      <Pomodoro />
+
+      <div className="lang-box" data-lang={getLang()}>
         {LANGS.map((l) => (
           <button
             key={l.id}
             className={'lang-btn' + (getLang() === l.id ? ' on' : '')}
-            onClick={() => setLang(l.id)}
+            onClick={() => {
+              window.dispatchEvent(new Event('app:layout-transition'));
+              setLang(l.id);
+            }}
             title={l.label}
           >
             {l.id.toUpperCase()}

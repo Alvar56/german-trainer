@@ -15,6 +15,8 @@ import { gameStats, precisionReciente } from '../lib/leaderboard.js';
 export function BarrasTema({ topicId, pct, etiqueta }) {
   const completo = pct >= 100;
   const rec = completo ? precisionReciente(topicId) : { pct: null };
+  const recienteCompleto = rec.pct >= 100;
+  const estadoReciente = rec.pct >= 80 ? 'bien' : rec.pct >= 50 ? 'medio' : 'mal';
 
   return (
     <div className="tema-barras">
@@ -30,13 +32,20 @@ export function BarrasTema({ topicId, pct, etiqueta }) {
 
       {completo && rec.pct != null && (
         <div className="row" style={{ gap: 12, marginTop: 8 }}>
-          <div className="mini-bar" style={{ flex: 1 }}>
+          <div className={'mini-bar' + (recienteCompleto ? ' completo' : '')} style={{ flex: 1 }}>
             <span
-              className={rec.pct >= 80 ? 'bien' : rec.pct >= 50 ? 'medio' : 'mal'}
+              className={recienteCompleto ? 'bien' : rec.pct >= 80 ? 'bien' : rec.pct >= 50 ? 'medio' : 'mal'}
               style={{ width: rec.pct + '%' }}
             />
           </div>
-          <span className="pill">{rec.pct}%</span>
+          <span className={'pill' + (recienteCompleto ? ' completo' : ' reciente-' + estadoReciente)}>
+            {recienteCompleto ? '🤩 100%' : (
+              <>
+                {estadoReciente === 'medio' ? '😐 ' : estadoReciente === 'mal' ? '😔 ' : '😃 '}
+                {rec.pct}%
+              </>
+            )}
+          </span>
         </div>
       )}
       {completo && rec.pct != null && (
@@ -51,7 +60,7 @@ export function BarrasTema({ topicId, pct, etiqueta }) {
 // Cómo se llama cada minijuego en el desglose. Se exporta porque la
 // Bestenliste desglosa lo mismo y no vamos a tener dos listas de nombres
 // que se van separando.
-export const NOMBRE_JUEGO = {
+const NOMBRE_JUEGO = {
   mixed: ['🎲 Mezclado', '🎲 Mixed'],
   todo: ['🎲 De todo un poco', '🎲 A bit of everything'],
   mc: ['✅ Test de gramática', '✅ Grammar quiz'],
@@ -74,6 +83,13 @@ export const NOMBRE_JUEGO = {
   notebook: ['📓 Cuaderno', '📓 Notebook'],
   kasus: ['🧭 Kasus', '🧭 Kasus'],
   komm: ['💬 Kommunikation', '💬 Kommunikation'],
+  'komm:decir': ['✅ Elegir la frase', '✅ Pick the phrase'],
+  'komm:responder': ['🗣️ Contestar', '🗣️ Reply'],
+  'komm:ordenar': ['🔀 Ordenar la frase', '🔀 Put it in order'],
+  'komm:hueco': ['📝 La palabra que falta', '📝 The missing word'],
+  'komm:review': ['🩹 Repasar fallos', '🩹 Review mistakes'],
+  'komm:marked': ['⭐ Repasar marcados', '⭐ Review starred'],
+  'komm:finish': ['🏁 Terminar el tema', '🏁 Finish the topic'],
   uebersetzen: ['🔁 Traducir frases', '🔁 Translate phrases']
 };
 
@@ -91,7 +107,7 @@ export default function CoronaPanel({ topicId, pct }) {
   const porJuego = gameStats(topicId);
 
   return (
-    <div className="corona-panel">
+    <div className="panel corona-panel">
       <div className="corona-head">
         <span className="corona">👑</span>
         <div>

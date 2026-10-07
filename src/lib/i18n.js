@@ -353,6 +353,7 @@ const DICT = {
   'ueb.phEs': ['Escribe la frase en espa\u00f1ol\u2026', 'Write the sentence in English\u2026'],
   'ueb.phDe': ['Escribe la frase en alem\u00e1n\u2026', 'Write the sentence in German\u2026'],
   'ueb.pedirPista': ['Pista ({n} restantes)', 'Hint ({n} left)'],
+  'ueb.pistaTraduccion': ['Ver traducción', 'Show translation'],
   'ueb.pista': ['💡 Pista', '💡 Hint'],
   'ueb.pista1': ['Estructura', 'Structure'],
   'ueb.pista2': ['Palabra clave', 'Keyword'],
@@ -399,15 +400,15 @@ const DICT = {
   'fox.coins': ['Monedas', 'Coins'],
 
   // Startseite
-  'home.sub': ['Resumen de tu alemán · nivel A2–B1', 'Your German at a glance · level A2–B1'],
+  'home.sub': ['Resumen de tu alemán · Nivel A1–A2', 'Your German at a glance · Level A1–A2'],
   'home.streak': ['Racha (días)', 'Streak (days)'],
   'home.record': ['Récord', 'Best'],
   'home.levelN': ['Nivel {n}', 'Level {n}'],
   'home.xpTotal': ['{n} XP en total', '{n} XP in total'],
-  'home.bestRun': ['Récord de seguidas', 'Best run'],
-  'home.bestRunSub': ['ejercicios acertados sin fallar', 'exercises right without a miss'],
-  'home.acc10': ['Precisión (últimas 10)', 'Accuracy (last 10)'],
-  'home.sessions': ['{n} sesiones', '{n} sessions'],
+  'home.bestRun': ['Mejor racha', 'Best streak'],
+  'home.bestRunSub': ['Aciertos seguidos', 'Correct answ. in a row'],
+  'home.acc10': ['Precisión reciente', 'Recent accuracy'],
+  'home.sessions': ['Últimas {n} sesiones', 'Last {n} sessions'],
   'home.sessionsTotal': ['Sesiones totales', 'Total sessions'],
   'home.aiOn': ['IA activa ✨', 'AI on ✨'],
   'home.aiOff': ['modo plantillas', 'template mode'],
@@ -431,6 +432,7 @@ const DICT = {
     'These give 1 coin per correct answer. Complete lessons, the diary, or exams grant more coins and bonus XP.'
   ],
   'home.aiReview': ['Repaso con IA', 'AI review'],
+  'home.newDiaryEntry': ['Nueva entrada del diario', 'New diary entry'],
   'foto.paste': [
     'o pega una captura con Ctrl+V · o arrastra el archivo aquí',
     'or paste a screenshot with Ctrl+V · or drop the file here'
@@ -524,8 +526,6 @@ const DICT = {
   'voc.confirmDeleteDeck': ['¿Borrar el mazo "{name}"?', 'Delete the deck "{name}"?'],
   'voc.allLesson': ['Toda la lección', 'Whole lesson'],
   'voc.markColour': ['Marcar con color', 'Mark with a colour'],
-  'gr.missedRules': ['{n} regla fallada', '{n} missed rule'],
-  'gr.missedRulesPl': ['{n} reglas falladas', '{n} missed rules'],
   'voc.examples': ['Ejemplos de uso', 'Examples'],
   'voc.mistakesStat': ['fallos', 'mistakes'],
   'voc.accuracyStat': ['precisión', 'accuracy'],
@@ -542,8 +542,6 @@ const DICT = {
   'ses.exit': ['Salir', 'Exit'],
 
   'ses.streakN': ['{n} seguidas', '{n} in a row'],
-  'ses.streakBest': ['Mejor racha', 'Best streak'],
-  'ses.streakRecord': ['¡Récord! {n} seguidas', 'New record! {n} in a row'],
   'ses.correctIs': ['Correcto', 'Correct'],
   'ses.alsoRight': ['Tu orden vale. También es correcto:', 'Your order works. This is also correct:'],
   'ses.dragHint': [
@@ -577,25 +575,18 @@ const DICT = {
   'sum.hits': ['aciertos', 'correct'],
   'sum.time': ['tiempo', 'time'],
   'sum.streak': ['Racha', 'Streak'],
-  'sum.freezeUsed': ['(congelador usado)', '(freeze used)'],
   // Subir de nivel: se avisa al terminar la tanda, que es cuando pasa.
   'sum.levelUp': ['¡Nivel {n}!', 'Level {n}!'],
-  'sum.rank': ['Puesto', 'Rank'],
   // El boton de volver a intentar SOLO lo que acabas de fallar.
-  'sum.retryFails': ['🩹 Repetir los fallos ({n})', '🩹 Retry your mistakes ({n})'],
+  'sum.retryFails': ['🩹 Repetir mis fallos ({n})', '🩹 Retry my mistakes ({n})'],
   'sum.mistakes': ['Repaso de fallos ({n})', 'Mistake review ({n})'],
   'sum.noMistakes': ['Ningún fallo. ¡Impecable! 🎯', 'Not a single mistake. Flawless! 🎯'],
-  'sum.again': ['Otra sesión', 'Another session'],
-  'sum.home': ['Inicio', 'Home'],
+  'sum.again': ['Otra ronda', 'Another round'],
+  'sum.backStartseite': ['Volver a Inicio', 'Back to Startseite'],
   'vsum.toReview': ['Para repasar', 'To review'],
-  'vsum.retryCards': ['🔄 Repasar las pendientes ({n})', '🔄 Review pending cards ({n})'],
-  'vsum.another': ['Otra ronda', 'Another round'],
-  'vsum.backEntry': ['Volver a la entrada', 'Back to the entry'],
-  'vsum.backDeck': ['Volver al mazo', 'Back to the deck'],
   // El boton del resumen dice a donde lleva: a los juegos de la leccion, o
   // -si venias de las tarjetas- a la teoria, que es de donde se lanzan.
-  'vsum.backExercises': ['Volver a los ejercicios', 'Back to the exercises'],
-  'vsum.backLesson': ['Volver a la lección', 'Back to the lesson'],
+  'vsum.backExercises': ['Volver a los ejercicios', 'Back to exercises'],
 
   // Grammatik / teoría
   'gr.sub': [
@@ -606,6 +597,7 @@ const DICT = {
   'gr.gWrite': ['Escribir', 'Type it'],
   'gr.gWriteSub': ['Sin opciones, a mano', 'No options, type it'],
   'ses.prev': ['El ejercicio anterior', 'The previous exercise'],
+  'ses.next': ['El ejercicio siguiente', 'The next exercise'],
   'ses.reviewing': ['Ya contestado', 'Already answered'],
   'ses.youAnswered': ['Contestaste:', 'You answered:'],
   'ses.writeGap': ['Escribe lo que falta', 'Type the missing word'],
@@ -636,27 +628,24 @@ const DICT = {
     'You have not played any session of this topic in a specific format yet.'
   ],
   'gr.crownLocked': [
-    'Te falta un {n}% para dominar el tema y ver tu acierto en cada minijuego.',
-    '{n}% to go before you master the topic and see your accuracy per minigame.'
+    'Te falta un {n}% para dominar el tema y ver tu porcentaje de error.',
+    '{n}% to master the topic and see your error rate.'
   ],
   'gr.pickGame': ['Elige el tipo de juego', 'Pick a game type'],
-  'gr.reviewWeak': ['🎯 Repasar mis fallos', '🎯 Review my mistakes'],
-  'gr.reviewWeakN': ['🎯 Repasar mis fallos ({n})', '🎯 Review my mistakes ({n})'],
+  'gr.reviewWeak': ['🩹 Repasar mis fallos', '🩹 Review my mistakes'],
+  'gr.reviewWeakN': ['🩹 Repasar mis fallos ({n})', '🩹 Review my mistakes ({n})'],
   // Se ve siempre, apagado mientras no haya nada que repasar: un boton que
   // aparece de la nada el dia que fallas algo no se entiende, y hasta entonces
   // no sabias que existia.
-  'gr.reviewWeakNone': [
-    'Aquí vuelve lo que falles, para repasarlo aparte. Todavía no has fallado nada.',
-    'Whatever you get wrong comes back here to review on its own. Nothing missed yet.'
-  ],
   'gr.reviewWeakHint': [
-    'Una tanda solo con lo que has fallado y aún no dominas.',
-    'A round with only what you got wrong and have not mastered yet.'
+    'Una tanda con los apartados en los que has cometido errores.',
+    'A round with the sections where you made mistakes.'
   ],
   // Bandera de meta, no diana: el boton de al lado (repasar fallos) ya usa la
   // diana, y desbloqueados quedaban dos iguales seguidos para cosas distintas.
   'voc.finish': ['🏁 Terminar el tema ({n})', '🏁 Finish the topic ({n})'],
-  'voc.finishLocked': ['🏁 Terminar el tema', '🏁 Finish the topic'],
+  'voc.finishPill': ['🏁 Terminar el tema', '🏁 Finish the topic'],
+  'voc.finishLocked': ['🏁 Terminar el tema (disponible al {p}%)', '🏁 Finish the topic (available at {p}%)'],
   'voc.finishLockedHint': [
     'Se abre al {p}% del tema: sirve para el ultimo tramo, cuando solo faltan unas pocas.',
     'Unlocks at {p}%: it is for the last stretch, when only a few are left.'
@@ -665,6 +654,37 @@ const DICT = {
     'Solo lo que todavía no cuenta para el 100%, empezando por lo que no te ha salido nunca.',
     'Only what does not count towards 100% yet, starting with what you have never seen.'
   ],
+  'voc.crosswordLocked': ['🔠 Crucigrama del tema (se desbloquea al {p}%)', '🔠 Topic crossword (unlocks at {p}%)'],
+  'voc.crosswordProgress': ['🔠 Crucigrama del tema ({n}/{total} completados)', '🔠 Topic crossword ({n}/{total} completed)'],
+  'voc.crosswordFinishedHint': ['Ya has completado los 3 crucigramas de este tema.', 'You have completed all 3 crosswords for this topic.'],
+  'voc.crosswordLockedHint': ['Se desbloquea al llegar al {p}% de este tema.', 'Unlocks when this topic reaches {p}%.'],
+  'voc.crosswordHint': ['Crucigrama con palabras y pistas en alemán de este tema.', 'A crossword with German words and clues from this topic.'],
+  'voc.crosswordTitle': ['Crucigrama del tema', 'Topic crossword'],
+  'voc.crosswordInstructions': ['Completa el crucigrama con las pistas en alemán.', 'Use the German clues to complete the crossword.'],
+  'voc.crosswordZoom': ['Zoom del crucigrama', 'Crossword zoom'],
+  'voc.crosswordZoomIn': ['Ampliar crucigrama', 'Zoom in on crossword'],
+  'voc.crosswordZoomOut': ['Reducir crucigrama', 'Zoom out on crossword'],
+  'voc.crosswordZoomReset': ['Restablecer el zoom del crucigrama', 'Reset crossword zoom'],
+  'voc.crosswordNavigation': ['Elegir crucigrama', 'Choose a crossword'],
+  'voc.crosswordRound': ['Crucigrama {n} de {total}', 'Crossword {n} of {total}'],
+  'voc.crosswordPrevious': ['Crucigrama anterior', 'Previous crossword'],
+  'voc.crosswordNext': ['Crucigrama siguiente', 'Next crossword'],
+  'voc.crosswordRoundsDone': ['{n}/{total} completados', '{n}/{total} completed'],
+  'voc.crosswordRoundDone': ['Crucigrama {n} resuelto · +{coins} monedas', 'Crossword {n} solved · +{coins} coins'],
+  'voc.crosswordFinishSet': ['Ver resultados', 'See results'],
+  'voc.crosswordNeedWords': ['Este tema no tiene suficientes palabras cortas para formar un crucigrama.', 'This topic does not have enough short words for a crossword.'],
+  'voc.crosswordDeckMissing': ['No se ha podido cargar el vocabulario de este tema. Vuelve atrás e inténtalo de nuevo.', 'This topic’s vocabulary could not be loaded. Go back and try again.'],
+  'voc.crosswordAcross': ['Horizontales', 'Across'],
+  'voc.crosswordDown': ['Verticales', 'Down'],
+  'voc.crosswordAnswer': ['Tu respuesta', 'Your answer'],
+  'voc.crosswordCheck': ['Comprobar', 'Check'],
+  'voc.crosswordTryAgain': ['No encaja todavía. Prueba otra vez.', 'Not quite. Try again.'],
+  'voc.crosswordCorrect': ['¡Correcto!', 'Correct!'],
+  'voc.crosswordSolved': ['Resuelta', 'Solved'],
+  'voc.crosswordEmptyCell': ['Casilla vacía', 'Empty cell'],
+  'voc.crosswordCoins': ['+{n} monedas por resolver el crucigrama', '+{n} coins for solving the crossword'],
+  'voc.crownCoins': ['+{n} monedas por dominar el tema', '+{n} coins for mastering the topic'],
+  'voc.crownEarned': ['Corona del tema', 'Topic crown'],
   'gr.aiChallenge': ['✨ Reto con IA', '✨ AI challenge'],
   'gr.aiChallengeHint': [
     'Tanda centrada en tus fallos y con la mayoría de los ejercicios escritos por la IA en ese momento.',
@@ -691,7 +711,6 @@ const DICT = {
     'Esto se generó en inglés. Vuelve a buscar para tenerlo en español.',
     'This was generated in Spanish. Search again to get it in English.'
   ],
-  'voc.combiTitle': ['Vocabulario al azar', 'Random vocabulary'],
   'voc.source': [
     'Estos ejercicios usan el contenido de aquí. Si subes la proporción de IA en Ajustes, cada partida añade además ejercicios nuevos del mismo tema (viene a cero). «Reto con IA» genera ejercicios aparte.',
     'These exercises use the content from here. If you raise the AI share in Settings, each round also adds fresh exercises on the same topic (starts at zero). "AI challenge" makes up separate exercises.'
@@ -730,12 +749,16 @@ const DICT = {
   'star.add': ['Guardar en favoritos', 'Save to favorites'],
   'star.remove': ['Quitar de favoritos', 'Remove from favorites'],
   'star.review': ['⭐ Repasar marcados ({n})', '⭐ Review starred ({n})'],
+  'star.reviewPill': ['⭐ Repasar marcados', '⭐ Review starred'],
+  'gr.reviewWeakPill': ['🩹 Repasar mis fallos', '🩹 Review my mistakes'],
   'oq.prompt': ['Responde a la pregunta', 'Answer the question'],
 
   // buscador de dudas
   'ask.title': ['Pregunta tu duda', 'Ask your question'],
   'ask.sub': ['explicación con tablas y ejemplos', 'explanation with tables and examples'],
   'ask.thinking': ['Pensando…', 'Thinking…'],
+  'ask.createTopic': ['Crear tema', 'Create topic'],
+  'ask.explain': ['Explicar', 'Explain'],
   'ask.off': [
     'Activa la IA en el menú lateral para usar el buscador de dudas.',
     'Turn on AI in the sidebar to use the question search.'
@@ -757,22 +780,20 @@ const DICT = {
     'Las funciones comunicativas de {libro}, con sus frases, sus diálogos y su práctica.',
     'The communicative functions of {libro}, with phrases, dialogues and practice.'
   ],
-  'komm.phrases': ['frases', 'phrases'],
-  'komm.practise': ['▶ Practicar', '▶ Practise'],
+  'komm.conversation': ['Conversación', 'Conversation'],
+  'komm.listenConv': ['🔊 Escuchar conversación', '🔊 Listen to conversation'],
   'komm.exPick': ['¿Cómo se dice en alemán?', 'How do you say it in German?'],
   'komm.exSentido': ['¿Qué quiere decir?', 'What does it mean?'],
   // La mezcla de Kommunikation: frases de todas las lecciones a la vez.
   'komm.mixTitle': ['Practicar sin elegir lección', 'Practise without picking a lesson'],
   'komm.mixSub': ['Frases al azar de toda la comunicación, o de un nivel entero. Diez preguntas de tipos distintos.', 'Random phrases from all the communication sections, or from one whole level. Ten questions of different kinds.'],
   'komm.mixAll': ['Toda la comunicación mezclada', 'All communication mixed'],
-  'komm.mixName': ['Todo mezclado', 'All mixed'],
+  'komm.mixName': ['Comunicación mixta', 'Mixed communication'],
   // La leccion, con pestañas: el rotulo de la rejilla de apartados y la
   // cuenta de los que llevas hechos, al lado del titulo.
   'komm.hechas': ['hechos', 'done'],
   'komm.exPassed': ['✓ Apartado completado.', '✓ Section completed.'],
   'komm.exFailed': ['Con un {p}% cuenta como hecho. Otra vuelta.', 'It counts as done from {p}%. Go again.'],
-  'komm.practiceAgain': ['Otra vuelta', 'Go again'],
-  'komm.backTheory': ['Volver a la teoría', 'Back to the theory'],
   'komm.convThis': ['💬 Conversación sobre esto', '💬 Conversation about this'],
   'komm.convLesson': ['Conversación nativa de la lección', 'Native conversation for this lesson'],
   'komm.convLessonSub': [
@@ -808,17 +829,23 @@ const DICT = {
     'Puedes escribir y guardar apuntes sin IA. Para pasarlos a limpio y generar ejercicios, actívala en el menú lateral.',
     'You can write and save notes without AI. To tidy them up and generate exercises, turn it on in the sidebar.'
   ],
-  'nb.new': ['+ Nueva entrada', '+ New entry'],
+  'nb.new': ['+ Neuer Eintrag', '+ Neuer Eintrag'],
   'nb.withEx': ['{n} con ejercicios', '{n} with exercises'],
   'nb.empty': [
     'Aún no hay apuntes. Crea la primera entrada después de tu próxima clase.',
     'No notes yet. Create your first entry after your next class.'
   ],
   'nb.noContent': ['Sin contenido todavía', 'No content yet'],
-  'nb.clean': ['✨ A limpio', '✨ Tidied up'],
+  'nb.clean': ['A limpio', 'Tidied up'],
   'nb.exercises': ['📝 {n} ejercicios', '📝 {n} exercises'],
-  'foto.confirmDel': ['¿Borrar este ejercicio resuelto?', 'Delete this solved exercise?'],
+  'foto.confirmDel': ['¿Borrar esta foto del cuaderno?', 'Delete this photo from the notebook?'],
   'foto.deleteOne': ['Borrar', 'Delete'],
+  'foto.savePhoto': ['Guardar foto', 'Save photo'],
+  'foto.saving': ['Guardando…', 'Saving…'],
+  'foto.savedOnly': ['Foto guardada', 'Saved photo'],
+  'foto.savedCount': ['Fotos guardadas ({n})', 'Saved photos ({n})'],
+  'foto.openSaved': ['Ampliar foto', 'Enlarge photo'],
+  'foto.close': ['Cerrar foto', 'Close photo'],
   'foto.doneA': ['✅ Ejercicios resueltos ({n})', '✅ Solved exercises ({n})'],
   'foto.doneB': ['✅ Imágenes descritas ({n})', '✅ Described pictures ({n})'],
   'foto.keepHint': [
@@ -837,25 +864,25 @@ const DICT = {
   'nb.fromBook': ['De esta lección en el libro ({band}):', 'From this lesson in the book ({band}):'],
   'nb.yourNotes': ['Tus apuntes de clase', 'Your class notes'],
   'nb.notesPh': ['Escribe aquí lo que has apuntado en clase, tal cual…', 'Write here what you noted in class, just as it is…'],
-  'nb.doClean': ['✨ Pasar a limpio', '✨ Tidy it up'],
+  'nb.doClean': ['Pasar a limpio', 'Tidy it up'],
   'nb.cleaning': ['Pasando a limpio…', 'Tidying up…'],
   'nb.doItems': ['📝 Generar ejercicios', '📝 Generate exercises'],
   'nb.offBoth': ['Activa la IA en el menú lateral para estas dos opciones.', 'Turn on AI in the sidebar for these two options.'],
-  'nb.cleanTitle': ['✨ A limpio', '✨ Tidied up'],
-  'nb.regen': ['regenerar', 'regenerate'],
+  'nb.cleanTitle': ['A limpio', 'Tidied up'],
+  'nb.regen': ['Regenerar', 'Regenerate'],
   'nb.review': ['📝 Repaso · {n} ejercicios', '📝 Review · {n} exercises'],
   'nb.startReview': ['▶ Empezar repaso', '▶ Start review'],
 
   // Foto de un ejercicio / imagen
-  'foto.titleA': ['📷 Foto de un ejercicio', '📷 Photo of an exercise'],
+  'foto.titleA': ['📷 Foto para guardar o resolver un ejercicio', '📷 Photo to save or solve an exercise'],
   'foto.subA': [
-    'Haz una foto del ejercicio de clase y te lo resuelvo, corrijo lo que hayas escrito y te explico la regla.',
-    'Take a photo of the exercise from class: I solve it, correct what you wrote and explain the rule.'
+    'Guarda la foto para consultarla después, o pulsa «Resolver el ejercicio» para recibir correcciones y una explicación.',
+    'Save the photo to review later, or choose “Solve the exercise” to get corrections and an explanation.'
   ],
   'foto.titleB': ['🖼️ Describir una imagen', '🖼️ Describe a picture'],
   'foto.subB': [
-    'Sube cualquier imagen y te la describo en alemán, con su vocabulario, frases para hablar de ella y preguntas.',
-    'Upload any picture and I describe it in German, with vocabulary, phrases to talk about it and questions.'
+    'Guarda cualquier imagen para verla más tarde, o pide que la describa en alemán con vocabulario, frases y preguntas.',
+    'Save any picture to view it later, or ask for a German description with vocabulary, phrases and questions.'
   ],
   'foto.pickA': ['Elegir o hacer una foto del ejercicio', 'Choose or take a photo of the exercise'],
   'foto.pick': ['Elegir o hacer una foto', 'Choose or take a photo'],
@@ -867,8 +894,8 @@ const DICT = {
   'foto.remove': ['Quitar foto', 'Remove photo'],
   'foto.wait': ['Leyendo la foto… tarda un minuto.', 'Reading the photo… this takes a minute.'],
   'foto.needsLocal': [
-    'Para leer fotos hace falta «IA · Claude (local, sin key)»: es el único que puede abrir la imagen.',
-    'Reading photos needs "AI · Claude (local, no key)": it is the only one that can open the image.'
+    'Para resolver o describir fotos hace falta «IA · Claude (local, sin key)». Guardarlas no necesita IA.',
+    'Solving or describing photos needs "AI · Claude (local, no key)". Saving them does not need AI.'
   ],
   'foto.description': ['Descripción', 'Description'],
   'foto.phrases': ['💬 Frases para hablar de esto', '💬 Phrases to talk about this'],
@@ -881,9 +908,8 @@ const DICT = {
     'Write in German about your day, whatever it is. The AI corrects it, explains every mistake and gives you a lesson on what you most need to review.'
   ],
   'tb.entries': ['Entradas', 'Entries'],
+  'tb.new': ['+ Neuer Eintrag', '+ Neuer Eintrag'],
   'tb.wordsWritten': ['Palabras escritas', 'Words written'],
-  'tb.daysRow': ['Días seguidos', 'Days in a row'],
-  'tb.corrected': ['Corregidas', 'Corrected'],
   'tb.topMistakes': ['Lo que más se te repite', 'What you repeat most'],
   'tb.topMistakesSub': [
     'Sacado de todas tus correcciones. Si algo sale mucho, ahí tienes tu próximo tema.',
@@ -1351,7 +1377,6 @@ const DICT = {
     'Random exercises from all the grammar, or from one whole level. For when you want to review and do not know what.'
   ],
   'gr.mixAll': ['Toda la gramática mezclada', 'All the grammar mixed'],
-  'gr.mixBand': ['Solo {b}', '{b} only'],
   'gr.soloPlantillas': [
     'Todos los ejercicios salen de las plantillas del libro.',
     'All exercises come from the book templates.'
@@ -1363,8 +1388,10 @@ const DICT = {
 
   // hg
   'hg.hintEs': ['Qué significa', 'What it means'],
+  'hg.instruction': ['Adivina la palabra con las letras disponibles. Puedes pedir pistas.', 'Guess the word using the available letters. You can ask for hints.'],
   'hg.hintArt': ['Artículo / primera letra', 'Article / first letter'],
   'hg.hintLetter': ['Descubrir una letra', 'Reveal a letter'],
+  'hg.revealedLetter': ['Letra revelada: {l}', 'Letter revealed: {l}'],
   'hg.noWords': [
     'Este mazo no tiene palabras sueltas para jugar al ahorcado.',
     'This deck has no single words to play hangman with.'
@@ -1407,7 +1434,7 @@ const DICT = {
   ],
   'komm.exAntwort': ['¿Qué le contestas?', 'What do you reply?'],
   'komm.exHueco': ['¿Qué palabra falta?', 'Which word is missing?'],
-  'komm.exFrage': ['Te contestan esto. ¿Qué habías dicho?', 'They reply this. What had you said?'],
+  'komm.exFrage': ['Te contestan a lo que ves arriba. ¿Qué habías dicho?', 'They reply to what you see above. What had you said?'],
   'komm.largo': ['Extensión', 'Length'],
   'komm.largoCorta': ['Corta', 'Short'],
   'komm.largoMedia': ['Media', 'Medium'],
@@ -1457,7 +1484,6 @@ const DICT = {
   'sug.more': ['Otras', 'Others'],
 
   // sum
-  'sum.backTema': ['Volver al tema', 'Back to the topic'],
 
   // tb
   'tb.subSinIA': [
@@ -1490,11 +1516,11 @@ const DICT = {
   'voc.colNaranja': ['Naranja', 'Orange'],
   'voc.colMorado': ['Morado', 'Purple'],
   'voc.combiSubDado': [
-    'Todo el vocabulario mezclado y un juego distinto cada vez. Reconocer una palabra sin saber de qué tema venía es lo que de verdad cuesta.',
-    'All the vocabulary mixed, and a different game every time. Recognising a word without knowing which topic it came from is the hard part.'
+    'Practica vocabulario con distintos tipos de ejercicios, usando todos los temas o un nivel concreto.',
+    'Practise vocabulary with different exercise types from every topic or one level.'
   ],
   'voc.combiNombre': ['Vocabulario mezclado ({n} mazos)', 'Mixed vocabulary ({n} decks)'],
-  'voc.combiAll': ['Todo el vocabulario', 'All the vocabulary'],
+  'voc.combiAll': ['Todo el vocabulario mezclado', 'All the vocabulary mixed'],
   'voc.sourceSinIA': [
     'Todos estos juegos usan las palabras de esta lección.',
     'All these games use the words from this lesson.'

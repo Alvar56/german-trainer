@@ -6,6 +6,62 @@ import { fusionarClave } from './fusion.js';
 
 const PREFIX = 'dtrainer:';
 
+function nuevoIdContador() {
+  try {
+    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  } catch {
+    /* usa el identificador de respaldo */
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function leerOCrearId(almacen, clave) {
+  try {
+    let id = almacen?.getItem(clave);
+    if (!id) {
+      id = nuevoIdContador();
+      almacen?.setItem(clave, id);
+    }
+    return id || nuevoIdContador();
+  } catch {
+    return nuevoIdContador();
+  }
+}
+
+let idCarrilContador;
+
+function carrilContador() {
+  if (idCarrilContador) return idCarrilContador;
+  const dispositivo = leerOCrearId(globalThis.localStorage, 'dtrainer_dispositivo_contadores');
+  // Un carril por pestaña evita que dos pestañas abiertas a la vez se pisen
+  // al actualizar el mismo contador. Estos identificadores no se exportan ni
+  // se sincronizan: cada copia aporta su propio carril.
+  const pestaña = leerOCrearId(globalThis.sessionStorage || globalThis.localStorage, 'dtrainer_pestana_contadores');
+  idCarrilContador = `${dispositivo}:${pestaña}`;
+  return idCarrilContador;
+}
+
+// Suma un incremento a un contador acumulativo y conserva su base por carril.
+// Al sincronizar, dos dispositivos pueden sumar sus incrementos sin volver a
+// sumar el mismo progreso al recibirlo más de una vez.
+export function sumarContadorLocal(registro, campo, incremento = 1) {
+  const cantidad = Math.max(0, Number(incremento) || 0);
+  if (!registro || !cantidad) return;
+  const baseCampo = `${campo}Base`;
+  const carrilesCampo = `${campo}Carriles`;
+  if (!Number.isFinite(Number(registro[baseCampo]))) {
+    registro[baseCampo] = Math.max(0, Number(registro[campo]) || 0);
+    registro[carrilesCampo] = {};
+  }
+  const carriles = registro[carrilesCampo] && typeof registro[carrilesCampo] === 'object'
+    ? registro[carrilesCampo]
+    : (registro[carrilesCampo] = {});
+  const carril = carrilContador();
+  carriles[carril] = (Number(carriles[carril]) || 0) + cantidad;
+  registro[campo] = Math.max(0, Number(registro[baseCampo]) || 0)
+    + Object.values(carriles).reduce((suma, n) => suma + (Number(n) || 0), 0);
+}
+
 // El valor por defecto se devuelve SIEMPRE en copia, nunca el objeto que nos
 // han pasado.
 //
@@ -25,11 +81,50 @@ function copia(v) {
   }
 }
 
+// Lo ya leído, para no volver a leerlo. Sin esto cada read() sacaba y
+// descodificaba la clave entera: el progreso del vocabulario pesa ~800 KB y
+// pintar una pantalla lo pedía miles de veces (una por tarjeta), así que
+// cambiar de sección tardaba de 1,5 a 3 segundos, y más cuanto más practicabas.
+//
+// Todas las lecturas y escrituras de 'dtrainer:' pasan por este fichero, así
+// que basta con olvidar la clave cada vez que se escribe. Se olvida en vez de
+// guardar el valor nuevo a propósito: la siguiente lectura devuelve un objeto
+// NUEVO, y React, que compara por referencia, repinta igual que antes.
+const cache = new Map();
+const AUSENTE = Symbol('ausente');
+
+function olvidar(key) {
+  cache.delete(key);
+}
+
+// Para quien toca localStorage por debajo de esta capa: las pruebas, que
+// preparan los datos a mano. La app no lo necesita.
+export function olvidarCache() {
+  cache.clear();
+}
+
+// Otra pestaña ha escrito: lo de aquí ya no vale.
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('storage', (e) => {
+    if (e.key == null) cache.clear();
+    else if (e.key.startsWith(PREFIX)) olvidar(e.key.slice(PREFIX.length));
+  });
+}
+
 function read(key, fallback) {
+  if (cache.has(key)) {
+    const v = cache.get(key);
+    return v === AUSENTE ? copia(fallback) : v;
+  }
   try {
     const raw = localStorage.getItem(PREFIX + key);
-    if (raw == null) return copia(fallback);
-    return JSON.parse(raw);
+    if (raw == null) {
+      cache.set(key, AUSENTE);
+      return copia(fallback);
+    }
+    const v = JSON.parse(raw);
+    cache.set(key, v);
+    return v;
   } catch {
     return copia(fallback);
   }
@@ -99,6 +194,7 @@ function limpiarSucias(subidas) {
 // Escribe SIN marcar como sucia y SIN disparar un envio: es lo que se usa al
 // traerse datos del servidor, que por definicion ya estan alli.
 function writeLimpio(key, value) {
+  olvidar(key);
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
   } catch (e) {
@@ -173,6 +269,29 @@ function pushSync() {
   syncTimeout = setTimeout(enviarSync, 1000);
 }
 
+// Si el servidor no conoce /api/sync-cambios (uno de antes), se deja de
+// intentar y se sube entero, como siempre.
+let servidorSinCambios = false;
+
+// Lo que hay que subir: solo las claves sucias, o todo si no queda otra.
+function peticionSync(localTs, enviadas) {
+  if (!servidorSinCambios && enviadas.size) {
+    const cambios = {};
+    const ILEGIBLE = '\u0000ilegible';
+    for (const k of enviadas) {
+      if (localStorage.getItem(PREFIX + k) == null) {
+        cambios[k] = null; // borrada aquí: también allí
+        continue;
+      }
+      // Un JSON roto no se sube: mandaría null y el servidor lo borraría.
+      const v = read(k, ILEGIBLE);
+      if (v !== ILEGIBLE) cambios[k] = v;
+    }
+    return { url: '/api/sync-cambios', body: { localTs, cambios } };
+  }
+  return { url: '/api/sync', body: { localTs, payload: storage.exportAll() } };
+}
+
 function enviarSync(reintento = false) {
   if (enVuelo) {
     pendiente = true;
@@ -180,12 +299,21 @@ function enviarSync(reintento = false) {
   }
   const localTs = Number(localStorage.getItem('dtrainer_sync_ts') || 0);
   const enviadas = sucias();
-  enVuelo = fetch('/api/sync', {
+  const { url, body } = peticionSync(localTs, enviadas);
+  enVuelo = fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ localTs, payload: storage.exportAll() })
+    body: JSON.stringify(body)
   })
     .then(async (res) => {
+      // Servidor de antes: no conoce la ruta de cambios. Se repite entero, y
+      // solo desde esa ruta: si /api/sync tampoco existe, no hay servidor y
+      // reintentar seria un bucle.
+      if (url !== '/api/sync' && (res.status === 404 || res.status === 405)) {
+        servidorSinCambios = true;
+        pendiente = true;
+        return;
+      }
       if (res.status === 409) {
         // El fichero lo ha tocado otra pestaña u otro aparato despues de la
         // ultima vez que supimos de el.
@@ -247,6 +375,7 @@ function enviarSync(reintento = false) {
 }
 
 function write(key, value) {
+  olvidar(key);
   try {
     localStorage.setItem(PREFIX + key, JSON.stringify(value));
     marcarSucia(key);
@@ -266,6 +395,7 @@ export const storage = {
     return next;
   },
   remove(key) {
+    olvidar(key);
     try {
       localStorage.removeItem(PREFIX + key);
       marcarSucia(key);
@@ -302,6 +432,7 @@ export const storage = {
       if (k && k.startsWith(PREFIX) && !conservar.includes(k.slice(PREFIX.length))) fuera.push(k);
     }
     fuera.forEach((k) => localStorage.removeItem(k));
+    cache.clear();
     return fuera.length;
   }
 };

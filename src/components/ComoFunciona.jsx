@@ -223,7 +223,11 @@ export default function ComoFunciona() {
               </tr>
               <tr>
                 <td>🪢 {pick('Ahorcado', 'Hangman')} <b>1–3</b></td>
-                <td>{pick('Adivinar la palabra letra a letra con tres pistas (traducción, inicial y vocal).', 'Guess the word letter by letter with three hints (meaning, initial, and vowel).')}</td>
+                <td>{pick('Adivinar una palabra letra a letra. Las pistas muestran el artículo o la inicial, revelan una letra y dan el significado.', 'Guess a word letter by letter. The hints show its article or first letter, reveal another letter, and give its meaning.')}</td>
+              </tr>
+              <tr>
+                <td>🔠 {pick('Crucigrama del tema', 'Topic crossword')}</td>
+                <td>{pick('Completar una cuadrícula con palabras del tema a partir de pistas en alemán.', 'Fill in a grid with topic vocabulary using German clues.')}</td>
               </tr>
             </tbody>
           </table>
@@ -292,6 +296,46 @@ export default function ComoFunciona() {
           </p>
         </Bloque>
 
+        <Bloque titulo={pick('📍 Avance y repasos', '📍 Progress and review')}>
+          <ul className="cf-lista">
+            <li>
+              <strong>{pick('Durante un ejercicio', 'During an exercise')}:</strong>{' '}
+              {pick(
+                'La barra muestra el avance de la tanda: en una sesión normal avanza al continuar y, al repasar fallos, al responderlos bien.',
+                'The bar shows session progress: in a regular session it advances when you continue, and in mistake review when you answer correctly.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Práctica mixta', 'Mixed practice')}:</strong>{' '}
+              {pick(
+                'Puedes elegir como máximo un nivel y una dificultad. Si no marcas ninguno, se mantienen todos los niveles y formatos. Fácil omite las preguntas de respuesta escrita; Difícil omite ordenar frases. Los ejercicios se eligen al azar dentro de la selección.',
+                'Choose at most one level and one difficulty. If you select neither, all levels and formats remain available. Easy skips written-response tasks; Difficult skips sentence-order tasks. Exercises are chosen at random from the selection.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Repasar mis fallos', 'Review my mistakes')}:</strong>{' '}
+              {pick(
+                'Reúne los ejercicios que fallaste. Al acertar, baja el total pendiente y avanza la barra.',
+                'Collects the exercises you got wrong. When you answer one correctly, the pending total drops and the bar advances.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Ejercicios marcados', 'Starred exercises')}:</strong>{' '}
+              {pick(
+                'Guarda ejercicios con la estrella para volver a practicarlos más tarde.',
+                'Star exercises to save them and practise them again later.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Estadísticas «Tema dominado»', '“Topic mastered” statistics')}:</strong>{' '}
+              {pick(
+                'En «Ejercicios» puedes consultar tu rendimiento y tus récords en cada minijuego del tema.',
+                'In “Exercises”, you can check your performance and records for each minigame in the topic.'
+              )}
+            </li>
+          </ul>
+        </Bloque>
+
         <Bloque titulo={pick('👑 Las coronas y los desbloqueos', '👑 Crowns and unlocks')}>
           <p>
             {pick(
@@ -303,29 +347,36 @@ export default function ComoFunciona() {
             <li>
               <strong>👑 {pick('Coronas (Kronen)', 'Crowns (Kronen)')}:</strong>{' '}
               {pick(
-                'Ganas 1 corona por cada lección completada al 100% en sus tres áreas (Gramática, Vocabulario y Comunicación). Las coronas desbloquean la colección de la realeza en la tienda de Felix (corona real, tiara, cetro, orbe, capa real, túnica de rey, vestido de reina, monóculo, zapatillas de cristal...).',
-                'You earn 1 crown for each lesson completed to 100% across all three areas (Grammar, Vocabulary, and Communication). Crowns unlock the royal collection in Felix’s shop (royal crown, tiara, sceptre, orb, royal cape, king’s robe, queen’s gown, monocle, glass slippers...).'
+                'Ganas 1 corona cuando la Gramática de una lección llega al 100%. Las coronas desbloquean artículos de la colección real en la tienda de Felix (corona, tiara, cetro, orbe y ropa real).',
+                'You earn 1 crown when a lesson’s Grammar reaches 100%. Crowns unlock items from the royal collection in Felix’s shop (crowns, tiaras, sceptres, an orb, and royal outfits).'
               )}
             </li>
             <li>
               <strong>✨ {pick('Auras y efectos de partículas', 'Particle auras & effects')}:</strong>{' '}
               {pick(
-                'Se desbloquean alcanzando hitos de racha de días seguidos (lluvia de estrellas, chispas doradas, burbujas flotantes...).',
-                'Unlocked by achieving day streak milestones (stardust, golden sparks, floating bubbles...).'
+                'Los efectos de partículas se desbloquean al batir hitos de respuestas correctas seguidas. Otros artículos de la tienda se desbloquean al mantener una racha de días; cada artículo muestra su requisito.',
+                'Particle effects unlock at correct-answer streak milestones. Other shop items unlock through day streaks; each item shows its requirement.'
               )}
             </li>
             <li>
               <strong>🏞️ {pick('Fondos y escenarios', 'Backgrounds & scenes')}:</strong>{' '}
               {pick(
-                'Los fondos para la habitación de Felix (Pradera, Playa, Desierto, Glaciar de hielo, Aula de clase, Espacio exterior) se compran con las monedas acumuladas.',
-                'Backgrounds for Felix’s room (Meadow, Beach, Desert, Ice glacier, Classroom, Outer space) are purchased with your accumulated coins.'
+                'Los fondos disponibles (Pradera, Playa, Desierto, Hielo y nieve, Clase y Espacio) se compran con monedas. Al elegir uno, su degradado de color aparece en Felix y en las pantallas de ejercicios.',
+                'Available backgrounds (Meadow, Beach, Desert, Ice and snow, Classroom, and Space) are purchased with coins. Choosing one applies its colour gradient to Felix and the exercise screens.'
+              )}
+            </li>
+            <li>
+              <strong>🐾 {pick('Cambiar de animal', 'Change animal')}:</strong>{' '}
+              {pick(
+                'Cada animal cuesta 500 monedas para desbloquearlo una sola vez. Después puedes cambiar gratis entre los animales que ya tengas.',
+                'Each animal costs 500 coins to unlock once. After that, you can switch between animals you own for free.'
               )}
             </li>
             <li>
               <strong>🏷️ {pick('Nombre de Felix', 'Felix’s name')}:</strong>{' '}
               {pick(
-                'Si quieres cambiarle el nombre a tu mascota zorro, puedes hacerlo desde su panel por 100 monedas.',
-                'If you want to change your pet fox’s name, you can do so in his panel for 100 coins.'
+                'Puedes cambiar el nombre de tu mascota desde su panel por 1000 monedas; se paga una sola vez.',
+                'You can rename your pet from its panel for 1000 coins; this is a one-time purchase.'
               )}
             </li>
           </ul>
@@ -471,6 +522,12 @@ export default function ComoFunciona() {
             </li>
             <li>
               {pick(
+                'Al terminar una tanda, recibes 5 monedas extra si tu racha actual es de 10 o más respuestas correctas seguidas. Es la racha de respuestas, no la de días.',
+                'Finish a round with a current streak of 10 or more correct answers in a row to receive 5 extra coins. This is the answer streak, not the day streak.'
+              )}
+            </li>
+            <li>
+              {pick(
                 'Fallar un ejercicio nunca quita monedas. Las tarjetas (flashcards) son para repaso y estudio visual libre, por lo que no otorgan monedas (la nota te la pones tú).',
                 'Missing an exercise never costs coins. Flashcards are for free visual study and review, so they do not award coins (you grade yourself).'
               )}
@@ -536,8 +593,8 @@ export default function ComoFunciona() {
         <Bloque titulo={pick('💡 Las pistas', '💡 The hints')}>
           <p>
             {pick(
-              'En el juego de der / die / das y en Kasus Trainer las pistas te ayudan a deducir el artículo sin darte la respuesta directamente:',
-              'In the der / die / das game and Kasus Trainer, hints help you deduce the article without giving away the direct answer:'
+              'Las ayudas dependen del ejercicio; algunas revelan información poco a poco y no muestran la respuesta completa:',
+              'Hints depend on the exercise; some reveal information gradually without showing the full answer:'
             )}
           </p>
           <ul className="cf-lista">
@@ -553,6 +610,41 @@ export default function ComoFunciona() {
               {pick(
                 'Si la palabra no tiene una terminación fija con regla, la pista descarta automáticamente una de las opciones incorrectas para que solo tengas que elegir entre las dos restantes.',
                 'If the word does not follow a fixed ending rule, the hint automatically eliminates one incorrect option so you only have to choose between the remaining two.'
+              )}
+            </li>
+            <li>
+              <strong>Kasus Trainer:</strong>{' '}
+              {pick(
+                'La pista «Género» muestra el artículo del sustantivo en nominativo; «Caso» indica el caso que debes aplicar en la frase.',
+                'The “Gender” hint shows the noun’s nominative article; “Case” tells you which case to apply in the sentence.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Ahorcado', 'Hangman')}:</strong>{' '}
+              {pick(
+                'La primera pista da el artículo si la palabra lo tiene; si no, muestra la inicial. La segunda revela una letra que aún no has probado y la tercera muestra la traducción.',
+                'The first hint gives the article if the word has one; otherwise, it shows the first letter. The second reveals an unused letter, and the third shows the translation.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Escribir y La palabra que falta', 'Type it and The missing word')}:</strong>{' '}
+              {pick(
+                'La inicial de cada palabra aparece desde el principio. Cada pista descubre otra letra; en algunas preguntas de diálogo también puedes mostrar la traducción.',
+                'The first letter of each word is visible from the start. Each hint reveals another letter; some dialogue questions also let you show the translation.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Traducir frases', 'Translate sentences')}:</strong>{' '}
+              {pick(
+                'Las pistas muestran partes de la respuesta de forma progresiva: primero una palabra y el número total de palabras, y luego más palabras.',
+                'Hints reveal parts of the answer progressively: first one word and the total word count, then more words.'
+              )}
+            </li>
+            <li>
+              <strong>{pick('Crucigrama', 'Crossword')}:</strong>{' '}
+              {pick(
+                'Cada palabra tiene una pista integrada en alemán: puede ser una definición, un ejemplo con un hueco o una pregunta sobre su significado.',
+                'Each word has an integrated clue in German: it may be a definition, an example with a blank, or a question about its meaning.'
               )}
             </li>
           </ul>

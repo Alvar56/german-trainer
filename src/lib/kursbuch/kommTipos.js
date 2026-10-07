@@ -11,6 +11,12 @@
 // componente como node.
 
 const SIGNOS = /[.,!?¿¡"„“]/g;
+const PALABRAS_FUNCION = new Set(['der', 'die', 'das', 'den', 'dem', 'ein', 'eine', 'und', 'ist', 'ich', 'du', 'sie']);
+const NUMEROS = new Set([
+  'null', 'eins', 'zwei', 'drei', 'vier', 'fünf', 'sechs', 'sieben', 'acht', 'neun', 'zehn',
+  'elf', 'zwölf', 'dreizehn', 'vierzehn', 'fünfzehn', 'sechzehn', 'siebzehn', 'achtzehn', 'neunzehn',
+  'zwanzig', 'dreißig', 'vierzig', 'fünfzig', 'sechzig', 'siebzig', 'achtzig', 'neunzig', 'hundert', 'tausend'
+]);
 
 // Los seis tipos, en el orden en que salen los botones.
 export const TIPOS = ['decir', 'contestar', 'entender', 'hueco', 'significado', 'ordenar'];
@@ -25,23 +31,36 @@ export const NOMBRE_TIPO = {
   ordenar: ['Ordenar', 'Word order']
 };
 
-// La palabra que se tapa: la más larga que no sea la primera -la primera va en
-// mayúscula y se adivina sola- ni un artículo. Devuelve null si la frase no da
-// para tanto, y entonces se prueba con otro tipo.
+export function palabraHuecoValida(palabra) {
+  const limpia = String(palabra || '').replace(SIGNOS, '').trim();
+  const minuscula = limpia.toLowerCase();
+  return limpia.length >= 4 &&
+    !/\p{Lu}/u.test(limpia) &&
+    !/\d/.test(limpia) &&
+    /^\p{L}+$/u.test(limpia) &&
+    !PALABRAS_FUNCION.has(minuscula) &&
+    !NUMEROS.has(minuscula);
+}
+
+// La palabra que se tapa debe poder deducirse de la frase. Los sustantivos
+// alemanes y los nombres propios empiezan en mayúscula; en concreto, no
+// escondemos personas, lugares, fechas ni cifras, que dependen de memorizar un
+// dato y no de entender el idioma. Si no queda una palabra adecuada, se usa
+// otro tipo de ejercicio.
 //
 // `salto` es para cuando la misma frase vuelve a caer en la tanda: en vez de
 // taparle otra vez la misma palabra, se tapa la siguiente en tamaño.
 export function palabraTapable(palabras, salto = 0) {
-  const fuera = new Set(['der', 'die', 'das', 'den', 'dem', 'ein', 'eine', 'und', 'ist', 'ich', 'du', 'sie']);
   const limpias = palabras.map((x) => x.replace(SIGNOS, '').toLowerCase());
   const candidatas = [];
   for (let k = 1; k < palabras.length; k++) {
     const limpia = palabras[k].replace(SIGNOS, '');
-    if (limpia.length < 4 || fuera.has(limpia.toLowerCase())) continue;
+    const minuscula = limpia.toLowerCase();
+    if (!palabraHuecoValida(limpia)) continue;
     // Tampoco vale una palabra que se repite en la propia frase: en
-    // "Passt dir 18 Uhr? - Ja, das ___." la tienes escrita dos líneas más
+    // "Passt dir 18 Uhr? – Ja, das ___." la tienes escrita dos líneas más
     // arriba y el hueco se rellena solo.
-    if (limpias.filter((x) => x === limpia.toLowerCase()).length > 1) continue;
+    if (limpias.filter((x) => x === minuscula).length > 1) continue;
     candidatas.push({ k, largo: limpia.length });
   }
   if (!candidatas.length) return null;

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { t } from '../lib/i18n.js';
+import { t, pick } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
 import { evaluateAnswer } from '../lib/ai.js';
 import { getLektion } from '../lib/kursbuch/index.js';
+import { capitalizarInicioFrase } from '../lib/frases.js';
+import Umlaut from './Umlaut.jsx';
 
 export default function OpenQuestion({ item, onAnswer, lektionId }) {
   const [texto, setTexto] = useState('');
@@ -44,19 +46,31 @@ export default function OpenQuestion({ item, onAnswer, lektionId }) {
     }
   }
 
+  function rendirse() {
+    if (hecho || evaluando) return;
+    setTexto('');
+    setFeedback({
+      correct: false,
+      gaveUp: true,
+      why: item.answer ? tc(item.answer) : pick('Puedes continuar con el siguiente ejercicio.', 'You can continue to the next exercise.')
+    });
+    setHecho(true);
+    onAnswer(false, '');
+  }
+
   return (
-    <div>
+    <div className="open-question">
       <div className="prompt-label">{tc(item.anweisung) || t('oq.prompt')}</div>
       
       {item.context && (
         <div style={{ marginBottom: 16, padding: 12, background: 'var(--surface-2)', borderRadius: 8, fontStyle: 'italic', fontSize: '0.95rem' }}>
-          {item.context}
+          {tc(item.context)}
         </div>
       )}
 
       {item.sentence && (
         <div className="sentence" style={{ marginBottom: 16 }}>
-          {item.sentence}
+          {capitalizarInicioFrase(tc(item.sentence))}
         </div>
       )}
 
@@ -64,17 +78,24 @@ export default function OpenQuestion({ item, onAnswer, lektionId }) {
         <textarea
           ref={input}
           className={'ask-input write-input' + (hecho ? (feedback?.correct ? ' bien' : ' mal') : '')}
+          lang="de"
+          spellCheck={false}
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={hecho || evaluando}
           placeholder={t('oq.placeholder')}
         />
-        
+        {!hecho && <Umlaut campo={input} onTexto={setTexto} disabled={evaluando} />}
         {!hecho && (
-          <button className="btn-primary" style={{ marginTop: 16 }} onClick={comprobar} disabled={!texto.trim() || evaluando}>
-            {evaluando ? t('oq.marking') : t('ses.check')}
-          </button>
+          <div className="open-question-actions">
+            <button className="btn-primary btn-corregir" onClick={comprobar} disabled={!texto.trim() || evaluando}>
+              {evaluando ? t('oq.marking') : t('ses.check')}
+            </button>
+            <button className="btn-ghost btn-corregir" onClick={rendirse} disabled={evaluando}>
+              {pick('No me sale', 'I give up')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -83,7 +104,7 @@ export default function OpenQuestion({ item, onAnswer, lektionId }) {
       )}
       {hecho && feedback && (
         <div style={{ marginTop: 20, padding: 16, background: feedback.correct ? 'var(--good-bg)' : 'var(--bad-bg)', borderLeft: `4px solid ${feedback.correct ? 'var(--good)' : 'var(--bad)'}`, borderRadius: 8 }}>
-          <strong>{feedback.correct ? t('oq.good') : t('oq.improve')}</strong>
+          <strong>{feedback.gaveUp ? pick('Respuesta modelo', 'Model answer') : feedback.correct ? t('oq.good') : t('oq.improve')}</strong>
           {feedback.why && <p style={{ marginTop: 8, marginBottom: 0 }}>{feedback.why}</p>}
         </div>
       )}

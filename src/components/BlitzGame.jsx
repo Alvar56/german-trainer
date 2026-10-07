@@ -1,13 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
+import GameModePill from './GameModePill.jsx';
 import { recordCard, deckStats } from '../lib/vocab.js';
+import { tc } from '../lib/contenido/index.js';
 import { recordActivity } from '../lib/streak.js';
 import { cobrarEjercicio, RECONOCER, ganar } from '../lib/monedas.js';
 import { bumpSessions } from '../lib/progress.js';
 import { saveRun } from '../lib/leaderboard.js';
 import { pick } from '../lib/i18n.js';
 import { apuntarRespuesta } from '../lib/rachas.js';
-import { useTeclas, teclasDeOpciones } from '../lib/teclas.js';
+import { useExerciseActive, useTeclas, teclasDeOpciones } from '../lib/teclas.js';
 
 // Medio minuto en Vocabulario, donde la pregunta es una palabra y se lee de
 // un vistazo. Gramatica y Kommunikation piden mas: ahi hay que leer una frase
@@ -38,6 +40,7 @@ function revuelve(a) {
 //   contexto   { id, nombre, emoji, pct } para el marcador y el ranking
 //   bono       segundos que suma cada acierto
 export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas, segundos = SEGUNDOS, bono = BONO, onExit, onFinish }) {
+  const activa = useExerciseActive();
   const fox = useFox();
   const ctx = contexto || {
     id: 'vocab:' + deck?.id,
@@ -66,6 +69,7 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
   const results = useRef([]);
   const timerEspera = useRef(null);
   const timerBono = useRef(null);
+  const pausaEn = useRef(null);
   const mejorSeguidas = useRef(0);
   const ultimaSeguidas = useRef(null);
   const monedas = useRef(0);
@@ -73,18 +77,35 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
   const ganado = aciertos >= OBJETIVO;
   const acabado = seg <= 0 || ganado;
 
+  useLayoutEffect(() => {
+    if (!activa) {
+      if (pausaEn.current === null) pausaEn.current = Date.now();
+      return;
+    }
+    if (pausaEn.current !== null) {
+      started.current += Date.now() - pausaEn.current;
+      pausaEn.current = null;
+    }
+  }, [activa]);
+
   // reloj
   useEffect(() => {
-    if (acabado) return;
+    if (!activa || acabado) return;
     const t = setInterval(() => setSeg((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
-  }, [acabado]);
+  }, [activa, acabado]);
 
   useEffect(() => {
-    if (!acabado) return;
+    if (!activa || !acabado) return;
     const t = setTimeout(terminar, 500);
     return () => clearTimeout(t);
-  }, [acabado]);
+  }, [activa, acabado]);
+
+  useEffect(() => {
+    if (!activa || !marcado || acabado) return;
+    timerEspera.current = setTimeout(avanzar, marcado.correcto ? 280 : 750);
+    return () => clearTimeout(timerEspera.current);
+  }, [activa, marcado, acabado]);
 
   const card = preguntas.length > 0 ? preguntas[i % preguntas.length] : null;
   // 3 opciones: la buena y dos distractores del mismo mazo
@@ -124,17 +145,17 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
     setRonda((n) => n + 1);
   }
 
-  useTeclas({ Escape: onExit, r: reiniciar, R: reiniciar }, true);
+  useTeclas({ Escape: onExit, r: reiniciar, R: reiniciar }, activa);
 
   // Atajos de teclado: 1, 2, 3 para responder; Enter o Espacio para saltar la espera
   useTeclas({
     ...teclasDeOpciones(opciones, (op) => responder(op))
-  }, !marcado && !acabado);
+  }, activa && !marcado && !acabado);
 
   useTeclas({
     Enter: avanzar,
     ' ': avanzar
-  }, !!marcado && !acabado);
+  }, activa && !!marcado && !acabado);
 
   function responder(op) {
     if (marcado || acabado) return;
@@ -178,7 +199,6 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
       timerBono.current = setTimeout(() => setAvisoBono(0), 900);
     }
 
-    timerEspera.current = setTimeout(avanzar, ok ? 280 : 750);
   }
 
   // Al salir a media partida los dos temporizadores seguian vivos y llamaban a
@@ -201,7 +221,7 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
     }
     const xp = Math.max(2, correct * 5 + (esGanado ? 20 : 0) + mejorRacha * 2);
     bumpSessions();
-    const streak = recordActivity(xp);
+    const streak = recordActivity(xp, Date.now() - started.current);
     saveRun({
       topicId: ctx.id,
       topicName: ctx.nombre,
@@ -255,8 +275,17 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
   return (
     <div className="vocab-session">
       <div className="progress-top">
-        <button className="btn-ghost" onClick={onExit} title="Salir (Esc)">✕</button>
-        <button className="btn-ghost blitz-reset" onClick={reiniciar} title={pick('Empezar de nuevo (R)', 'Start over (R)')}>↻</button>
+        <button className="btn-ghost ses-icon-btn" onClick={onExit} title="Salir (Esc)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+        <button className="btn-ghost ses-icon-btn blitz-reset" onClick={reiniciar} title={pick('Empezar de nuevo (R)', 'Start over (R)')}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 16a9 9 0 1 0 1.64-11.36L3 8" />
+            <path d="M3 3v5h5" />
+          </svg>
+        </button>
         {/* Tope al 100%: ahora acertar suma segundos y el reloj puede pasar
             del tiempo de salida, con lo que la barra se saldria del carril. */}
         <div className="bar"><span style={{ width: Math.min(100, (seg / segundos) * 100) + '%' }} /></div>
@@ -271,7 +300,10 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
       </div>
 
       <div className="ctx-fila">
-        <span className="pill ctx-tema">{ctx.emoji} {ctx.nombre}</span>
+        <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
+          <span className="pill ctx-tema">{ctx.emoji} {ctx.nombre}</span>
+          <GameModePill mode="blitz" />
+        </span>
         <span className="row" style={{ gap: 8 }}>
           <span className="pill" style={{ fontWeight: 600 }}>✓ {aciertos} / {OBJETIVO}</span>
           {racha >= 3 && <span className="pill blitz-racha">🔥 {racha}</span>}
@@ -297,7 +329,7 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
                 disabled={!!marcado}
               >
                 <span className="op-tecla">{k + 1}</span>
-                {op.es}
+                {op._traducible ? tc(op._esBase) : op.es}
               </button>
             );
           })}

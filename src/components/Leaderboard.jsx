@@ -37,11 +37,12 @@ export default function Leaderboard({ onBack, highlightId }) {
         </button>
       </Tabs>
 
+      <div className="tab-panel-content">
       {tab === 'ranking' ? (
         <>
           <p className="muted">{t('lb.sub')}</p>
 
-          <select value={topicId} onChange={(e) => setTopicId(e.target.value)}>
+          <select className="lb-topic-filter" value={topicId} onChange={(e) => setTopicId(e.target.value)}>
             <option value="">{t('lb.allTopics')}</option>
             {topicsTraducidos().map((tp) => (
               <option key={tp.id} value={tp.id}>
@@ -90,6 +91,7 @@ export default function Leaderboard({ onBack, highlightId }) {
       ) : (
         <Estadisticas />
       )}
+      </div>
     </div>
   );
 }

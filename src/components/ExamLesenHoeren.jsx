@@ -105,7 +105,7 @@ export default function ExamLesenHoeren({ teil, typ, onBack }) {
     const correct = aufgabe.aufgaben.filter((a, i) => respuestas[i] === a.loesung).length;
     const seconds = Math.round((Date.now() - inicio.current) / 1000);
     saveResult({ teil, typ, correct, total, seconds });
-    recordActivity(correct * 10);
+    recordActivity(correct * 10, Date.now() - inicio.current);
     // en proporción a los aciertos: contestar a boleo no paga
     ganar(Math.round((MONEDAS_EXAMEN * correct) / Math.max(1, total)));
     // Aprobado del examen real: 60 %.
@@ -312,7 +312,7 @@ export default function ExamLesenHoeren({ teil, typ, onBack }) {
 
       {!enviado ? (
         <div className="row" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button className="btn-primary" onClick={corregir} disabled={contestadas < total}>
+          <button className="btn-primary btn-corregir" onClick={corregir} disabled={contestadas < total}>
             {t('ex.finish')}
           </button>
           <span className="muted" style={{ fontSize: '0.84rem' }}>

@@ -1,13 +1,15 @@
 // Vocabulario: mazos (decks) temáticos, importación de Excel, generación con IA
 // y repaso espaciado por tarjeta. Se guarda todo en localStorage.
 
-import { storage } from './storage.js';
+import { storage, sumarContadorLocal } from './storage.js';
 import { KURSBUCH, allBookDecks, lektionDecks, lektionDeckTodo, getLektion } from './kursbuch/index.js';
 import { tc } from './contenido/index.js';
 import { t } from './i18n.js';
 
 const DECKS_KEY = 'vocab:decks'; // mazos creados por el usuario (excel / IA)
 const PROG_KEY = 'vocab:progress'; // { 'deckId::de': { correct, wrong, strength, due, lastSeen } }
+const FINISH_TOPIC_PERCENT_RESET = 'vocab:finish-topic-percent-reset-v1';
+const FINISH_TOPIC_PERCENT_BACKUP = 'vocab:finish-topic-percent-backup-v1';
 
 // ---------- Mazos de arranque ----------
 const BUILTIN = [
@@ -1116,7 +1118,18 @@ function traducirDeck(deck) {
   return {
     ...deck,
     name: tc(deck.name),
-    cards: (deck.cards || []).map((c) => ({ ...c, es: tc(c.es), exEs: tc(c.exEs) }))
+    cards: (deck.cards || []).map((c) => {
+      const esBase = c._esBase ?? c.es;
+      const exEsBase = c._exEsBase ?? c.exEs ?? '';
+      return {
+        ...c,
+        _traducible: true,
+        _esBase: esBase,
+        _exEsBase: exEsBase,
+        es: tc(esBase),
+        exEs: tc(exEsBase)
+      };
+    })
   };
 }
 
@@ -1211,11 +1224,37 @@ export function deleteUserDeck(id) {
 
 // ---------- Repaso espaciado por tarjeta ----------
 const INTERVALS = [0, 30e3, 5 * 60e3, 60 * 60e3, 24 * 3600e3, 3 * 24 * 3600e3, 7 * 24 * 3600e3];
+let finishTopicPercentResetChecked = false;
+// Progresos ya comprobados sin claves del formato viejo (ver progAll).
+const yaRevisados = new WeakSet();
 
 function progAll() {
-  const p = storage.get(PROG_KEY, {});
+  let p = storage.get(PROG_KEY, {});
+  // Finish Topic habia contado cada acierto dos veces solo para la barra del
+  // vocabulario. Ese porcentaje artificial se elimina una vez al actualizar;
+  // se conservan strength y fallos, que siguen siendo datos reales de repaso.
+  if (!finishTopicPercentResetChecked && !storage.get(FINISH_TOPIC_PERCENT_RESET, false)) {
+    finishTopicPercentResetChecked = true;
+    storage.set(FINISH_TOPIC_PERCENT_BACKUP, p);
+    p = Object.fromEntries(Object.entries(p).map(([key, card]) => {
+      const limpio = { ...card, correct: 0 };
+      delete limpio.correctBase;
+      delete limpio.correctCarriles;
+      return [key, limpio];
+    }));
+    storage.set(PROG_KEY, p);
+    storage.set(FINISH_TOPIC_PERCENT_RESET, true);
+  } else {
+    finishTopicPercentResetChecked = true;
+  }
   // Si asoma una clave del formato viejo, se fusiona todo al vuelo.
+  //
+  // Mirar las ~3000 claves cuesta poco, pero esto se llama una vez por
+  // tarjeta: cientos de veces por pantalla. storage.get devuelve el MISMO
+  // objeto hasta que alguien escribe, así que cada objeto se revisa una vez.
+  if (yaRevisados.has(p)) return p;
   for (const k in p) if (!k.startsWith('w::')) return fusionarPorPalabra(p);
+  if (p && typeof p === 'object') yaRevisados.add(p);
   return p;
 }
 // La clave del progreso de una palabra: la PALABRA, y punto.
@@ -1376,11 +1415,14 @@ export function recordCard(de, correct, extra = {}) {
     // Lo que no sea test (quiz / flashcards) cuenta por dos para el progreso
     const peso = extra.peso != null ? extra.peso : (extra.mode && extra.mode !== 'quiz' && extra.mode !== 'flashcards' ? 2 : 1);
     if (correct) {
-      c.correct += peso;
+      sumarContadorLocal(c, 'correct', peso);
       c.strength = Math.min(6, c.strength + peso);
+      if (extra.reviewMistake) c.reviewCleared = true;
     } else {
-      c.wrong += 1;
+      sumarContadorLocal(c, 'wrong', 1);
       c.strength = Math.max(0, c.strength - 1);
+      // Si vuelve a fallarla después de haberla recuperado, reaparece en la lista.
+      delete c.reviewCleared;
     }
     c.lastSeen = now;
     c.due = now + INTERVALS[Math.min(c.strength, INTERVALS.length - 1)];
@@ -1397,7 +1439,7 @@ export function cartasFalladas(deck) {
   const p = progAll();
   return deck.cards.filter((card) => {
     const c = p[cardKey(card.de)];
-    return c && c.wrong > 0 && c.strength < 4;
+    return c && c.wrong > 0 && c.strength < 4 && !c.reviewCleared;
   });
 }
 
@@ -1614,10 +1656,18 @@ export function nounsByLevel(nivel = 'all') {
   return pool.filter((x) => def.bands.includes(x.band));
 }
 
-export function allNouns() {
+export function allNouns(cardsOverride = null) {
   const out = [];
   const seen = new Set();
-  allDecks().forEach((d) => {
+  // Sin contexto, estas formas admiten dos artículos: Deutsche puede ser
+  // masculino o femenino; Kopfhörer y Handwerker aparecen tanto en singular
+  // como en plural. No son preguntas justas de artículo si se muestra solo
+  // el sustantivo desnudo.
+  const formasAmbiguas = new Set(['Deutsche', 'Kopfhörer', 'Handwerker']);
+  const decks = cardsOverride
+    ? [{ id: 'mixed-vocabulary', cards: cardsOverride, fromBook: false, bandName: 'extra' }]
+    : allDecks();
+  decks.forEach((d) => {
     d.cards.forEach((c) => {
       // Muchas tarjetas traen dos sustantivos en una: "der Arzt / die Ärztin",
       // "der Ort / die Stadt". Cada lado es una palabra que se puede preguntar,
@@ -1635,6 +1685,7 @@ export function allNouns() {
         if (!isPlain && !isWithPlural) return;
         const noun = parts[1].replace(/[(),]/g, '');
         if (!/^[A-ZÄÖÜ][A-Za-zäöüß-]+$/.test(noun)) return;
+        if (formasAmbiguas.has(noun)) return;
         if (seen.has(noun)) return;
         seen.add(noun);
         // Si la traducción viene partida igual, se empareja lado con lado.
@@ -1653,7 +1704,7 @@ export function allNouns() {
     });
   });
 
-  for (const en of EXTRA_NOUNS) {
+  for (const en of cardsOverride ? [] : EXTRA_NOUNS) {
     if (out.length >= 2000) break;
     if (seen.has(en.noun)) continue;
     seen.add(en.noun);

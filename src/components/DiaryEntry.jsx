@@ -31,6 +31,7 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [tab, setTab] = useState('schreiben'); // 'schreiben' | 'korrektur'
+  const [tabDirection, setTabDirection] = useState('forward');
   const saveT = useRef(null);
   const area = useRef(null);
   const insertar = useInsercion(area);
@@ -116,6 +117,12 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
     onDeleted();
   }
 
+  function cambiarPestana(siguiente) {
+    if (siguiente === tab) return;
+    setTabDirection(siguiente === 'korrektur' ? 'forward' : 'backward');
+    setTab(siguiente);
+  }
+
   const c = entry.correction;
   const n = countWords(text);
 
@@ -141,15 +148,15 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
         {/* Borrar, en la fila de la fecha y a la derecha. Estaba al final de
             la página, donde en la versión sin IA se quedaba solo en una fila
             entera para él y había que bajar hasta abajo para verlo. */}
-        <button className="btn-ghost btn-sm nb-borrar" onClick={borrar}>{t('delete')}</button>
+        <button className="btn-ghost btn-sm danger nb-borrar" onClick={borrar}>{t('delete')}</button>
       </div>
 
       {c && (
-        <div className="lk-tabs lk-tabs-2">
-          <button className={'lk-tab' + (tab === 'schreiben' ? ' on' : '')} onClick={() => setTab('schreiben')}>
+        <div className="lk-tabs lk-tabs-2 diary-tabs">
+          <button className={'lk-tab' + (tab === 'schreiben' ? ' on' : '')} onClick={() => cambiarPestana('schreiben')}>
             <span>✍️ Mein Text</span><small>{t('tb.tabMineSub')}</small>
           </button>
-          <button className={'lk-tab' + (tab === 'korrektur' ? ' on' : '')} onClick={() => setTab('korrektur')}>
+          <button className={'lk-tab' + (tab === 'korrektur' ? ' on' : '')} onClick={() => cambiarPestana('korrektur')}>
             <span>✅ Korrektur</span>
             <small>{c.korrekturen.length === 0 ? t('tb.noMistakes') : t('tb.nCorrections', { n: c.korrekturen.length })}</small>
           </button>
@@ -157,7 +164,7 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
       )}
 
       {(!c || tab === 'schreiben') && (
-        <>
+        <div key={tab} className={'stack diary-tab-panel diary-tab-panel-' + tabDirection}>
           <div>
             <div className="prompt-label">{t('tb.writePrompt')}</div>
             <textarea
@@ -263,7 +270,7 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
               la fila entera se va en vez de dejar un hueco vacío al final. */}
           {!SIN_IA && (
             <div className="row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <button className="btn-primary" onClick={corregir} disabled={!aiOn || !text.trim() || busy}>
+              <button className="btn-primary btn-corregir" onClick={corregir} disabled={!aiOn || !text.trim() || busy}>
                 {busy ? t('tb.correcting') : c ? t('tb.correctAgain') : t('tb.correctBtn')}
               </button>
             </div>
@@ -274,11 +281,11 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
             </p>
           )}
           {err && <p style={{ color: 'var(--bad)', fontSize: '0.85rem', marginTop: -4 }}>{err}</p>}
-        </>
+        </div>
       )}
 
       {c && tab === 'korrektur' && (
-        <div className="stack">
+        <div key={tab} className={'stack diary-tab-panel diary-tab-panel-' + tabDirection}>
           {esOtroIdioma(entry.correctionLang) && (
             <p className="aviso-idioma">⚠ {t('otroIdioma')}</p>
           )}
@@ -359,7 +366,7 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
           )}
 
           {c.wortschatz.length > 0 && (
-            <div className="card">
+            <div className="card diary-native">
               <div className="lk-block-title">{t('tb.native')}</div>
               <div className="stack" style={{ gap: 8, marginTop: 10 }}>
                 {c.wortschatz.map((w, i) => (

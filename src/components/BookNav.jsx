@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BAENDE, getLektion, lektionLabel } from '../lib/kursbuch/index.js';
 import { lektionProgress, bandProgress } from '../lib/lektionProgress.js';
 import { pick, t } from '../lib/i18n.js';
@@ -17,14 +17,119 @@ export default function BookNav({ title, subtitle, count, unit, onOpen, extra, a
   // Es uno solo para las tres: si estas repasando A1.1, lo estas repasando
   // entero, no el vocabulario de A1.1 y la gramatica de A2.1.
   const [band, setBandLocal] = useState(() => storage.get('ui:band', 'a21'));
+  const [transition, setTransition] = useState(null);
+  const [stageHeight, setStageHeight] = useState(null);
+  const stageRef = useRef(null);
+  const incomingRef = useRef(null);
+  const transitionTimer = useRef(null);
+  const transitionId = useRef(0);
   const setBand = (id) => {
+    if (id === band) return;
+    const from = BAENDE.findIndex((b) => b.id === band);
+    const to = BAENDE.findIndex((b) => b.id === id);
+    if (from < 0 || to < 0) return;
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    const alturaActual = stageRef.current?.getBoundingClientRect().height;
+    setStageHeight(alturaActual || null);
+    setTransition({
+      id: ++transitionId.current,
+      from: band,
+      direction: to > from ? 'forward' : 'backward'
+    });
     setBandLocal(id);
     storage.set('ui:band', id);
   };
-  const activeBand = BAENDE.find((b) => b.id === band) || BAENDE[0];
-  const lektionen = activeBand.lektionen
-    .map((l) => getLektion(l.id))
-    .filter((l) => l && count(l) > 0);
+
+  // Mantiene visibles la lista anterior y la nueva durante el cambio: una
+  // sale por un lado mientras la otra entra por el contrario. El marco anima
+  // su alto tambien, para que las tarjetas de la lista entrante tengan sitio.
+  useLayoutEffect(() => {
+    if (!transition) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const altoNuevo = incomingRef.current?.scrollHeight;
+      if (altoNuevo != null) setStageHeight(altoNuevo);
+    });
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    transitionTimer.current = setTimeout(() => {
+      setTransition(null);
+      setStageHeight(null);
+      transitionTimer.current = null;
+    }, reducedMotion ? 40 : 1500);
+    return () => {
+      cancelAnimationFrame(frame);
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    };
+  }, [band, transition]);
+
+  useEffect(() => () => {
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
+  }, []);
+
+  const renderBand = (bandId) => {
+    const selectedBand = BAENDE.find((b) => b.id === bandId) || BAENDE[0];
+    const lektionen = selectedBand.lektionen
+      .map((l) => getLektion(l.id))
+      .filter((l) => l && count(l) > 0);
+    if (lektionen.length === 0) {
+      return (
+        <div className="card center">
+          <p className="muted">
+            {pick(
+              'Este tomo todavía no tiene contenido en esta sección.',
+              'This volume has no content in this section yet.'
+            )}
+          </p>
+        </div>
+      );
+    }
+    return (
+      <div className="topic-grid">
+        {lektionen.map((l) => {
+          const n = count(l);
+          const prog = lektionProgress(l);
+          const pct = prog ? prog[progressKey] : null;
+          if (pct != null && pct >= 100) {
+          }
+          if (prog?.total != null && prog.total >= 100) {
+          }
+          const ancha = l.nr === 'Start';
+          const barra = pct == null ? null : (
+            <div className="mini-bar lk-bar">
+              <span
+                style={{
+                  width: pct + '%',
+                  background: pct >= 100 ? 'var(--good)' : 'var(--accent)'
+                }}
+              />
+            </div>
+          );
+          return (
+            <button
+              key={l.id}
+              className={'card topic-open lk-card' + (ancha ? ' lk-card-ancha' : '')}
+              onClick={() => onOpen(l)}
+            >
+              <div className="row spread">
+                <div className="flex-min">
+                  <div className="t-title">{lektionLabel(l)}</div>
+                  <div className="t-blurb">{n} {n === 1 ? unit[0] : unit[1]}</div>
+                </div>
+                {ancha && barra}
+                {pct != null && (
+                  <span className={'lk-pct' + (pct >= 100 ? ' dominado' : pct > 0 ? ' medio' : '')}>
+                    {pct >= 100 && <span className="lk-corona">👑</span>}
+                    {pct}%
+                  </span>
+                )}
+                <span className="chev">›</span>
+              </div>
+              {!ancha && barra}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
     <div className="wide">
@@ -54,72 +159,29 @@ export default function BookNav({ title, subtitle, count, unit, onOpen, extra, a
         </button>
       </div>
 
-      {lektionen.length === 0 ? (
-        <div className="card center">
-          <p className="muted">
-            {pick(
-              'Este tomo todavía no tiene contenido en esta sección.',
-              'This volume has no content in this section yet.'
-            )}
-          </p>
+      <div
+        ref={stageRef}
+        className={'book-band-stage' + (transition ? ' is-sliding' : '')}
+        style={transition && stageHeight != null ? { height: `${stageHeight}px` } : undefined}
+      >
+        {transition && (
+          <div
+            key={`leaving-${transition.id}`}
+            className={`book-band-panel is-exiting exit-${transition.direction}`}
+            aria-hidden="true"
+            inert=""
+          >
+            {renderBand(transition.from)}
+          </div>
+        )}
+        <div
+          key={`current-${band}`}
+          ref={transition ? incomingRef : null}
+          className={'book-band-panel' + (transition ? ` is-entering enter-${transition.direction}` : '')}
+        >
+          {renderBand(band)}
         </div>
-      ) : (
-        <div className="topic-grid">
-          {lektionen.map((l) => {
-            const n = count(l);
-            const prog = lektionProgress(l);
-            const pct = prog ? prog[progressKey] : null;
-            if (pct != null && pct >= 100) {
-            }
-            if (prog?.total != null && prog.total >= 100) {
-            }
-            const ancha = l.nr === 'Start';
-            const barra = pct == null ? null : (
-              <div className="mini-bar lk-bar">
-                <span
-                  style={{
-                    width: pct + '%',
-                    background: pct >= 100 ? 'var(--good)' : 'var(--accent)'
-                  }}
-                />
-              </div>
-            );
-            return (
-              // La Start no es una lección más: es la de antes de empezar, y
-              // va sola en su fila. En dos columnas quedaba emparejada con la
-              // Lektion 1 como si fueran hermanas, y no lo son.
-              <button
-                key={l.id}
-                className={'card topic-open lk-card' + (ancha ? ' lk-card-ancha' : '')}
-                onClick={() => onOpen(l)}
-              >
-                {/* La Start ocupa el ancho entero, asi que lo suyo es que no
-                    ocupe ademas el alto de una tarjeta normal: el titulo, la
-                    cuenta y la barra van en la misma fila. Las demas, que son
-                    de media columna, siguen en dos alturas. */}
-                <div className="row spread">
-                  <div className="flex-min">
-                    <div className="t-title">{lektionLabel(l)}</div>
-                    <div className="t-blurb">{n} {n === 1 ? unit[0] : unit[1]}</div>
-                  </div>
-                  {ancha && barra}
-                  {pct != null && (
-                    /* Al 100% la pastilla se pone dorada y se lleva la corona:
-                       en verde se confundia con "vas bien" y lo que dice es
-                       otra cosa, que ese tema ya esta. */
-                    <span className={'lk-pct' + (pct >= 100 ? ' dominado' : pct > 0 ? ' medio' : '')}>
-                      {pct >= 100 && <span className="lk-corona">👑</span>}
-                      {pct}%
-                    </span>
-                  )}
-                  <span className="chev">›</span>
-                </div>
-                {!ancha && barra}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      </div>
 
       {/* El juego de la seccion: debajo de las lecciones, porque no es de
           ninguna en concreto pero tampoco debe tapar la lista. */}

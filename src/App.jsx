@@ -1,53 +1,55 @@
-import React, { useEffect, useRef, useState, useLayoutEffect } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { AppErrorBoundary } from './components/AppErrorBoundary.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Monedero from './components/Monedero.jsx';
-import MazoConIA from './components/MazoConIA.jsx';
+const MazoConIA = lazy(() => import('./components/MazoConIA.jsx'));
 import Dashboard from './components/Dashboard.jsx';
-import Grammar from './components/Grammar.jsx';
-import TopicDetail from './components/TopicDetail.jsx';
-import Session from './components/Session.jsx';
-import Summary from './components/Summary.jsx';
-import Leaderboard from './components/Leaderboard.jsx';
-import Settings from './components/Settings.jsx';
-import Vocab from './components/Vocab.jsx';
-import DeckDetail from './components/DeckDetail.jsx';
-import VocabSession from './components/VocabSession.jsx';
-import MatchGame from './components/MatchGame.jsx';
-import WortsalatGame from './components/WortsalatGame.jsx';
-import BlitzGame from './components/BlitzGame.jsx';
-import HangmanGame from './components/HangmanGame.jsx';
-import VocabReto from './components/VocabReto.jsx';
-import KommReto from './components/KommReto.jsx';
-import AskPractice from './components/AskPractice.jsx';
-import GenderGame from './components/GenderGame.jsx';
-import FoxChat from './components/FoxChat.jsx';
-import TranslateGame from './components/TranslateGame.jsx';
-import VocabSummary from './components/VocabSummary.jsx';
-import Notebook from './components/Notebook.jsx';
-import NotebookEntry from './components/NotebookEntry.jsx';
-import NotebookSession from './components/NotebookSession.jsx';
-import Kommunikation from './components/Kommunikation.jsx';
-import News from './components/News.jsx';
-import Lieder from './components/Lieder.jsx';
-import Diary from './components/Diary.jsx';
-import DiaryEntry from './components/DiaryEntry.jsx';
-import Pruefung from './components/Pruefung.jsx';
-import ExamLesenHoeren from './components/ExamLesenHoeren.jsx';
-import ExamSchreiben from './components/ExamSchreiben.jsx';
-import ExamSprechen from './components/ExamSprechen.jsx';
-import { getTopic } from './topics/index.js';
-import { getDeck, soloFallos, soloQueFaltan, mazosParaMezclar } from './lib/vocab.js';
-import { getNote, migrarFotos } from './lib/notebook.js';
-import KasusGame from './components/KasusGame.jsx';
+const Grammar = lazy(() => import('./components/Grammar.jsx'));
+const TopicDetail = lazy(() => import('./components/TopicDetail.jsx'));
+const Session = lazy(() => import('./components/Session.jsx'));
+const Summary = lazy(() => import('./components/Summary.jsx'));
+const Leaderboard = lazy(() => import('./components/Leaderboard.jsx'));
+const Settings = lazy(() => import('./components/Settings.jsx'));
+const Vocab = lazy(() => import('./components/Vocab.jsx'));
+const DeckDetail = lazy(() => import('./components/DeckDetail.jsx'));
+const VocabSession = lazy(() => import('./components/VocabSession.jsx'));
+const CrosswordGame = lazy(() => import('./components/CrosswordGame.jsx'));
+const MatchGame = lazy(() => import('./components/MatchGame.jsx'));
+const WortsalatGame = lazy(() => import('./components/WortsalatGame.jsx'));
+const BlitzGame = lazy(() => import('./components/BlitzGame.jsx'));
+const HangmanGame = lazy(() => import('./components/HangmanGame.jsx'));
+const VocabReto = lazy(() => import('./components/VocabReto.jsx'));
+const KommReto = lazy(() => import('./components/KommReto.jsx'));
+const AskPractice = lazy(() => import('./components/AskPractice.jsx'));
+const GenderGame = lazy(() => import('./components/GenderGame.jsx'));
+const FoxChat = lazy(() => import('./components/FoxChat.jsx'));
+const TranslateGame = lazy(() => import('./components/TranslateGame.jsx'));
+const VocabSummary = lazy(() => import('./components/VocabSummary.jsx'));
+const Notebook = lazy(() => import('./components/Notebook.jsx'));
+const NotebookEntry = lazy(() => import('./components/NotebookEntry.jsx'));
+const NotebookSession = lazy(() => import('./components/NotebookSession.jsx'));
+const Kommunikation = lazy(() => import('./components/Kommunikation.jsx'));
+const News = lazy(() => import('./components/News.jsx'));
+const Lieder = lazy(() => import('./components/Lieder.jsx'));
+const Diary = lazy(() => import('./components/Diary.jsx'));
+const DiaryEntry = lazy(() => import('./components/DiaryEntry.jsx'));
+const Pruefung = lazy(() => import('./components/Pruefung.jsx'));
+const ExamLesenHoeren = lazy(() => import('./components/ExamLesenHoeren.jsx'));
+const ExamSchreiben = lazy(() => import('./components/ExamSchreiben.jsx'));
+const ExamSprechen = lazy(() => import('./components/ExamSprechen.jsx'));
+const KasusGame = lazy(() => import('./components/KasusGame.jsx'));
 import { SIN_IA, PORTABLE } from './lib/modo.js';
-import { getLektion } from './lib/kursbuch/index.js';
-import { onLangChange } from './lib/i18n.js';
+import { onLangChange, t, pick } from './lib/i18n.js';
+import { onContenidoIdiomaListo } from './lib/contenido/index.js';
 import { storage, fusionarDelServidor, alFusionar, HAY_SERVIDOR } from './lib/storage.js';
 import { hayEjercicio } from './lib/enEjercicio.js';
+import { crucigramasResueltos, MAX_CRUCIGRAMAS_VOCAB } from './lib/vocabRewards.js';
+import { aplicarBonoRachaFinal } from './lib/monedas.js';
+import { ExerciseActiveContext } from './lib/teclas.js';
+import { createEntry } from './lib/diary.js';
 
 // Vistas que no merece la pena recordar: una partida o un resumen a medias.
-const EFIMERAS = ['session', 'summary', 'vsession', 'vsummary', 'nsession', 'nsummary', 'exam', 'vreto', 'gender', 'kasus', 'traducir', 'fox', 'askpractice', 'kommreto'];
+const EFIMERAS = ['session', 'summary', 'vsession', 'vsummary', 'vcrossword', 'nsession', 'nsummary', 'exam', 'vreto', 'gender', 'kasus', 'traducir', 'fox', 'askpractice', 'kommreto'];
 
 // Pantallas donde estas HACIENDO un ejercicio. El monedero va fijo arriba a la
 // derecha y ahi tapaba el contador (1/20), asi que en estas se aparta. Lo
@@ -59,18 +61,117 @@ const EFIMERAS = ['session', 'summary', 'vsession', 'vsummary', 'nsession', 'nsu
 // fallos ahi es una carrera de tres preguntas que se acaba antes de empezar,
 // y ademas rompe lo unico que mide -cuantas te salen seguidas en 30 segundos.
 const REPETIBLES = ['quiz', 'write', 'flashcards', 'wortsalat', 'hangman'];
-const EJERCICIO = ['session', 'vsession', 'nsession', 'exam', 'vreto', 'gender', 'kasus', 'traducir', 'kommreto'];
+const EJERCICIO = ['session', 'vsession', 'vcrossword', 'nsession', 'exam', 'vreto', 'gender', 'kasus', 'traducir', 'kommreto'];
+const EJERCICIOS_QUE_SE_PAUSAN_AL_NAVEGAR = ['session', 'askpractice', 'kasus', 'vsession', 'vcrossword', 'gender', 'vreto'];
+const VISTAS_CON_FUNDIDO_CORTO = ['topic', 'deck', 'lektionvocab', 'kommlektion', 'dentry', 'note'];
 
-const TOP_LEVEL = ['home', 'grammar', 'vocab', 'komm', 'news', 'lieder', 'diary', 'pruefung', ...(PORTABLE ? [] : ['notebook']), 'leaderboard', 'settings'];
+// Mantener el mismo orden visual que NAV en el menu lateral: la direccion de
+// la transicion depende de la posicion relativa de las dos secciones.
+const TOP_LEVEL = ['home', 'grammar', 'vocab', 'komm', ...(PORTABLE ? [] : ['notebook']), 'diary', 'pruefung', 'news', 'lieder', 'leaderboard', 'settings'];
 
 export default function App() {
   const [view, setView] = useState({ name: 'home' });
+  const [vistaKommGuardada, setVistaKommGuardada] = useState(null);
+  const [ejerciciosGuardados, setEjerciciosGuardados] = useState({});
+  const [temaGuardado, setTemaGuardado] = useState(null);
+  const [datos, setDatos] = useState({});
+  const [errorDatos, setErrorDatos] = useState(false);
   // Al cambiar el idioma hay que repintar toda la app.
   const [, setLangTick] = useState(0);
-  useEffect(() => onLangChange(() => setLangTick((n) => n + 1)), []);
-
   useEffect(() => {
-    document.body.classList.toggle('en-ejercicio', EJERCICIO.includes(view.name));
+    const actualizar = () => setLangTick((n) => n + 1);
+    const quitarIdioma = onLangChange(actualizar);
+    const quitarContenido = onContenidoIdiomaListo(actualizar);
+    return () => {
+      quitarIdioma();
+      quitarContenido();
+    };
+  }, []);
+
+  // En móvil algunos navegadores dejan el foco visual del toque sobre el
+  // botón, aunque ya haya terminado el gesto. Se quita ese foco táctil al
+  // soltar; la navegación con teclado conserva su indicador :focus-visible.
+  useEffect(() => {
+    const iniciarToque = (event) => {
+      if (event.pointerType === 'touch' || event.pointerType === 'pen') {
+        document.documentElement.classList.add('touch-pointer-active');
+      }
+    };
+    const quitarFocoDeToque = (event) => {
+      const esToque = event.pointerType === 'touch' || event.pointerType === 'pen';
+      const elemento = event.target instanceof Element
+        && esToque
+        ? event.target.closest('button, a, [role="button"]')
+        : null;
+      requestAnimationFrame(() => {
+        if (elemento && document.activeElement === elemento) elemento.blur();
+        document.documentElement.classList.remove('touch-pointer-active');
+      });
+    };
+    document.addEventListener('pointerdown', iniciarToque, true);
+    document.addEventListener('pointerup', quitarFocoDeToque, true);
+    document.addEventListener('pointercancel', quitarFocoDeToque, true);
+    return () => {
+      document.removeEventListener('pointerdown', iniciarToque, true);
+      document.removeEventListener('pointerup', quitarFocoDeToque, true);
+      document.removeEventListener('pointercancel', quitarFocoDeToque, true);
+      document.documentElement.classList.remove('touch-pointer-active');
+    };
+  }, []);
+
+  // Los bancos de contenido pesan mucho más que la interfaz. Se incorporan
+  // cuando se entra en su sección o se inicia una actividad que los necesita.
+  useEffect(() => {
+    let vivo = true;
+    const cargas = [];
+    if (((['topic', 'session'].includes(view.name) && !view.topic) || temaGuardado) && !datos.topics) {
+      cargas.push(import('./topics/index.js').then((mod) => ['topics', mod]));
+    }
+    if (['deck', 'vreto', 'vsession', 'vcrossword'].includes(view.name)) {
+      cargas.push(import('./lib/vocab.js').then((mod) => ['vocab', mod]));
+    }
+    if (view.name === 'nsession') {
+      cargas.push(
+        import('./lib/notebook.js').then((mod) => ['notebook', mod]),
+        import('./lib/kursbuch/index.js').then((mod) => ['kursbuch', mod])
+      );
+    }
+    if (cargas.length) {
+      setErrorDatos(false);
+      Promise.all(cargas).then((modulos) => {
+        if (vivo) setDatos((actuales) => ({ ...actuales, ...Object.fromEntries(modulos) }));
+      }).catch(() => {
+        if (vivo) setErrorDatos(true);
+      });
+    }
+    return () => { vivo = false; };
+  }, [view.name, temaGuardado?.topicId, Boolean(datos.topics)]);
+
+  const temas = datos.topics;
+  const vocabulario = datos.vocab;
+  const cuaderno = datos.notebook;
+  const libro = datos.kursbuch;
+  const requiereDatos =
+    (['topic', 'session'].includes(view.name) && !temas && !view.topic) ||
+    (Boolean(temaGuardado) && !temas) ||
+    (['deck', 'vreto', 'vsession', 'vcrossword'].includes(view.name) && !vocabulario) ||
+    (view.name === 'nsession' && (!cuaderno || !libro));
+  const getTopic = temas?.getTopic;
+  const getDeck = vocabulario?.getDeck;
+  const deckDelCrucigrama = view.name === 'vcrossword' ? getDeck?.(view.deckId) : null;
+  const getNote = cuaderno?.getNote;
+  const getLektion = libro?.getLektion;
+
+  useLayoutEffect(() => {
+    const enEjercicio = EJERCICIO.includes(view.name);
+    document.body.classList.toggle('en-ejercicio', enEjercicio);
+    document.body.classList.toggle('crucigrama-activo', view.name === 'vcrossword');
+    document.body.classList.toggle('inicio-fijo-escritorio', view.name === 'home');
+    if (enEjercicio) {
+      window.scrollTo(0, 0);
+      mainRef.current?.scrollTo(0, 0);
+      document.querySelector('.sidebar')?.scrollTo(0, 0);
+    }
   }, [view.name]);
 
   // Traerse lo de los otros aparatos.
@@ -140,14 +241,14 @@ export default function App() {
     };
   }, []);
 
-  // Las fotos del cuaderno, de dentro de la nota a IndexedDB. Una sola vez:
-  // cuando ya no queda ninguna incrustada, no escribe nada.
+  // Las fotos antiguas del cuaderno se migran al abrirlo, no al arrancar la
+  // app: el cuaderno y el libro no deben descargarse para quien no los usa.
   useEffect(() => {
-    if (PORTABLE) return;
-    migrarFotos().catch(() => {
+    if (PORTABLE || !['notebook', 'note', 'nsession', 'nsummary'].includes(view.name)) return;
+    import('./lib/notebook.js').then(({ migrarFotos }) => migrarFotos()).catch(() => {
       /* si no se puede, las fotos se quedan donde estaban */
     });
-  }, []);
+  }, [view.name]);
 
   useEffect(() => {
     if (PORTABLE && ['notebook', 'note', 'nsession', 'nsummary'].includes(view.name)) {
@@ -170,19 +271,111 @@ export default function App() {
 
   const current = TOP_LEVEL.includes(view.name)
     ? view.name
+    : (view.name === 'session' && view.game === 'vocab-mixed') || (view.name === 'summary' && view.data?.game === 'vocab-mixed')
+    ? 'vocab'
+    : (view.name === 'session' && view.game === 'grammar-mixed') || (view.name === 'summary' && view.data?.game === 'grammar-mixed')
+    ? 'grammar'
     : ['grammar', 'topic', 'askpractice', 'kasus'].includes(view.name)
     ? 'grammar'
     : (view.name === 'session' && view.topicId !== 'mix') || (view.name === 'summary' && view.data?.topic?.id !== 'mix')
     ? 'grammar'
     : (view.name === 'session' && view.topicId === 'mix') || (view.name === 'summary' && view.data?.topic?.id === 'mix')
     ? 'home'
-    : ['deck', 'vsession', 'vsummary', 'gender', 'lektionvocab', 'vreto'].includes(view.name)
+    : (view.name === 'vsummary' && ['uebersetzen', 'komm-reto'].includes(view.data?.mode)) || view.name === 'kommreto'
+    ? 'komm'
+    : ['deck', 'vsession', 'vsummary', 'vcrossword', 'gender', 'lektionvocab', 'vreto'].includes(view.name)
     ? 'vocab'
     : ['kommlektion', 'traducir'].includes(view.name)
     ? 'komm'
     : ['exam', 'dentry', 'note', 'nsession', 'nsummary'].includes(view.name)
     ? view.name === 'exam' ? 'pruefung' : view.name.startsWith('d') ? 'diary' : 'notebook'
     : 'home';
+
+  const obtenerVistaDeEjercicio = (name) => {
+    if (view.name === name) return { ...view, ejercicioVisible: true };
+    const guardada = ejerciciosGuardados[name];
+    return guardada ? { ...guardada.view, ejercicioVisible: false } : null;
+  };
+  const vistaSession = obtenerVistaDeEjercicio('session');
+  const vistaAskPractice = obtenerVistaDeEjercicio('askpractice');
+  const vistaKasus = obtenerVistaDeEjercicio('kasus');
+  const vistaVSession = obtenerVistaDeEjercicio('vsession');
+  const vistaVCrossword = obtenerVistaDeEjercicio('vcrossword');
+  const vistaGender = obtenerVistaDeEjercicio('gender');
+  const vistaVReto = obtenerVistaDeEjercicio('vreto');
+  const vistaTopic = view.name === 'topic'
+    ? { ...view, ejercicioVisible: true }
+    : (current !== 'grammar' && temaGuardado
+      ? { ...temaGuardado, ejercicioVisible: false }
+      : null);
+
+  const esVistaKommRetenible = (candidate) =>
+    ['komm', 'kommlektion', 'kommreto', 'traducir'].includes(candidate?.name);
+  const vistaKommActiva = current === 'komm' && esVistaKommRetenible(view) ? view : null;
+  const vistaKomm = vistaKommActiva || (current !== 'komm' && esVistaKommRetenible(vistaKommGuardada)
+    ? vistaKommGuardada
+    : null);
+  const kommVisible = Boolean(vistaKommActiva);
+
+  // Comunicación conserva la instancia del ejercicio mientras se visita otra
+  // sección. Si se abandona desde dentro (volver/resumen), se descarta la ruta
+  // antigua para que no reaparezca una tanda ya cerrada.
+  useEffect(() => {
+    if (current !== 'komm') return;
+    setVistaKommGuardada(esVistaKommRetenible(view) ? view : null);
+  }, [current, view]);
+
+  const mainRef = useRef(null);
+  const motionId = view.topicId ?? view.deckId ?? view.lektionId ?? view.entryId ?? view.noteId ?? '';
+  const previousMotion = useRef({ current, name: view.name, id: motionId });
+  useLayoutEffect(() => {
+    const previous = previousMotion.current;
+    let motion = '';
+    const cambioVista = previous.name !== view.name || previous.id !== motionId;
+    const vistaDeDetalle = VISTAS_CON_FUNDIDO_CORTO.includes(view.name);
+    const veniaDeDetalle = VISTAS_CON_FUNDIDO_CORTO.includes(previous.name);
+    const wasActivity = EJERCICIO.includes(previous.name) || previous.name === 'askpractice';
+    const isActivity = EJERCICIO.includes(view.name) || view.name === 'askpractice';
+
+    // Al cambiar de sección principal, el desplazamiento direccional tiene
+    // prioridad aunque la vista anterior o la nueva sea una lección, detalle
+    // o ejercicio.
+    if (previous.current !== current) {
+      const from = TOP_LEVEL.indexOf(previous.current);
+      const to = TOP_LEVEL.indexOf(current);
+      if (from >= 0 && to >= 0 && from !== to) {
+        motion = to > from ? 'main-motion-forward' : 'main-motion-backward';
+      }
+    }
+
+    // Las actividades conservan el fundido al entrar o salir sin cambiar de sección.
+    if (!motion && cambioVista && (wasActivity || isActivity)) {
+      motion = 'main-motion-fade';
+    }
+
+    // Lecciones y entradas del diario/cuaderno usan un fundido más breve al
+    // cambiar dentro de la misma sección. El identificador también cuenta para
+    // animar al cambiar de entrada o lección aunque la ruta tenga el mismo nombre.
+    if (!motion && cambioVista && (vistaDeDetalle || veniaDeDetalle)) {
+      motion = 'main-motion-fade-short';
+    }
+
+    previousMotion.current = { current, name: view.name, id: motionId };
+    const main = mainRef.current;
+    if (!main) return;
+    main.classList.remove('main-motion-fade', 'main-motion-fade-short', 'main-motion-forward', 'main-motion-backward');
+    const limpiarMovimiento = (event) => {
+      const movimientoDeMain = event.target === main && event.animationName.startsWith('main-menu-');
+      const fundidoDeVista = event.target.parentElement === main && event.animationName === 'main-fade';
+      if (!movimientoDeMain && !fundidoDeVista) return;
+      main.classList.remove('main-motion-fade', 'main-motion-fade-short', 'main-motion-forward', 'main-motion-backward');
+    };
+    main.addEventListener('animationend', limpiarMovimiento);
+    if (!motion) return () => main.removeEventListener('animationend', limpiarMovimiento);
+    void main.offsetWidth;
+    main.classList.add(motion);
+    return () => main.removeEventListener('animationend', limpiarMovimiento);
+  }, [current, view.name, motionId]);
 
   // Dónde estabas la última vez en cada sección.
   const memoria = useRef({});
@@ -212,6 +405,12 @@ export default function App() {
       return nextView;
     });
   };
+  const volverAlInicioDeLaPagina = (accion) => {
+    // El regreso desde el resumen debe ignorar la posición que quedó guardada
+    // antes de entrar en la tanda.
+    scrollPedido.current = 0;
+    return accion?.();
+  };
 
   useEffect(() => {
     memoria.current[current] = view;
@@ -227,17 +426,53 @@ export default function App() {
     window.scrollTo(0, y);
   }, [view]);
 
+  // Un ejercicio retenido puede haber dejado activa esta clase al ocultarse.
+  // Los menús principales vuelven a mostrar la navegación normal.
+  useLayoutEffect(() => {
+    if (TOP_LEVEL.includes(view.name)) document.body.classList.remove('en-ejercicio');
+  }, [view.name]);
+
   const irASeccion = (name) => {
+    if (current !== name) window.dispatchEvent(new Event('app:layout-transition'));
     const memView = (current === name) ? { name } : (memoria.current[name] || { name });
+    // Blitz y Match de gramática viven dentro del detalle de la lección, no
+    // cambian la ruta. Conservamos ese componente oculto para volver al mismo
+    // juego cuando se regrese desde otro menú.
+    if (current !== name && current === 'grammar' && view.name === 'topic') {
+      setTemaGuardado(view);
+    }
+    setEjerciciosGuardados((guardadas) => {
+      const siguientes = { ...guardadas };
+      // Al regresar se activa la instancia guardada; al irse, se deja esa
+      // instancia montada para que el progreso sobreviva al cambio de sección.
+      Object.entries(siguientes).forEach(([tipo, registro]) => {
+        if (registro.owner === name) delete siguientes[tipo];
+      });
+      if (current !== name && EJERCICIOS_QUE_SE_PAUSAN_AL_NAVEGAR.includes(view.name)) {
+        siguientes[view.name] = { view, owner: current };
+      }
+      return siguientes;
+    });
     // Pulsar el menú te lleva al principio de la sección, salvo que estés
     // volviendo a un ejercicio a medias: ahí se respeta dónde ibas.
-    scrollPedido.current = EFIMERAS.includes(memView.name)
+    const esEjercicioKomm = name === 'komm'
+      && ['kommlektion', 'kommreto', 'traducir'].includes(memView.name);
+    scrollPedido.current = EFIMERAS.includes(memView.name) || esEjercicioKomm
       ? (scrollMap.current[JSON.stringify(memView)] ?? 0)
       : 0;
     setViewProxy(memView);
   };
 
-  const go = (name) => setViewProxy({ name });
+  const go = (name) => {
+    // Al salir explícitamente de un ejercicio/resumen, no conservarlo como
+    // última pantalla de su sección: al volver a Wortschatz desde el menú se
+    // reabría la tanda que ya se había cerrado.
+    if (EFIMERAS.includes(view.name) && current !== name) {
+      memoria.current[current] = { name: current };
+    }
+    if (view.name === 'topic' && name === 'grammar') setTemaGuardado(null);
+    setViewProxy({ name });
+  };
   const openTopic = (topicId, tab = 'teoria') => setViewProxy({ name: 'topic', topicId, tab });
   // La pestaña viaja en la vista para que la memoria de sección la recuerde.
   const setTab = (tab) => setViewProxy((v) => ({ ...v, tab }));
@@ -246,8 +481,8 @@ export default function App() {
   const traducir = (lektionId = null, dir = 'mix', nivel = 'all', cartasFijas = null) =>
     setViewProxy({ name: 'traducir', lektionId, dir, nivel, cartasFijas, k: Date.now() });
 
-  const start = (topicId, mode, game = 'mixed', itemsFijos = null, origen = null) =>
-    setViewProxy({ name: 'session', topicId, mode, game, itemsFijos, origen, k: Date.now() });
+  const start = (topicId, mode, game = 'mixed', itemsFijos = null, origen = null, reviewMode = null, mixOptions = null) =>
+    setViewProxy({ name: 'session', topicId, mode, game, itemsFijos, origen, reviewMode, mixOptions, k: Date.now() });
 
   // La teoria del tema que acabas de practicar. Devuelve null cuando no hay
   // ninguna (la tanda mixta), y asi el resumen no pinta el boton.
@@ -270,7 +505,7 @@ export default function App() {
       go('vocab');
       return;
     }
-    const d = getDeck(deckId);
+    const d = vocabulario?.getDeck(deckId);
     if (d?.lektionId || (String(deckId).startsWith('kb-') && !String(deckId).startsWith('kb-topic-'))) {
       const lid = d?.lektionId || String(deckId).replace(/^kb-/, '').replace(/-w\d+$/, '').replace(/-all$/, '');
       setViewProxy({ name: 'lektionvocab', lektionId: lid, tab });
@@ -283,8 +518,40 @@ export default function App() {
   // fallos: la misma partida pero con un subconjunto del mazo.
   //   true / 'fallos' -> solo lo que has fallado
   //   'faltan'        -> solo lo que aun no cuenta para el porcentaje
-  const startVocab = (deckId, vmode, fallos = false, dir = null, cartasFijas = null, origen = null) =>
-    setViewProxy({ name: 'vsession', deckId, vmode, fallos, dir, cartasFijas, origen, k: Date.now() });
+  const startVocab = async (deckId, vmode, fallos = false, dir = null, cartasFijas = null, origen = null, reviewMode = null, mixOptions = null) => {
+    if (vmode === 'crossword') {
+      if (crucigramasResueltos(deckId) >= MAX_CRUCIGRAMAS_VOCAB) return;
+      setViewProxy({ name: 'vcrossword', deckId, origen, k: Date.now() });
+      return;
+    }
+    if (vmode === 'mixed') {
+      const [modVocab, modMix, modSettings] = await Promise.all([
+        vocabulario ? Promise.resolve(vocabulario) : import('./lib/vocab.js'),
+        import('./lib/mixItems.js'),
+        import('./lib/settings.js')
+      ]);
+      if (!vocabulario) setDatos((actuales) => ({ ...actuales, vocab: modVocab }));
+      const deck = modVocab.getDeck(deckId);
+      const items = cartasFijas?.length
+        ? cartasFijas
+        : modMix.vocabMixItems(modSettings.getSettings().sessionSize || 10, null, deck?.cards || [], mixOptions?.difficultyIds || []);
+      const topic = {
+        id: 'vocab-mix',
+        name: pick('Mezcla de vocabulario', 'Mixed vocabulary'),
+        nameEs: pick('Mezcla de vocabulario', 'Mixed vocabulary'),
+        deckId,
+        mixOptions: mixOptions || { bandIds: [], difficultyIds: [] },
+        concepts: [],
+        frames: []
+      };
+      setViewProxy({
+        name: 'session', topicId: topic.id, topic, mode: 'random',
+        game: 'vocab-mixed', itemsFijos: items, origen: 'vocab', k: Date.now()
+      });
+      return;
+    }
+    setViewProxy({ name: 'vsession', deckId, vmode, fallos, dir, cartasFijas, origen, reviewMode, k: Date.now() });
+  };
   const startReto = (deckId) => setViewProxy({ name: 'vreto', deckId, k: Date.now() });
   // El mismo reto, pero con las conversaciones de una Lektion de Kommunikation.
   const startKommReto = (lektionId) => setViewProxy({ name: 'kommreto', lektionId, k: Date.now() });
@@ -295,22 +562,28 @@ export default function App() {
   // `dir` es el sentido de la tarjeta ('de-es' o 'es-de'). Importa mas de lo
   // que parece: el color que gana la palabra depende de el, y sin elegirlo
   // salia al azar, asi que no se podia practicar el lado dificil a proposito.
-  const flashcardsDeTodo = (dir = null) => {
-    const ids = mazosParaMezclar().map((d) => d.id);
-    if (ids.length) startVocab('combi:' + ids.join('|'), 'flashcards', false, dir, null, 'home');
+  const flashcardsDeTodo = async (dir = null) => {
+    try {
+      const mod = vocabulario || await import('./lib/vocab.js');
+      if (!vocabulario) setDatos((actuales) => ({ ...actuales, vocab: mod }));
+      const ids = mod.mazosParaMezclar().map((d) => d.id);
+      if (ids.length) startVocab('combi:' + ids.join('|'), 'flashcards', false, dir, null, 'home');
+    } catch {
+      setErrorDatos(true);
+    }
   };
   // El mazo de "solo mis fallos" lleva el mismo id, así que el progreso de cada
   // palabra se sigue apuntando donde toca.
-  const mazoDeLaVista = () => {
-    const d = view.deckId === 'starred'
-      ? { id: 'starred', name: 'Marcados', emoji: '⭐', builtin: true, cards: view.cartasFijas || [] }
-      : getDeck(view.deckId);
+  const mazoDeLaVista = (vista = view) => {
+    const d = vista.deckId === 'starred'
+      ? { id: 'starred', name: 'Marcados', emoji: '⭐', builtin: true, cards: vista.cartasFijas || [] }
+      : vocabulario?.getDeck(vista.deckId);
     if (!d) return null;
-    if (view.cartasFijas?.length) {
-      return { ...d, cards: view.cartasFijas };
+    if (vista.cartasFijas?.length) {
+      return { ...d, cards: vista.cartasFijas };
     }
-    if (view.fallos === 'faltan') return soloQueFaltan(d);
-    return view.fallos ? soloFallos(d) : d;
+    if (vista.fallos === 'faltan') return vocabulario.soloQueFaltan(d);
+    return vista.fallos ? vocabulario.soloFallos(d) : d;
   };
 
   return (
@@ -318,13 +591,23 @@ export default function App() {
       <div className="layout">
       <Monedero />
       <Sidebar current={current} onNavigate={irASeccion} />
-      <main className="main">
+      <main ref={mainRef} className="main">
+        <Suspense fallback={<LoadingIndicator />}>
+        {requiereDatos ? (
+          errorDatos
+            ? <div className="card" role="alert" aria-live="polite">Der Inhalt konnte nicht geladen werden. Bitte lade die App neu.</div>
+            : <LoadingIndicator />
+        ) : <>
         {view.name === 'home' && (
           <Dashboard
             onStart={(topicId, mode, game) => start(topicId, mode, game, null, 'home')}
             onNavigate={go}
             onFox={(abrirCon) => setView({ name: 'fox', abrirCon })}
             onFlashcards={flashcardsDeTodo}
+            onDiaryNew={() => {
+              const entry = createEntry();
+              setViewProxy({ name: 'dentry', entryId: entry.id });
+            }}
           />
         )}
         {view.name === 'grammar' && (
@@ -336,86 +619,103 @@ export default function App() {
           />
         )}
 
-        {!SIN_IA && view.name === 'askpractice' && (
-          <AskPractice
-            key={view.k}
-            pregunta={view.pregunta}
-            res={view.res}
-            onExit={() => go('grammar')}
-            onFinish={(data) =>
-              setView({
-                name: 'vsummary',
-                data: {
-                  ...data,
-                  deck: { id: 'ask', name: view.res?.titel || view.pregunta, emoji: '💬' },
-                  mode: 'ask'
+        {!SIN_IA && vistaAskPractice && (
+          <ExerciseActiveContext.Provider value={vistaAskPractice.ejercicioVisible}>
+            <div style={vistaAskPractice.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaAskPractice.ejercicioVisible}>
+              <AskPractice
+                key={vistaAskPractice.k}
+                pregunta={vistaAskPractice.pregunta}
+                res={vistaAskPractice.res}
+                onExit={() => go('grammar')}
+                onFinish={(data) =>
+                  setView({
+                    name: 'vsummary',
+                    data: {
+                      ...aplicarBonoRachaFinal(data),
+                      deck: { id: 'ask', name: vistaAskPractice.res?.titel || vistaAskPractice.pregunta, emoji: '💬' },
+                      mode: 'ask'
+                    }
+                  })
                 }
-              })
-            }
-          />
+              />
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
-        {view.name === 'topic' && (
-          <TopicDetail
-            topic={getTopic(view.topicId)}
-            tab={view.tab}
-            onTab={setTab}
-            onStart={start}
-            onBack={() => go('grammar')}
-          />
+        {vistaTopic && (
+          <ExerciseActiveContext.Provider value={vistaTopic.ejercicioVisible}>
+            <div style={vistaTopic.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaTopic.ejercicioVisible}>
+              <TopicDetail
+                key={vistaTopic.topicId}
+                topic={getTopic(vistaTopic.topicId)}
+                tab={vistaTopic.tab}
+                onTab={setTab}
+                onStart={start}
+                onBack={() => go('grammar')}
+              />
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
-        {view.name === 'session' && (
-          <Session
-            key={view.k}
-            topic={getTopic(view.topicId)}
-            mode={view.mode}
-            game={view.game}
-            itemsFijos={view.itemsFijos}
-            onExit={() => {
-              if (view.origen === 'home' || view.game === 'todo') {
-                go('home');
-              } else if (!view.topicId || view.topicId === 'mix' || String(view.topicId).startsWith('mix:')) {
-                go('grammar');
-              } else {
-                openTopic(view.topicId, 'ejercicios');
-              }
-            }}
-            onDone={(data) => setView({ name: 'summary', data })}
-          />
+        {vistaSession && (
+          <ExerciseActiveContext.Provider value={vistaSession.ejercicioVisible}>
+            <div style={vistaSession.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaSession.ejercicioVisible}>
+              <Session
+                key={vistaSession.k}
+                topic={vistaSession.topic || getTopic(vistaSession.topicId)}
+                mode={vistaSession.mode}
+                game={vistaSession.game}
+                mixOptions={vistaSession.mixOptions}
+                itemsFijos={vistaSession.itemsFijos}
+                reviewMode={vistaSession.reviewMode}
+                onExit={() => {
+                  if (vistaSession.game === 'vocab-mixed') {
+                    go('vocab');
+                  } else if (vistaSession.origen === 'home' || vistaSession.game === 'todo') {
+                    go('home');
+                  } else if (!vistaSession.topicId || vistaSession.topicId === 'mix' || String(vistaSession.topicId).startsWith('mix:')) {
+                    go('grammar');
+                  } else {
+                    openTopic(vistaSession.topicId, 'ejercicios');
+                  }
+                }}
+                onDone={(data) => setView({ name: 'summary', data: aplicarBonoRachaFinal(data) })}
+              />
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
         {view.name === 'summary' && (
           <Summary
             data={view.data}
-            onRepeat={() => start(view.data.topic.id, view.data.mode || 'mixed', view.data.game || 'mixed')}
+            volverAInicio={view.data?.game === 'todo'}
+            onRepeat={() => view.data.game === 'vocab-mixed'
+              ? startVocab(view.data.topic.deckId, 'mixed', false, null, null, null, null, view.data.topic.mixOptions)
+              : start(view.data.topic.id, view.data.mode || 'mixed', view.data.game || 'mixed', null, null, null, view.data.mixOptions)}
             /* Otra tanda con lo que acaba de fallar, sin generar nada nuevo. */
-            onRepetirFallos={() =>
+            onRepetirFallos={() => view.data.game === 'vocab-mixed'
+              ? startVocab(view.data.topic.deckId, 'mixed', false, null, view.data.fallos, null, null, view.data.topic.mixOptions)
+              :
               setViewProxy({
                 name: 'session',
                 topicId: view.data.topic.id,
+                topic: view.data.topic,
                 mode: view.data.mode || 'mixed',
                 game: view.data.game || 'mixed',
+                mixOptions: view.data.mixOptions,
                 itemsFijos: view.data.fallos,
                 k: Date.now()
               })
             }
-            onHome={() => go('home')}
             /* La tanda mixta no sale de un tema, asi que ahi no hay adonde
-               volver: el boton no se pinta. */
-            onTema={volverAlTema(view.data?.topic?.id, 'ejercicios')}
-          />
-        )}
-
-        {view.name === 'traducir' && (
-          <TranslateGame
-            key={view.k}
-            lektionId={view.lektionId}
-            dir={view.dir}
-            nivel={view.nivel}
-            cartasFijas={view.cartasFijas}
-            onExit={() => go('komm')}
-            onFinish={(data) => setView({ name: 'vsummary', data })}
+               volver: se vuelve a la lista general de ejercicios de gramática. */
+            onTema={() => volverAlInicioDeLaPagina(
+              view.data?.game === 'todo'
+                ? () => go('home')
+                : view.data?.game === 'vocab-mixed'
+                ? () => go('vocab')
+                : volverAlTema(view.data?.topic?.id, 'ejercicios') || (() => go('grammar'))
+            )}
           />
         )}
 
@@ -447,13 +747,17 @@ export default function App() {
           />
         )}
 
-        {view.name === 'gender' && (
-          <GenderGame
-            key={view.k}
-            nivel={view.nivel || 'all'}
-            onExit={() => go('vocab')}
-            onFinish={(data) => setView({ name: 'vsummary', data })}
-          />
+        {vistaGender && (
+          <ExerciseActiveContext.Provider value={vistaGender.ejercicioVisible}>
+            <div style={vistaGender.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaGender.ejercicioVisible}>
+              <GenderGame
+                key={vistaGender.k}
+                nivel={vistaGender.nivel || 'all'}
+                onExit={() => go('vocab')}
+                onFinish={(data) => setView({ name: 'vsummary', data: aplicarBonoRachaFinal(data) })}
+              />
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
         {view.name === 'deck' && getDeck(view.deckId) && (
@@ -473,66 +777,101 @@ export default function App() {
         )}
         {view.name === 'deck' && !getDeck(view.deckId) && <Vocab onOpen={openDeck} onChanged={() => go('vocab')} />}
 
-        {view.name === 'vreto' && (
-          <VocabReto
-            key={view.k}
-            deck={getDeck(view.deckId)}
-            onExit={() => returnToDeck(view.deckId)}
-            onFinish={(data) => setView({ name: 'vsummary', data: { ...data, deck: getDeck(view.deckId), mode: 'reto' } })}
-          />
+        {vistaVReto && (
+          <ExerciseActiveContext.Provider value={vistaVReto.ejercicioVisible}>
+            <div style={vistaVReto.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaVReto.ejercicioVisible}>
+              <VocabReto
+                key={vistaVReto.k}
+                deck={getDeck(vistaVReto.deckId)}
+                onExit={() => returnToDeck(vistaVReto.deckId)}
+                onFinish={(data) => setView({ name: 'vsummary', data: { ...aplicarBonoRachaFinal(data), deck: getDeck(vistaVReto.deckId), mode: 'reto' } })}
+              />
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
         {/* MazoConIA anade al mazo palabras nuevas segun el mando de Ajustes.
             Con el mando a cero -como viene- devuelve el mazo tal cual y no
             pide nada. Envuelve a los seis porque todos reciben el mazo por
             la misma puerta. */}
-        {view.name === 'vsession' && (
-          <MazoConIA deck={mazoDeLaVista()}>
-            {(mazo) =>
-              view.vmode === 'match' ? (
-                <MatchGame
-                  key={view.k}
-                  deck={mazo}
-                  onExit={() => returnToDeck(view.deckId, 'ejercicios', view.origen)}
-                  onFinish={(data) => setView({ name: 'vsummary', data: { ...data, origen: view.origen } })}
-                />
-              ) : view.vmode === 'wortsalat' ? (
-                <WortsalatGame
-                  key={view.k}
-                  deck={mazo}
-                  cartasFijas={view.cartasFijas}
-                  onExit={() => returnToDeck(view.deckId, 'ejercicios', view.origen)}
-                  onFinish={(data) => setView({ name: 'vsummary', data: { ...data, origen: view.origen } })}
-                />
-              ) : view.vmode === 'hangman' ? (
-                <HangmanGame
-                  key={view.k}
-                  deck={mazo}
-                  cartasFijas={view.cartasFijas}
-                  onExit={() => returnToDeck(view.deckId, 'ejercicios', view.origen)}
-                  onFinish={(data) => setView({ name: 'vsummary', data: { ...data, origen: view.origen } })}
-                />
-              ) : view.vmode === 'blitz' ? (
-                <BlitzGame
-                  key={view.k}
-                  deck={mazo}
-                  cartasFijas={view.cartasFijas}
-                  onExit={() => returnToDeck(view.deckId, 'ejercicios', view.origen)}
-                  onFinish={(data) => setView({ name: 'vsummary', data: { ...data, origen: view.origen } })}
+        {vistaVSession && (
+          <ExerciseActiveContext.Provider value={vistaVSession.ejercicioVisible}>
+            <div style={vistaVSession.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaVSession.ejercicioVisible}>
+              <MazoConIA key={vistaVSession.k} deck={mazoDeLaVista(vistaVSession)} enabled={!vistaVSession.fallos}>
+                {(mazo) =>
+                  vistaVSession.vmode === 'match' ? (
+                    <MatchGame
+                      key={vistaVSession.k}
+                      deck={mazo}
+                      onExit={() => returnToDeck(vistaVSession.deckId, 'ejercicios', vistaVSession.origen)}
+                      onFinish={(data) => setView({ name: 'vsummary', data: { ...aplicarBonoRachaFinal(data), origen: vistaVSession.origen } })}
+                    />
+                  ) : vistaVSession.vmode === 'wortsalat' ? (
+                    <WortsalatGame
+                      key={vistaVSession.k}
+                      deck={mazo}
+                      cartasFijas={vistaVSession.cartasFijas}
+                      onExit={() => returnToDeck(vistaVSession.deckId, 'ejercicios', vistaVSession.origen)}
+                      onFinish={(data) => setView({ name: 'vsummary', data: { ...aplicarBonoRachaFinal(data), origen: vistaVSession.origen } })}
+                    />
+                  ) : vistaVSession.vmode === 'hangman' ? (
+                    <HangmanGame
+                      key={vistaVSession.k}
+                      deck={mazo}
+                      cartasFijas={vistaVSession.cartasFijas}
+                      onExit={() => returnToDeck(vistaVSession.deckId, 'ejercicios', vistaVSession.origen)}
+                      onFinish={(data) => setView({ name: 'vsummary', data: { ...aplicarBonoRachaFinal(data), origen: vistaVSession.origen } })}
+                    />
+                  ) : vistaVSession.vmode === 'blitz' ? (
+                    <BlitzGame
+                      key={vistaVSession.k}
+                      deck={mazo}
+                      cartasFijas={vistaVSession.cartasFijas}
+                      onExit={() => returnToDeck(vistaVSession.deckId, 'ejercicios', vistaVSession.origen)}
+                      onFinish={(data) => setView({ name: 'vsummary', data: { ...aplicarBonoRachaFinal(data), origen: vistaVSession.origen } })}
+                    />
+                  ) : (
+                    <VocabSession
+                      key={vistaVSession.k}
+                      deck={mazo}
+                      mode={vistaVSession.vmode}
+                      finishTopic={vistaVSession.fallos === 'faltan'}
+                      fallos={Boolean(vistaVSession.fallos && vistaVSession.fallos !== 'faltan')}
+                      dir={vistaVSession.dir}
+                      cartasFijas={vistaVSession.cartasFijas}
+                      reviewMode={vistaVSession.reviewMode}
+                      onExit={() => vistaVSession.reviewMode === 'marked'
+                        ? volverAlInicioDeLaPagina(() => returnToDeck(vistaVSession.deckId, 'ejercicios', vistaVSession.origen))
+                        : volverDeJuego(vistaVSession.deckId, vistaVSession.vmode, vistaVSession.origen)}
+                      onFinish={(data) => setView({ name: 'vsummary', data: { ...aplicarBonoRachaFinal(data), origen: vistaVSession.origen } })}
+                    />
+                  )
+                }
+              </MazoConIA>
+            </div>
+          </ExerciseActiveContext.Provider>
+        )}
+
+        {vistaVCrossword && (
+          <ExerciseActiveContext.Provider value={vistaVCrossword.ejercicioVisible}>
+            <div style={vistaVCrossword.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaVCrossword.ejercicioVisible}>
+              {vocabulario?.getDeck(vistaVCrossword.deckId) ? (
+                <CrosswordGame
+                  key={vistaVCrossword.k}
+                  deck={vocabulario.getDeck(vistaVCrossword.deckId)}
+                  onExit={() => returnToDeck(vistaVCrossword.deckId, 'ejercicios', vistaVCrossword.origen)}
+                  onFinish={(data) => setView({ name: 'vsummary', data: { ...aplicarBonoRachaFinal(data), origen: vistaVCrossword.origen } })}
                 />
               ) : (
-                <VocabSession
-                  key={view.k}
-                  deck={mazo}
-                  mode={view.vmode}
-                  dir={view.dir}
-                  cartasFijas={view.cartasFijas}
-                  onExit={() => volverDeJuego(view.deckId, view.vmode, view.origen)}
-                  onFinish={(data) => setView({ name: 'vsummary', data: { ...data, origen: view.origen } })}
-                />
-              )
-            }
-          </MazoConIA>
+                <div className="card center stack" role="alert">
+                  <p>{t('voc.crosswordDeckMissing')}</p>
+                  <button className="btn-ghost" onClick={() => returnToDeck(vistaVCrossword.deckId, 'ejercicios', vistaVCrossword.origen)}>
+                    {t('back')}
+                  </button>
+                </div>
+              )}
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
         {view.name === 'vsummary' && (
@@ -552,63 +891,126 @@ export default function App() {
                     origen: view.data.origen,
                     k: Date.now()
                   })
+              : view.data.mode === 'uebersetzen' && view.data.missed?.length
+              ? () => traducir(view.data.lektionId, view.data.dir || 'mix', view.data.nivel || 'all', view.data.missed)
+              : view.data.mode === 'komm-reto' && view.data.missed?.length
+              ? () => setViewProxy({
+                  name: 'kommreto',
+                  lektionId: view.data.lektionId,
+                  itemsFijos: view.data.missed,
+                  k: Date.now()
+                })
               : null}
             onRepeat={() =>
-              view.data.mode === 'gender'
+              view.data.mode === 'uebersetzen'
+                ? traducir(view.data.lektionId, view.data.dir || 'mix', view.data.nivel || 'all')
+                : view.data.mode === 'komm-reto'
+                ? setViewProxy({ name: 'kommreto', lektionId: view.data.lektionId, k: Date.now() })
+                : view.data.mode === 'gender'
                 ? setView({ name: 'gender', k: Date.now() })
                 : startVocab(view.data.deck.id, view.data.mode, false, view.data.dir, null, view.data.origen)
             }
-            onDeck={() =>
-              view.data.mode === 'gender'
-                ? (view.data.origen === 'home' ? go('home') : go('vocab'))
-                : volverDeJuego(view.data.deck.id, view.data.mode, view.data.origen)
-            }
-            onHome={() => go('home')}
+            onDeck={() => volverAlInicioDeLaPagina(() =>
+              view.data.mode === 'uebersetzen'
+                ? (view.data.lektionId
+                    ? setViewProxy({ name: 'kommlektion', lektionId: view.data.lektionId, tab: 'ejercicios' })
+                    : go('komm'))
+                : view.data.mode === 'komm-reto'
+                ? setViewProxy({ name: 'kommlektion', lektionId: view.data.lektionId, tab: 'ejercicios' })
+                : view.data.mode === 'gender'
+                ? go('vocab')
+                : returnToDeck(view.data.deck.id, 'ejercicios')
+            )}
           />
         )}
 
-        {view.name === 'komm' && (
-          <Kommunikation
-            onOpen={(lektionId) => setViewProxy({ name: 'kommlektion', lektionId })}
-            onTraducir={traducir}
-          />
+        {vistaKomm && (
+          <ExerciseActiveContext.Provider value={kommVisible}>
+            <div style={kommVisible ? undefined : { display: 'none' }} aria-hidden={!kommVisible}>
+              {['komm', 'kommlektion'].includes(vistaKomm.name) && (
+                <Kommunikation
+                  lektionId={vistaKomm.name === 'kommlektion' ? vistaKomm.lektionId : undefined}
+                  // La pestaña y la conversación se conservan en la instancia
+                  // oculta mientras se consulta otra sección.
+                  tab={vistaKomm.tab}
+                  onTab={setTab}
+                  onOpen={(lektionId) => setViewProxy({ name: 'kommlektion', lektionId })}
+                  onTraducir={traducir}
+                  onReto={startKommReto}
+                  dialog={vistaKomm.dialog}
+                  busy={vistaKomm.busy}
+                  setDialog={(dialog) => {
+                    if (kommVisible) setViewProxy((v) => ({ ...v, dialog }));
+                    else {
+                      if (memoria.current.komm) memoria.current.komm = { ...memoria.current.komm, dialog };
+                      setVistaKommGuardada((v) => v ? { ...v, dialog } : v);
+                    }
+                  }}
+                  setBusy={(busy) => {
+                    if (kommVisible) setViewProxy((v) => ({ ...v, busy }));
+                    else {
+                      if (memoria.current.komm) memoria.current.komm = { ...memoria.current.komm, busy };
+                      setVistaKommGuardada((v) => v ? { ...v, busy } : v);
+                    }
+                  }}
+                  onBack={() => go('komm')}
+                />
+              )}
+
+              {vistaKomm.name === 'traducir' && (
+                <TranslateGame
+                  key={vistaKomm.k}
+                  lektionId={vistaKomm.lektionId}
+                  dir={vistaKomm.dir}
+                  nivel={vistaKomm.nivel}
+                  cartasFijas={vistaKomm.cartasFijas}
+                  onExit={() => go('komm')}
+                  onFinish={(data) => setView({
+                    name: 'vsummary',
+                    data: {
+                      ...aplicarBonoRachaFinal(data),
+                      dir: vistaKomm.dir,
+                      nivel: vistaKomm.nivel,
+                      lektionId: vistaKomm.lektionId,
+                      volverA: 'tema'
+                    }
+                  })}
+                />
+              )}
+
+              {vistaKomm.name === 'kommreto' && (
+                <KommReto
+                  key={vistaKomm.k}
+                  lektionId={vistaKomm.lektionId}
+                  itemsFijos={vistaKomm.itemsFijos}
+                  onExit={() => setViewProxy({ name: 'kommlektion', lektionId: vistaKomm.lektionId, tab: 'ejercicios' })}
+                  onFinish={(data) => setView({
+                    name: 'vsummary',
+                    data: {
+                      ...aplicarBonoRachaFinal(data),
+                      mode: 'komm-reto',
+                      deck: { ...data.deck, id: 'komm:' + vistaKomm.lektionId, emoji: '💬' },
+                      lektionId: vistaKomm.lektionId,
+                      volverA: 'tema'
+                    }
+                  })}
+                />
+              )}
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
-        {view.name === 'kommlektion' && (
-          <Kommunikation
-            lektionId={view.lektionId}
-            // La pestaña viaja en la vista, como en Gramática y Vocabulario.
-            // Sin esto vivía sólo en el useState del componente, así que
-            // cualquier remontaje -volver a la sección, o la recarga que hace
-            // la sincronización al volver a la pestaña del navegador- te
-            // devolvía a Teoría aunque estuvieras en Ejercicios.
-            tab={view.tab}
-            onTab={setTab}
-            onReto={startKommReto}
-            dialog={view.dialog}
-            busy={view.busy}
-            setDialog={(dialog) => setViewProxy((v) => ({ ...v, dialog }))}
-            setBusy={(busy) => setViewProxy((v) => ({ ...v, busy }))}
-            onBack={() => go('komm')}
-          />
-        )}
-
-        {view.name === 'kommreto' && (
-          <KommReto
-            key={view.k}
-            lektionId={view.lektionId}
-            onExit={() => setViewProxy({ name: 'kommlektion', lektionId: view.lektionId, tab: 'ejercicios' })}
-            onFinish={(data) => setView({ name: 'vsummary', data: { ...data, mode: 'reto' } })}
-          />
-        )}
-
-        {view.name === 'kasus' && (
-          <KasusGame
-            key={view.k}
-            filtro={view.filtro}
-            onExit={() => go('grammar')}
-            onFinish={(data) => setView({ name: 'vsummary', data })}
-          />
+        {vistaKasus && (
+          <ExerciseActiveContext.Provider value={vistaKasus.ejercicioVisible}>
+            <div style={vistaKasus.ejercicioVisible ? undefined : { display: 'none' }} aria-hidden={!vistaKasus.ejercicioVisible}>
+              <KasusGame
+                key={vistaKasus.k}
+                filtro={vistaKasus.filtro}
+                onExit={() => go('grammar')}
+                onFinish={(data) => setView({ name: 'vsummary', data: aplicarBonoRachaFinal(data) })}
+              />
+            </div>
+          </ExerciseActiveContext.Provider>
         )}
 
         {!SIN_IA && view.name === 'news' && <News />}
@@ -669,8 +1071,9 @@ export default function App() {
             key={view.k}
             note={getNote(view.noteId)}
             lektion={getLektion(getNote(view.noteId)?.lektionId)}
+            itemsFijos={view.itemsFijos}
             onExit={() => setView({ name: 'note', noteId: view.noteId })}
-            onFinish={(data) => setView({ name: 'nsummary', data, noteId: view.noteId })}
+            onFinish={(data) => setView({ name: 'nsummary', data: aplicarBonoRachaFinal(data), noteId: view.noteId })}
           />
         )}
 
@@ -678,15 +1081,27 @@ export default function App() {
           <VocabSummary
             data={view.data}
             onRepeat={() => setView({ name: 'nsession', noteId: view.noteId, k: Date.now() })}
+            onRepetirFallos={() => setView({ name: 'nsession', noteId: view.noteId, itemsFijos: view.data.fallos, k: Date.now() })}
             onDeck={() => setView({ name: 'note', noteId: view.noteId })}
-            onHome={() => go('home')}
           />
         )}
 
         {view.name === 'leaderboard' && <Leaderboard onBack={() => go('home')} />}
         {view.name === 'settings' && <Settings onBack={() => go('home')} />}
+        </>}
+        </Suspense>
       </main>
       </div>
     </AppErrorBoundary>
+  );
+}
+
+function LoadingIndicator() {
+  return (
+    <div className="loading-screen loading-screen-app" role="status" aria-live="polite">
+      <span className="loading-mark" aria-hidden="true" />
+      <strong>{t('loading')}</strong>
+      <span className="loading-subline" aria-hidden="true"><i /><i /><i /></span>
+    </div>
   );
 }

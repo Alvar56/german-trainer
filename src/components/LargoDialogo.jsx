@@ -1,19 +1,7 @@
 import React, { useState } from 'react';
 import { t } from '../lib/i18n.js';
-import { getSettings, setSettings } from '../lib/settings.js';
-
-// Cuántas intervenciones pedirle a la IA. Antes estaban fijas en 14: una
-// conversación de la panadería salía igual de larga que una discusión con el
-// vecino, y para repasar cuatro frases sueltas se hacía pesada.
-export const TURNOS = { corta: 8, media: 14, larga: 22 };
-
-export function turnosDe(largo) {
-  return TURNOS[largo] || TURNOS.media;
-}
-
-export function largoGuardado() {
-  return getSettings().dialogLargo || 'media';
-}
+import { setSettings } from '../lib/settings.js';
+import { largoGuardado } from '../lib/largoDialogo.js';
 
 // El selector. Es la misma preferencia en los dos sitios donde se pide una
 // conversación (la libre y la de una Lektion), así que se guarda en ajustes y
@@ -60,7 +48,7 @@ export default function LargoDialogo({ disabled = false, onChange, chips = false
   return (
     <div className="dlg-largo" role="group" aria-label={t('komm.largo')}>
       <span className="dlg-largo-tit">{t('komm.largo')}</span>
-      <div className="dlg-largo-ops">
+      <div className="dlg-largo-ops" data-largo={largo}>
         {opciones.map(([id, texto]) => (
           <button
             key={id}

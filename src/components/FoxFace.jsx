@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { colorDe } from '../lib/fuchs.js';
 
 // Zorro en pixel art, 28x30, sentado y con cola. Se dibuja por formas en vez
@@ -12,10 +12,54 @@ import { colorDe } from '../lib/fuchs.js';
 const W = 28;
 const H = 30;
 const ALTO_CABEZA = 19; // sin cuerpo, el dibujo se recorta aquí
+const OBJETOS_EASTER_EGG = new Set(['guitarra', 'trebol', 'camara', 'peluche', 'cocheRC', 'robot']);
+const TOQUES_EASTER_EGG = { guitarra: 4, trebol: 3, camara: 2, peluche: 2, cocheRC: 3, robot: 2 };
 // (Aqui vivia MARGEN, el aire que se le anadia al viewBox para las chispas.
 //  Se lo llevaba del tamano del zorro; ahora las chispas se salen del cuadro.)
 // Cuanto se agranda el objeto de la mano respecto a la rejilla del zorro.
 const ESCALA_OBJETO = 1.3;
+
+// Acorde breve de guitarra acústica sintetizado con una cuerda pulsada.
+let contextoGuitarra;
+function tocarAcordeGuitarra() {
+  if (typeof window === 'undefined') return;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+  try {
+    contextoGuitarra ||= new AudioCtx();
+    const ctx = contextoGuitarra;
+    if (ctx.state === 'suspended') ctx.resume();
+    [196, 246.94, 293.66].forEach((frecuencia, nota) => {
+      const duracion = 0.78;
+      const largo = Math.floor(ctx.sampleRate * duracion);
+      const periodo = Math.max(2, Math.round(ctx.sampleRate / frecuencia));
+      const buffer = ctx.createBuffer(1, largo, ctx.sampleRate);
+      const datos = buffer.getChannelData(0);
+      const cuerda = Float32Array.from({ length: periodo }, () => Math.random() * 2 - 1);
+      let indice = 0;
+      for (let i = 0; i < largo; i++) {
+        datos[i] = cuerda[indice];
+        cuerda[indice] = (cuerda[indice] + cuerda[(indice + 1) % periodo]) * 0.497;
+        indice = (indice + 1) % periodo;
+      }
+      const fuente = ctx.createBufferSource();
+      const filtro = ctx.createBiquadFilter();
+      const volumen = ctx.createGain();
+      const inicio = ctx.currentTime + nota * 0.045;
+      fuente.buffer = buffer;
+      filtro.type = 'lowpass';
+      filtro.frequency.value = 2600;
+      volumen.gain.setValueAtTime(0.0001, inicio);
+      volumen.gain.exponentialRampToValueAtTime(0.11, inicio + 0.012);
+      volumen.gain.exponentialRampToValueAtTime(0.0001, inicio + duracion);
+      fuente.connect(filtro).connect(volumen).connect(ctx.destination);
+      fuente.start(inicio);
+      fuente.stop(inicio + duracion);
+    });
+  } catch {
+    // Si no hay Web Audio, la guitarra sigue funcionando visualmente.
+  }
+}
 
 function lienzo() {
   return Array.from({ length: H }, () => Array(W).fill('.'));
@@ -237,8 +281,8 @@ function marcasGato(g) {
   espejoPx(g, 10, 7, 'd');
   espejoPx(g, 12, 7, 'd');
   espejoPx(g, 11, 8, 'd');
-  espejo(g, 14, 4, 6, 'o');
-  espejo(g, 16, 4, 6, 'o');
+  espejo(g, 14, 4, 6, 'g');
+  espejo(g, 16, 4, 6, 'g');
 }
 
 // Perro: orejas caídas por los lados, por delante del cráneo, y la mancha
@@ -456,7 +500,7 @@ const BICHOS = {
   mapache: { detras: orejasMapache, marcas: marcasMapache }
 };
 
-export const ESPECIES = Object.keys(BICHOS);
+const ESPECIES = Object.keys(BICHOS);
 
 function cabeza(g, especie = 'zorro') {
   const b = BICHOS[especie] || BICHOS.zorro;
@@ -659,6 +703,33 @@ function rect(x0, y0, x1, y1, k) {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) out.push([x, y, k]);
   return out;
 }
+function mapaSprite(filas, x0, y0) {
+  const px = [];
+  filas.forEach((fila, dy) => [...fila].forEach((k, dx) => {
+    if (k !== '.') px.push([x0 + dx, y0 + dy, k.toLowerCase()]);
+  }));
+  return px;
+}
+// Convierte cada celda del sprite de referencia en cuatro subpíxeles. El
+// tamaño exterior se conserva, pero el contorno y los matices ganan resolución.
+function mapaSpriteFino(filas, x0, y0, tonos = {}, conservarMayusculas = false) {
+  const px = [];
+  filas.forEach((fila, dy) => [...fila].forEach((k, dx) => {
+    if (k === '.') return;
+    const base = conservarMayusculas ? k : k.toLowerCase();
+    const colores = tonos[base] || [base, base, base, base];
+    [[0, 0], [.5, 0], [0, .5], [.5, .5]].forEach(([ox, oy], i) => {
+      px.push([x0 + dx * .5 + ox, y0 + dy * .5 + oy, colores[i]]);
+    });
+  }));
+  return px;
+}
+function doblarResolucion(filas) {
+  return filas.flatMap((fila) => {
+    const doble = [...fila].map((k) => k + k).join('');
+    return [doble, doble];
+  });
+}
 function marco(x0, y0, x1, y1) {
   const out = [];
   for (let x = x0; x <= x1; x++) { out.push([x, y0, 'a']); out.push([x, y1, 'a']); }
@@ -695,22 +766,22 @@ const EXTRAS = {
     ]
   },
   corona: {
-    a: '#f2c230', b: '#b8860b', c: '#e8558f',
+    a: '#f6cf4a', b: '#b8860b', c: '#e8558f',
     px: [
-      // Cruz / gema superior central
-      [13, 0, 'c'], [14, 0, 'c'], [13, 1, 'a'], [14, 1, 'a'],
-      // Picos dorados con gemas
-      ...rect(4, 1, 6, 4, 'a'), [5, 1, 'c'],
-      ...rect(8, 2, 10, 4, 'a'), [9, 2, '#22c55e'],
-      ...rect(12, 2, 15, 4, 'a'), [13, 2, 'c'], [14, 2, 'c'],
-      ...rect(17, 2, 19, 4, 'a'), [18, 2, '#3b82f6'],
-      ...rect(21, 1, 23, 4, 'a'), [22, 1, 'c'],
-      // Terciopelo interior
-      ...rect(6, 3, 21, 5, '#8a1f2f'),
-      // Arco y base de la corona
-      ...rect(4, 5, 23, 6, 'a'),
-      ...rect(4, 7, 23, 8, 'b'),
-      [6, 7, 'c'], [10, 7, '#22c55e'], [13, 7, 'c'], [14, 7, 'c'], [17, 7, '#3b82f6'], [21, 7, 'c']
+      // Corona más grande, con tres puntas marcadas y simétricas.
+      [2, 1, 'a'], [24, 1, 'a'],
+      ...rect(2, 2, 4, 6, 'a'), ...rect(22, 2, 24, 6, 'a'),
+      ...rect(12, 0, 14, 5, 'a'),
+      ...rect(7, 2, 9, 6, 'a'), ...rect(17, 2, 19, 6, 'a'),
+      ...rect(4, 5, 22, 7, 'a'),
+      // Interior de terciopelo y reflejos dorados.
+      ...rect(6, 6, 20, 7, '#8a1f2f'),
+      [3, 2, 'c'], [13, 1, '#ffffff'], [23, 2, '#3b82f6'],
+      [8, 3, '#22c55e'], [18, 3, '#e8558f'],
+      // Base ancha, con una línea de luz y sombra inferior.
+      ...rect(3, 8, 23, 8, 'a'),
+      ...rect(4, 9, 22, 9, 'b'),
+      ...rect(7, 9, 10, 9, 'a'), ...rect(16, 9, 19, 9, 'a')
     ]
   },
   flor: {
@@ -761,7 +832,7 @@ const EXTRAS = {
     ]
   },
   sombreroElegante: {
-    a: '#2d2d38', b: '#1b1b22', c: '#9e2a2b',
+    a: '#858b95', b: '#555b66', c: '#9e2a2b',
     px: [
       // Copa con pliegue central
       ...rect(8, 1, 19, 1, 'a'), [13, 1, 'b'], [14, 1, 'b'],
@@ -829,18 +900,6 @@ const EXTRAS = {
     ]
   },
   // --- objetos: se sostienen con la pata derecha ---
-  balon: {
-    a: '#f5f5f5', b: '#33333f', c: '#c9a227',
-    // La pelota bota y el pie se queda quieto. `anima` marca qué píxeles son
-    // la parte que se mueve: sin esto había que animar el complemento entero
-    // y el trofeo daba saltitos, que no es lo que hace un trofeo.
-    anima: (x, y) => y <= 25,
-    px: [
-      ...rect(21, 22, 24, 25, 'a'),
-      [22, 22, 'b'], [23, 23, 'b'], [21, 24, 'b'], [24, 24, 'b'], [22, 25, 'b'],
-      ...rect(22, 26, 23, 27, 'c'), ...rect(20, 28, 25, 28, 'c')
-    ]
-  },
   trofeo: {
     a: '#f2c230', b: '#a87c12', c: '#fff0bc',
     px: [
@@ -900,8 +959,8 @@ const EXTRAS = {
   cinta: {
     a: '#2f7de0', b: '#1c56a0', c: '#ffffff',
     px: [
-      ...rect(4, 7, 23, 7, 'a'), ...rect(4, 8, 23, 8, 'a'), ...rect(4, 9, 23, 9, 'b'),
-      ...rect(10, 7, 13, 8, 'c'), ...rect(15, 7, 17, 8, 'c')
+      ...rect(4, 7, 23, 7, 'a'), ...rect(4, 8, 23, 8, 'b'),
+      ...rect(10, 7, 13, 7, 'c'), ...rect(15, 7, 17, 7, 'c')
     ]
   },
   zapatillas: {
@@ -1235,13 +1294,6 @@ const EXTRAS = {
   },
 
   // --- objetos (añadidos) ---
-  mochila: {
-    a: '#2f6b45', b: '#1f4a2f', c: '#c9a227',
-    px: [
-      ...rect(21, 21, 25, 27, 'a'), ...rect(21, 27, 25, 28, 'b'),
-      ...rect(22, 22, 24, 23, 'c'), [20, 22, 'b'], [20, 25, 'b']
-    ]
-  },
   camara: {
     a: '#33333f', b: '#1b1b22', c: '#7bd8ff',
     px: [
@@ -1250,11 +1302,100 @@ const EXTRAS = {
     ]
   },
   guitarra: {
-    a: '#b5533f', b: '#8d3c2c', c: '#e8c98f',
+    a: '#d58a4e', b: '#a85c32', c: '#f1cc7b', d: '#422b24', e: '#fff1c6', escala: 1.34,
     px: [
-      ...rect(21, 24, 25, 28, 'a'), ...rect(22, 25, 24, 27, 'b'),
-      ...rect(23, 19, 24, 23, 'c'), ...rect(22, 18, 25, 18, 'c')
+      // Mástil corto y caja redondeada, con cintura suave y boca central.
+      [22, 12, 'd'], [23, 12, 'd'], [24, 12, 'd'], [21, 13, 'd'], ...rect(22, 13, 24, 14, 'a'), [25, 13, 'd'],
+      [21, 14, 'd'], ...rect(22, 14, 24, 21, 'a'), [25, 14, 'd'],
+      [22, 15, 'c'], [23, 15, 'c'], [24, 15, 'c'], [22, 16, 'c'], [23, 16, 'c'], [24, 16, 'c'],
+      [21, 21, 'd'], ...rect(22, 21, 24, 22, 'a'), [25, 21, 'd'],
+      [21, 22, 'd'], ...rect(22, 22, 24, 22, 'a'), [25, 22, 'd'],
+      [20, 23, 'd'], ...rect(21, 23, 25, 23, 'a'), [26, 23, 'd'],
+      [20, 24, 'd'], ...rect(21, 24, 25, 24, 'a'), [26, 24, 'd'],
+      [19, 25, 'd'], ...rect(20, 25, 26, 27, 'a'), [27, 25, 'd'],
+      [19, 26, 'd'], [27, 26, 'd'], [19, 27, 'd'], [27, 27, 'd'],
+      [20, 28, 'd'], ...rect(21, 28, 25, 28, 'a'), [26, 28, 'd'],
+      [21, 29, 'd'], [22, 29, 'a'], [23, 29, 'a'], [24, 29, 'a'], [25, 29, 'd'],
+      [20, 25, 'c'], [21, 24, 'c'], [22, 24, 'c'], [24, 24, 'c'], [25, 25, 'c'],
+      [22, 26, 'd'], [23, 26, 'e'], [24, 26, 'd'],
+      [23, 23, 'e'], [23, 24, 'e'], [23, 25, 'e'], [23, 27, 'e'], [23, 28, 'e']
     ]
+  },
+  trebol: {
+    a: '#2c974f', b: '#94df72', c: '#17452e', d: '#d9efaa', escala: 1.34,
+    px: [
+      // Cuatro hojas redondas, juntas en un centro claro y tallo separado.
+      [21, 17, 'c'], [22, 17, 'c'], [20, 18, 'c'], [21, 18, 'c'], [22, 18, 'c'], [23, 18, 'c'], [21, 19, 'c'], [22, 19, 'c'],
+      [24, 17, 'c'], [25, 17, 'c'], [23, 18, 'c'], [24, 18, 'c'], [25, 18, 'c'], [26, 18, 'c'], [24, 19, 'c'], [25, 19, 'c'],
+      [20, 21, 'c'], [21, 20, 'c'], [22, 20, 'c'], [23, 20, 'c'], [21, 21, 'c'], [22, 21, 'c'], [21, 22, 'c'], [22, 22, 'c'],
+      [24, 20, 'c'], [25, 20, 'c'], [26, 21, 'c'], [27, 21, 'c'], [24, 21, 'c'], [25, 21, 'c'], [25, 22, 'c'], [26, 22, 'c'],
+      [21, 18, 'a'], [22, 18, 'b'], [24, 18, 'a'], [25, 18, 'b'],
+      [21, 21, 'a'], [22, 21, 'b'], [25, 21, 'a'], [26, 21, 'b'],
+      [22, 19, 'a'], [23, 19, 'd'], [24, 19, 'a'], [23, 20, 'd'], [23, 21, 'a'],
+      [23, 22, 'd'], [23, 23, 'd'], [24, 24, 'd'], [25, 25, 'd'], [26, 26, 'c']
+    ]
+  },
+  peluche: {
+    a: '#9a613d', b: '#68442f', c: '#d9955b', d: '#f4d5ad', e: '#292b32', escala: 1.12,
+    px: [
+      // Osito de peluche: orejas redondas, cabeza, hocico y cuerpo mullido.
+      [21, 17, 'b'], [22, 17, 'b'], [25, 17, 'b'], [26, 17, 'b'],
+      [20, 18, 'b'], [21, 18, 'a'], [22, 18, 'a'], [23, 18, 'b'], [24, 18, 'b'], [25, 18, 'a'], [26, 18, 'a'], [27, 18, 'b'],
+      [20, 19, 'b'], ...rect(21, 19, 26, 19, 'a'), [27, 19, 'b'],
+      [19, 20, 'b'], ...rect(20, 20, 27, 22, 'a'), [28, 20, 'b'],
+      [19, 21, 'b'], [28, 21, 'b'], [20, 22, 'b'], [27, 22, 'b'],
+      [21, 23, 'b'], [22, 23, 'a'], [23, 23, 'a'], [24, 23, 'a'], [25, 23, 'a'], [26, 23, 'b'],
+      [20, 24, 'b'], ...rect(21, 24, 26, 27, 'a'), [27, 24, 'b'],
+      [19, 25, 'b'], [20, 25, 'a'], [27, 25, 'a'], [28, 25, 'b'],
+      [19, 26, 'b'], [20, 26, 'a'], [27, 26, 'a'], [28, 26, 'b'],
+      [20, 27, 'b'], [21, 27, 'a'], [22, 27, 'a'], [25, 27, 'a'], [26, 27, 'a'], [27, 27, 'b'],
+      [21, 28, 'b'], [22, 28, 'b'], [25, 28, 'b'], [26, 28, 'b'],
+      [22, 20, 'c'], [23, 20, 'd'], [24, 20, 'd'], [25, 20, 'c'], [22, 21, 'd'], [23, 21, 'd'], [24, 21, 'd'], [25, 21, 'd'],
+      [22, 20, 'e'], [25, 20, 'e'], [23, 22, 'b'], [24, 22, 'b']
+    ]
+  },
+  cocheRC: {
+    k: '#080b0e', r: '#c81818', y: '#ffd52e', d: '#292b2d', escala: 1.3,
+    px: mapaSprite([
+      '..kkk.....k................',
+      '..drd....rd................',
+      '..drdkkrrry.k.kkkkk........',
+      '..kkddkkrrrrrrrrkddkk......',
+      '...kdkdkrrrrrrrkdkkdrkk....',
+      '...kdkdkrrrrrrkkdkkdrrrk...',
+      '....kkkkkdkkkk..kkkkkkkk...'
+    ], 4, 23)
+  },
+  robot: {
+    k: '#172839', b: '#244b70', s: '#4f9fc0', c: '#a9e5e8', w: '#e2f5e7', e: '#18272b',
+    o: '#ec9b24', y: '#ffd33e', escala: .6, pixelStep: .5,
+    px: mapaSpriteFino(doblarResolucion([
+      '......kkk......',
+      '......koyk.....',
+      '...kkkkkkkkk...',
+      '..kbbbbbbbbb k..',
+      '.kbbsssssssbbk.',
+      '.kbscccccccsbk.',
+      '.kbscccccccsbk.',
+      '.kbsceeeec csbk.',
+      '.kbsceweec csbk.',
+      '.kbscccccccsbk.',
+      '.kbbsssssssbbk.',
+      '..kkkkkkkkkkk..',
+      '....kkkkkkk....',
+      '..kkkoookkkk...',
+      '.kkkkyyyyykkk..',
+      'kkkkkkkkkkkkkkk',
+      'kkkoookkkkkookk',
+      'kkkkkkkkkkkkkkk',
+      '...kkkkkkkkk...',
+      '....kyy...kyy...',
+      '....kyy...kyy...',
+      '....kkk...kkk...'
+    ].map((row) => row.replaceAll(' ', '.'))), 20, 8, {
+      b: ['b', 'b', 's', 'b'], s: ['s', 's', 's', 'b'],
+      c: ['w', 'c', 'c', 'c'], o: ['y', 'o', 'o', 'o'], y: ['y', 'y', 'o', 'y']
+    })
   },
   // --- cabeza (con monedas) ---
   gorroLana: {
@@ -1433,31 +1574,6 @@ const EXTRAS = {
       [22, 22, 'c'], [24, 25, 'c'], [22, 27, 'c']
     ]
   },
-  paraguas: {
-    // Abierto por encima de la cabeza, pero solo se le ve la mitad de arriba:
-    // una franja fina de copa y el mastil bajando por fuera de la cara. Antes
-    // ocupaba seis filas y le tapaba media cabeza al zorro.
-    //
-    // Escala propia: el resto de objetos se agrandan un 30% desde su base, y
-    // este ya ocupa el alto entero. Escalarlo lo sacaria del lienzo por arriba.
-    escala: 1,
-    a: '#c0392b', b: '#8e2a1e', c: '#5d4037',
-    px: [
-      // La copa: tres filas. La de arriba tiene que tapar la cabeza ENTERA,
-      // que con gorro llega de x4 a x23. Cuando era mas estrecha asomaban las
-      // puntas de las orejas por encima y parecia medio paraguas.
-      ...rect(4, 0, 23, 0, 'a'),
-      ...rect(3, 1, 24, 1, 'a'),
-      ...rect(2, 2, 25, 2, 'a'),
-      // la mitad derecha, en sombra, para que se le vea el volumen
-      ...rect(14, 0, 23, 0, 'b'),
-      ...rect(15, 1, 24, 1, 'b'),
-      ...rect(16, 2, 25, 2, 'b'),
-      // el mastil baja por fuera de la cabeza hasta la patita
-      ...rect(24, 3, 25, 27, 'c'),
-      ...rect(22, 28, 25, 28, 'c')
-    ]
-  },
   globo: {
     a: '#e74c3c', b: '#b03a2e', c: '#ffffff',
     px: [
@@ -1559,21 +1675,13 @@ const EXTRAS = {
 // Cada forma, en pixeles del dibujo relativos a su centro. 'a' es el color
 // de siempre, 'b' el nucleo claro y 'c' la sombra.
 const FORMAS = {
-  // una chispa: el pixel y su brillo encima
-  chispa: [[0, 0, 'a'], [0, -1, 'b']],
-  // chispa con cola: la cola la deja detras al subir
-  estela: [[0, -1, 'b'], [0, 0, 'a'], [0, 1, 'a'], [0, 2, 'c']],
-  // lengua de fuego: ancha abajo y en punta arriba, con el centro claro
-  llama: [
-    [0, -2, 'b'], [0, -1, 'b'], [-1, -1, 'a'], [1, -1, 'a'],
-    [-1, 0, 'a'], [0, 0, 'a'], [1, 0, 'a'], [0, 1, 'c']
-  ],
-  // cascote que se levanta del suelo
-  roca: [[0, 0, 'a'], [1, 0, 'a'], [-1, 1, 'c'], [0, 1, 'c'], [1, 1, 'c']],
-  // rayo en zigzag
-  rayo: [[0, -3, 'a'], [0, -2, 'a'], [-1, -1, 'a'], [0, -1, 'b'], [1, 0, 'a'], [1, 1, 'a'], [0, 2, 'a']],
-  // el destello de toda la vida, para el remate de arriba
-  destello: [[0, 0, 'b'], [-1, 0, 'a'], [1, 0, 'a'], [0, -1, 'a'], [0, 1, 'a']]
+  chispa: [[0, 0, 'a'], [0, -1, 'b'], [1, 0, 'b']],
+  rombo: [[0, -2, 'b'], [-1, -1, 'a'], [0, -1, 'b'], [1, -1, 'a'], [-1, 0, 'a'], [0, 0, 'b'], [1, 0, 'a'], [0, 1, 'c']],
+  estrella: [[0, -2, 'b'], [0, -1, 'a'], [-2, 0, 'a'], [-1, 0, 'a'], [0, 0, 'b'], [1, 0, 'a'], [2, 0, 'a'], [0, 1, 'a'], [0, 2, 'b']],
+  estela: [[0, -2, 'b'], [0, -1, 'a'], [0, 0, 'a'], [0, 1, 'c'], [1, 2, 'c']],
+  luna: [[-1, -2, 'b'], [0, -2, 'b'], [-2, -1, 'a'], [0, -1, 'a'], [-2, 0, 'a'], [-1, 0, 'a'], [0, 0, 'a'], [-1, 1, 'b']],
+  burbuja: [[0, -1, 'b'], [-1, 0, 'a'], [1, 0, 'a'], [-1, 1, 'a'], [1, 1, 'a'], [0, 2, 'c'], [0, 0, 'b']],
+  flor: [[0, -2, 'b'], [-1, -1, 'a'], [0, -1, 'b'], [1, -1, 'a'], [-2, 0, 'a'], [-1, 0, 'b'], [0, 0, 'a'], [1, 0, 'b'], [2, 0, 'a'], [-1, 1, 'a'], [0, 1, 'b'], [1, 1, 'a'], [0, 2, 'c']]
 };
 
 // Donde se colocan:
@@ -1588,31 +1696,34 @@ const FORMAS = {
 //   crepita   no se mueve: parpadea como un chispazo
 const PARTICULAS = {
   p1: [
-    { n: 5, forma: 'chispa', donde: 'anillo', mov: 'flota', a: '#ffd76e', b: '#fff6d5', seg: 3.2 }
+    { n: 4, forma: 'chispa', donde: 'anillo', mov: 'flota', a: '#f6c95d', b: '#fff4c2', seg: 3.4 }
   ],
   p2: [
-    { n: 7, forma: 'estela', donde: 'anillo', mov: 'sube', a: '#ffc93c', b: '#fff8d8', c: '#e09a12', seg: 2.4 }
+    { n: 6, forma: 'estela', donde: 'anillo', mov: 'flota', a: '#7bc9dc', b: '#e5fbff', c: '#4a9fb9', seg: 2.8 },
+    { n: 3, forma: 'chispa', donde: 'anillo', mov: 'flota', a: '#f5d58a', b: '#fff8df', seg: 2.2 }
   ],
   p3: [
-    { n: 7, forma: 'llama', donde: 'aura', mov: 'sube', a: '#ff9f43', b: '#ffe8b8', c: '#d4651a', seg: 1.6 }
+    { n: 6, forma: 'rombo', donde: 'aura', mov: 'sube', a: '#b69be8', b: '#f2eaff', c: '#8066bd', seg: 2.3 },
+    { n: 3, forma: 'chispa', donde: 'anillo', mov: 'flota', a: '#f6d985', b: '#fff9df', seg: 2.8 }
   ],
   p4: [
-    { n: 10, forma: 'llama', donde: 'aura', mov: 'sube', a: '#ff7a1f', b: '#fff3c9', c: '#c43c08', seg: 1.2 },
-    { n: 4, forma: 'chispa', donde: 'anillo', mov: 'flota', a: '#ffd76e', b: '#fff6d5', seg: 2.2 }
+    { n: 6, forma: 'luna', donde: 'anillo', mov: 'flota', a: '#8ba9e8', b: '#eff5ff', c: '#647bb8', seg: 3.2 },
+    { n: 4, forma: 'estrella', donde: 'anillo', mov: 'flota', a: '#eacb73', b: '#fff8d8', seg: 2.4 }
   ],
   p5: [
-    { n: 8, forma: 'llama', donde: 'aura', mov: 'sube', a: '#ff9f43', b: '#ffe8b8', c: '#d4651a', seg: 1.5 },
-    { n: 5, forma: 'roca', donde: 'suelo', mov: 'sube', a: '#9a8876', b: '#c4b4a2', c: '#5f5245', seg: 2.6 }
+    { n: 7, forma: 'rombo', donde: 'suelo', mov: 'sube', a: '#78c9d9', b: '#e4fbff', c: '#418ca9', seg: 2.6 },
+    { n: 5, forma: 'burbuja', donde: 'anillo', mov: 'flota', a: '#a9dce8', b: '#f3fdff', c: '#6eb1c5', seg: 3.1 }
   ],
   p6: [
-    { n: 8, forma: 'llama', donde: 'aura', mov: 'sube', a: '#5fc8ff', b: '#eaf9ff', c: '#1f7fc4', seg: 1.4 },
-    { n: 4, forma: 'rayo', donde: 'lados', mov: 'crepita', a: '#9fe6ff', b: '#ffffff', c: '#4aa8e0', seg: 1.8 }
+    { n: 8, forma: 'flor', donde: 'aura', mov: 'flota', a: '#82cbb8', b: '#e6fff3', c: '#559d9a', seg: 3.1 },
+    { n: 5, forma: 'estrella', donde: 'anillo', mov: 'crepita', a: '#b8a2e8', b: '#fffaff', c: '#8372c1', seg: 2.7 },
+    { n: 3, forma: 'chispa', donde: 'anillo', mov: 'flota', a: '#f6dc91', b: '#fff9df', seg: 2.2 }
   ],
   p7: [
-    { n: 11, forma: 'llama', donde: 'aura', mov: 'sube', a: '#ffcf3a', b: '#fffbe6', c: '#ff8c00', seg: 1.0 },
-    { n: 4, forma: 'rayo', donde: 'lados', mov: 'crepita', a: '#fff3a8', b: '#ffffff', c: '#ffae00', seg: 1.5 },
-    { n: 4, forma: 'roca', donde: 'suelo', mov: 'sube', a: '#9a8876', b: '#c4b4a2', c: '#5f5245', seg: 2.2 },
-    { n: 3, forma: 'destello', donde: 'anillo', mov: 'flota', a: '#ffd54a', b: '#ffffff', c: '#ffb300', seg: 2.0 }
+    { n: 8, forma: 'rombo', donde: 'aura', mov: 'flota', a: '#a88ce3', b: '#fffaff', c: '#7661bb', seg: 2.8 },
+    { n: 6, forma: 'estrella', donde: 'anillo', mov: 'crepita', a: '#edcb6c', b: '#fffbe5', c: '#c89e43', seg: 2.6 },
+    { n: 5, forma: 'burbuja', donde: 'suelo', mov: 'sube', a: '#80cbd8', b: '#f0fdff', c: '#4a9eae', seg: 3.0 },
+    { n: 4, forma: 'flor', donde: 'anillo', mov: 'flota', a: '#e9a9c4', b: '#fff2f8', c: '#bb769e', seg: 3.2 }
   ]
 };
 
@@ -1674,6 +1785,7 @@ function paleta(c) {
     const suf = id.replace('galaxy-', '');
     return {
       o: suf === 'red' ? '#3d1205' : suf === 'blue' ? '#141738' : '#052e16',
+      g: '#858b95',
       f: `url(#galaxy-${suf}-fur)`,
       d: `url(#galaxy-${suf}-fur)`,
       h: `url(#galaxy-${suf}-fur)`,
@@ -1692,6 +1804,7 @@ function paleta(c) {
   }
   return {
     o: '#211a16',
+    g: '#858b95',
     f: c.fur,
     d: c.sombra,
     h: c.luzPelo,
@@ -1721,12 +1834,40 @@ export default function FoxFace({
   // siempre no premian nada. La tienda las ensena igual, que si no compras a
   // ciegas.
   chispeando = false,
+  desvaneciendoEfecto = false,
   // Aciertos seguidos que llevas: el efecto aprieta segun sube. Lo que llevas
   // puesto elige QUE se ve; la racha, cuanto arde.
   racha = 0,
   className = ''
 }) {
   const [cerrando, setCerrando] = useState(false);
+  const [foxEgg, setFoxEgg] = useState(null);
+  const accessoryTaps = useRef({ id: null, count: 0 });
+  const accessoryTapTimer = useRef(null);
+  const foxEggTimer = useRef(null);
+
+  useEffect(() => () => {
+    clearTimeout(accessoryTapTimer.current);
+    clearTimeout(foxEggTimer.current);
+  }, []);
+
+  const tocarObjeto = (id) => {
+    if (id === 'guitarra') tocarAcordeGuitarra();
+    const objetivo = TOQUES_EASTER_EGG[id];
+    if (!objetivo) return;
+    const taps = accessoryTaps.current;
+    if (taps.id === id) taps.count += 1;
+    else { taps.id = id; taps.count = 1; }
+    clearTimeout(accessoryTapTimer.current);
+    if (taps.count >= objetivo) {
+      taps.count = 0;
+      setFoxEgg(id);
+      clearTimeout(foxEggTimer.current);
+      foxEggTimer.current = setTimeout(() => setFoxEgg(null), id === 'camara' ? 800 : 1900);
+    } else {
+      accessoryTapTimer.current = setTimeout(() => { taps.id = null; taps.count = 0; }, 2600);
+    }
+  };
 
   // Parpadeo suelto cada pocos segundos: es lo que hace que parezca vivo.
   useEffect(() => {
@@ -1752,13 +1893,14 @@ export default function FoxFace({
   let pId = fuchs?.particulas;
   if (colorId.startsWith('galaxy')) pId = null;
   const base = chispeando ? PARTICULAS[pId] || null : null;
-  const empuje = Math.max(0, Math.min(1, (racha - 2) / (10 - 2)));
+  // La subida va de la racha inicial al tope completo en 20 aciertos.
+  const empuje = Math.max(0, Math.min(1, (racha - EMPIEZA) / (TOPE - EMPIEZA)));
   const chispas =
     base &&
     base.map((capa) => ({
       ...capa,
-      n: Math.round(capa.n * (1 + 0.7 * empuje)),
-      seg: +(capa.seg * (1 - 0.4 * empuje)).toFixed(2)
+      n: Math.round(capa.n * (1 + 0.9 * empuje)),
+      seg: +(capa.seg * (1 - 0.45 * empuje)).toFixed(2)
     }));
   const especie = ESPECIES.includes(fuchs?.especie) ? fuchs.especie : 'zorro';
 
@@ -1794,7 +1936,12 @@ export default function FoxFace({
       // de rejilla se quedaba en un manchurron de cinco pixeles y no se
       // distinguia un libro de una taza. Crece desde su base, que es donde lo
       // agarra, asi que sigue apoyado en la patita.
-      return ex ? { id, ex, escala: i === 5 ? ex.escala ?? ESCALA_OBJETO : 1, esObjeto: i === 5 } : null;
+      return ex ? {
+        id,
+        ex,
+        escala: i === 5 ? ex.escala ?? ESCALA_OBJETO : 1,
+        esObjeto: i === 5
+      } : null;
     })
     .filter(Boolean);
 
@@ -1995,6 +2142,18 @@ export default function FoxFace({
         )}
         {extras.map(({ id, ex, escala, esObjeto }, i) => {
           const vis = ex.px.filter(([, y]) => y < alto);
+          const pixelStep = ex.pixelStep ?? 1;
+          const pixelesRender = [
+            ...vis.flatMap(([x, y, color]) => {
+              if (pixelStep === 1) return [[x, y, color]];
+              const celdas = [];
+              for (let py = 0; py < 1; py += pixelStep) {
+                for (let px = 0; px < 1; px += pixelStep) celdas.push([x + px, y + py, color]);
+              }
+              return celdas;
+            }),
+            ...(ex.microPx || []).filter(([, y]) => y < alto)
+          ];
           // El ancla es la base del propio dibujo. Y cada pixel se coloca ya
           // escalado en vez de meterlo todo en un <g transform>: asi los
           // cuadrados siguen encajando justos entre si y no salen las rayas
@@ -2009,24 +2168,47 @@ export default function FoxFace({
           // se separan ampliamente hacia la derecha en el menú de personalización (tienda)
           // para apreciarlos con claridad sin solaparse con el cuerpo ni tapar el brazo del zorro.
           // En la portada (Startseite), se mantienen en su posición estándar original.
-          const esObjetoSuelto = esObjeto && id !== 'paraguas';
+          const esObjetoSuelto = esObjeto;
           const separacionX = (esObjetoSuelto && separarObjetos) ? 3.6 : 0;
           const ajuste = (esObjetoSuelto && separarObjetos) ? 0 : (der > W ? W - der : izq < 0 ? -izq : 0);
           // Y lo mismo por arriba: nada puede quedar por encima del lienzo.
           const arriba = cy + (Math.min(...vis.map((q) => q[1])) - cy) * escala;
           const ajusteY = arriba < 0 ? -arriba : 0;
           // Cada complemento en su grupo, con su id de clase: asi el CSS le
-          // puede dar vida a uno solo (el globo flota, el paraguas se mece).
+          // puede dar vida a uno solo (por ejemplo, el globo flotante).
           return (
-            <g key={`e${i}`} className={`fox-extra fox-x-${id}`}>
-              {vis.map(([x, y, k], j) => (
+            <g
+              key={`e${i}`}
+              className={`fox-extra fox-x-${id}`}
+              onClick={OBJETOS_EASTER_EGG.has(id) ? (ev) => {
+                ev.stopPropagation();
+                tocarObjeto(id);
+              } : undefined}
+              onKeyDown={OBJETOS_EASTER_EGG.has(id) ? (ev) => {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                  ev.preventDefault();
+                  tocarObjeto(id);
+                }
+              } : undefined}
+              role={OBJETOS_EASTER_EGG.has(id) ? 'button' : undefined}
+              tabIndex={OBJETOS_EASTER_EGG.has(id) ? 0 : undefined}
+              aria-label={id === 'guitarra' ? 'Tocar la guitarra' : id === 'camara' ? 'Hacer una foto' : id === 'peluche' ? 'Abrazar el peluche' : id === 'cocheRC' ? 'Conducir el coche' : id === 'robot' ? 'Activar el robot' : `Interactuar con ${id}`}
+              style={OBJETOS_EASTER_EGG.has(id) ? { cursor: 'pointer' } : undefined}
+            >
+              {id === 'guitarra' && <title>Toca para escuchar un acorde</title>}
+              {id === 'trebol' && <title>Toca tres veces para probar suerte</title>}
+              {id === 'camara' && <title>Toca dos veces para hacer una foto</title>}
+              {id === 'peluche' && <title>Toca dos veces para darle un abrazo</title>}
+              {id === 'cocheRC' && <title>Toca tres veces para hacerlo correr</title>}
+              {id === 'robot' && <title>Toca dos veces para activarlo</title>}
+              {pixelesRender.map(([x, y, k], j) => (
                 <rect
                   key={j}
                   className={ex.anima && ex.anima(x, y) ? 'fox-px-mueve' : undefined}
                   x={(escala === 1 ? x : cx + (x - cx) * escala) + ajuste + separacionX}
                   y={escala === 1 ? y : cy + (y - cy) * escala + ajusteY}
-                  width={escala}
-                  height={escala}
+                  width={pixelStep * escala}
+                  height={pixelStep * escala}
                   fill={k === 'a' ? ex.a : k === 'b' ? ex.b : k === 'c' ? ex.c : k === 'd' ? ex.d : (typeof k === 'string' && (k.startsWith('#') || k.startsWith('rgba') || k.startsWith('rgb'))) ? k : (ex[k] || ex.c)}
                 />
               ))}
@@ -2034,6 +2216,42 @@ export default function FoxFace({
           );
         })}
       </g>
+      {foxEgg === 'guitarra' && fuchs?.objeto === 'guitarra' && (
+        <g className="fox-guitar-egg" aria-hidden="true" pointerEvents="none">
+          <text x="26" y="18" textAnchor="middle" fontSize="5" fontWeight="700" fill="#8b6ad8">♪</text>
+          <text x="26" y="14" textAnchor="middle" fontSize="4" fontWeight="700" fill="#d99ac6">♫</text>
+        </g>
+      )}
+      {foxEgg === 'trebol' && fuchs?.objeto === 'trebol' && (
+        <g aria-hidden="true" pointerEvents="none" fill="#f4ce62">
+          <path d="M21 17v-2m-1 1h2M26 22v-2m-1 1h2M20 25v-2m-1 1h2" stroke="#f4ce62" strokeWidth=".7" />
+          <circle cx="22" cy="17" r=".6" /><circle cx="26" cy="20" r=".6" />
+        </g>
+      )}
+      {foxEgg === 'camara' && fuchs?.objeto === 'camara' && (
+        <g aria-hidden="true" pointerEvents="none">
+          <rect x="18" y="19" width="10" height="11" fill="#fff" opacity=".72">
+            <animate attributeName="opacity" values=".72;0;0" dur=".72s" fill="freeze" />
+          </rect>
+        </g>
+      )}
+      {foxEgg === 'peluche' && fuchs?.objeto === 'peluche' && (
+        <g aria-hidden="true" pointerEvents="none">
+          <text x="25" y="17" textAnchor="middle" fontSize="5" fill="#e76b91">♥<animate attributeName="y" values="17;12;17" dur="1s" /></text>
+        </g>
+      )}
+      {foxEgg === 'cocheRC' && fuchs?.objeto === 'cocheRC' && (
+        <g aria-hidden="true" pointerEvents="none" fill="none" stroke="#5ca9dc" strokeWidth="1">
+          <path d="M17 27h-3m4 2h-5"><animate attributeName="opacity" values="1;.15;1" dur=".45s" repeatCount="4" /></path>
+          <path d="M18 24l-2-2m12 7l2-2"><animate attributeName="opacity" values=".2;1;.2" dur=".4s" repeatCount="4" /></path>
+        </g>
+      )}
+      {foxEgg === 'robot' && fuchs?.objeto === 'robot' && (
+        <g aria-hidden="true" pointerEvents="none" fill="#f6d45b">
+          <path d="M24 12v-3m-1.5 1.5h3" stroke="#f6d45b" strokeWidth=".8"><animate attributeName="opacity" values="1;.2;1" dur=".35s" repeatCount="4" /></path>
+          <circle cx="24" cy="9" r="1"><animate attributeName="r" values=".5;1.5;.5" dur=".7s" repeatCount="2" /></circle>
+        </g>
+      )}
       {colorId.startsWith('galaxy') && (
         <g className="fox-galaxy-effects" aria-hidden="true" style={{ pointerEvents: 'none' }}>
           {/* Olas cósmicas luminosas centradas en el cuerpo y cara */}
@@ -2144,7 +2362,7 @@ export default function FoxFace({
         </g>
       )}
       {chispas && !colorId.startsWith('galaxy') && (
-        <g className="fox-particulas" aria-hidden="true">
+        <g className={'fox-particulas' + (desvaneciendoEfecto ? ' fox-particulas-desvanecer' : '')} aria-hidden="true">
           {chispas.map((capa, c) =>
             motas(capa, alto).map((m, i) => (
               <g

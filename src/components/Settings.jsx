@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { t, pick, getLang, setLang, LANGS, LANGS_PENDIENTES } from '../lib/i18n.js';
 import ImportarVocab from './ImportarVocab.jsx';
 import ComoFunciona from './ComoFunciona.jsx';
@@ -9,7 +9,7 @@ import { exportarFotos, importarFotos } from '../lib/fotos.js';
 import { getTema, setTema, TEMAS } from '../lib/tema.js';
 import { getLevel, liveStreak } from '../lib/streak.js';
 import { saldo } from '../lib/monedas.js';
-import { coronas, getFuchs } from '../lib/fuchs.js';
+import { coronas, getFuchs, onCoronasListo } from '../lib/fuchs.js';
 import { bestStreak } from '../lib/rachas.js';
 import { generateItems } from '../lib/ai.js';
 import { esOrdenador } from '../lib/teclas.js';
@@ -27,11 +27,14 @@ const NOMBRE_TEMA = {
 export default function Settings({ onBack }) {
   const [tema, setTemaLocal] = useState(getTema());
   const [s, setS] = useState(getSettings());
+  const [numCoronas, setNumCoronas] = useState(coronas);
   const [test, setTest] = useState(null);
   // Sacar las fotos de IndexedDB tarda un momento; el boton lo dice mientras.
   const [exportando, setExportando] = useState(false);
   const lvl = getLevel();
   const racha = liveStreak();
+
+  useEffect(() => onCoronasListo(setNumCoronas), []);
 
   const up = (patch) => setS(setSettings(patch));
 
@@ -113,7 +116,7 @@ export default function Settings({ onBack }) {
             <div className="l">{t('fox.coins')}</div>
           </div>
           <div className="card statcard">
-            <div className="n">{coronas()}</div>
+            <div className="n">{numCoronas}</div>
             <div className="l">{t('set.crowns')}</div>
           </div>
           <div className="card statcard">

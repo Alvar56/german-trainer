@@ -7,8 +7,6 @@
 
 import { storage } from './storage.js';
 import { SIN_IA } from './modo.js';
-import { BAENDE } from './kursbuch/index.js';
-import { lektionProgress } from './lektionProgress.js';
 import { getLevel, getStreak } from './streak.js';
 import { bestStreak } from './rachas.js';
 import { saldo, gastar } from './monedas.js';
@@ -53,7 +51,7 @@ export const COLORES = [
 // ganar" no era una escalera, era un monton. Ahora:
 //
 //   dias    10 cinta · 20 chandal · 40 zapatillas · 60 gafas · 90 medalla ·
-//           150 trofeo balon · 365 copa de oro
+//           150 reloj de arena · 365 copa de oro
 //   coronas 4 zapatos · 6 cristal · 8 monoculo · 10 capa · 12 collar ·
 //           14 traje · 16 vestido · 18 orbe · 20 cetro · 22 diadema ·
 //           24 corona
@@ -140,46 +138,43 @@ export const COMPLEMENTOS = [
   { id: 'zapatosrey', de: 'Königsschuhe', ranura: 'pies', es: '👑 Zapatos de rey', en: '👑 King shoes', req: { tipo: 'coronas', n: 4 } },
   { id: 'cristal', de: 'Kristallschuhe', ranura: 'pies', es: '👑 Zapatos de cristal', en: '👑 Glass slippers', req: { tipo: 'coronas', n: 6 } },
 
-  // ---- efectos: se ganan encadenando aciertos, y suben de intensidad ----
-  // Es una escalera de aura de dibujos animados: chispas -> chispas con
-  // estela -> llamas pegadas al cuerpo -> llamas mas altas -> piedras que se
-  // levantan del suelo -> rayos -> las tres cosas a la vez.
+  // ---- efectos: una progresión de luz, estrellas y cristales ----
   { id: 'p0', de: 'Nichts', ranura: 'particulas', es: 'Nada', en: 'Nothing', precio: 0 },
-  { id: 'p1', de: 'Funken', ranura: 'particulas', es: '✨ Chispas', en: '✨ Sparks', req: { tipo: 'racha', n: 10 } },
-  { id: 'p2', de: 'Sternschnuppen', ranura: 'particulas', es: '💫 Chispas con estela', en: '💫 Trailing sparks', req: { tipo: 'racha', n: 20 } },
-  { id: 'p3', de: 'Aura', ranura: 'particulas', es: '🔥 Aura', en: '🔥 Aura', req: { tipo: 'racha', n: 30 } },
-  { id: 'p4', de: 'Flammenaura', ranura: 'particulas', es: '🔥 Aura en llamas', en: '🔥 Blazing aura', req: { tipo: 'racha', n: 40 } },
-  { id: 'p5', de: 'Erdbeben', ranura: 'particulas', es: '🪨 Terremoto', en: '🪨 Earthquake', req: { tipo: 'racha', n: 50 } },
-  { id: 'p6', de: 'Sturm', ranura: 'particulas', es: '⚡ Tormenta', en: '⚡ Storm', req: { tipo: 'racha', n: 65 } },
-  { id: 'p7', de: 'Super-Aura', ranura: 'particulas', es: '🌟 Súper aura', en: '🌟 Super aura', req: { tipo: 'racha', n: 80 } },
+  { id: 'p1', de: 'Goldene Lichtpunkte', ranura: 'particulas', es: '✨ Destellos dorados', en: '✨ Golden glimmers', req: { tipo: 'racha', n: 10 } },
+  { id: 'p2', de: 'Sternschnuppen', ranura: 'particulas', es: '💫 Estelas luminosas', en: '💫 Starlight trails', req: { tipo: 'racha', n: 20 } },
+  { id: 'p3', de: 'Sternenaura', ranura: 'particulas', es: '🌟 Aura estelar', en: '🌟 Star aura', req: { tipo: 'racha', n: 30 } },
+  { id: 'p4', de: 'Mondorbit', ranura: 'particulas', es: '🌙 Órbita lunar', en: '🌙 Moon orbit', req: { tipo: 'racha', n: 40 } },
+  { id: 'p5', de: 'Kristallregen', ranura: 'particulas', es: '💎 Lluvia de cristales', en: '💎 Crystal rain', req: { tipo: 'racha', n: 50 } },
+  { id: 'p6', de: 'Polarlicht', ranura: 'particulas', es: '🌌 Aurora boreal', en: '🌌 Northern lights', req: { tipo: 'racha', n: 65 } },
+  { id: 'p7', de: 'Sternbild', ranura: 'particulas', es: '🌠 Constelación', en: '🌠 Constellation', req: { tipo: 'racha', n: 80 } },
 
   // ---- objetos: unos se compran y los tres trofeos se ganan ----
   { id: 'nadaObjeto', de: 'Nichts', ranura: 'objeto', es: 'Nada', en: 'Nothing', precio: 0 },
   { id: 'libro', de: 'Buch', ranura: 'objeto', es: 'Libro', en: 'Book', precio: 150 },
   { id: 'taza', de: 'Kaffeetasse', ranura: 'objeto', es: 'Taza de café', en: 'Coffee mug', precio: 180 },
   { id: 'brezel', de: 'Brezel', ranura: 'objeto', es: 'Brezel', en: 'Pretzel', precio: 220 },
-  { id: 'paraguas', de: 'Regenschirm', ranura: 'objeto', es: 'Paraguas', en: 'Umbrella', precio: 280 },
   { id: 'baston', de: 'Spazierstock', ranura: 'objeto', es: 'Bastón', en: 'Walking stick', precio: 320 },
-  { id: 'mochila', de: 'Rucksack', ranura: 'objeto', es: 'Mochila', en: 'Backpack', precio: 320 },
   { id: 'cohete', de: 'Spielzeugrakete', ranura: 'objeto', es: 'Cohete', en: 'Toy rocket', precio: 340 },
   { id: 'globo', de: 'Luftballon', ranura: 'objeto', es: 'Globo', en: 'Balloon', precio: 380 },
   { id: 'camara', de: 'Kamera', ranura: 'objeto', es: 'Cámara de fotos', en: 'Camera', precio: 450 },
   { id: 'guitarra', de: 'Gitarre', ranura: 'objeto', es: 'Guitarra', en: 'Guitar', precio: 540 },
-  { id: 'balon', de: 'Ball-Trophäe', ranura: 'objeto', es: '🏅 Trofeo balón', en: '🏅 Ball trophy', req: { tipo: 'dias', n: 150 } },
+  { id: 'trebol', de: 'Vierblättriges Kleeblatt', ranura: 'objeto', es: '🍀 Trébol de cuatro hojas', en: '🍀 Four-leaf clover', precio: 280 },
+  { id: 'peluche', de: 'Kuscheltier', ranura: 'objeto', es: 'Peluche', en: 'Teddy bear', precio: 260 },
+  { id: 'cocheRC', de: 'Ferngesteuertes Auto', ranura: 'objeto', es: 'Coche teledirigido', en: 'Remote-control car', precio: 400 },
+  { id: 'robot', de: 'Roboter', ranura: 'objeto', es: 'Robot', en: 'Robot', precio: 800 },
   { id: 'trofeo', de: 'Goldpokal', ranura: 'objeto', es: '🏆 Trofeo de oro', en: '🏆 Gold trophy', req: { tipo: 'dias', n: 365 } },
   { id: 'orbe', de: 'Reichsapfel', ranura: 'objeto', es: '👑 Orbe de reina', en: '👑 Queen orb', req: { tipo: 'coronas', n: 18 } },
   { id: 'bastonrey', de: 'Zepter', ranura: 'objeto', es: '👑 Bastón de rey', en: '👑 Royal sceptre', req: { tipo: 'coronas', n: 20 } }
 ];
 
-// Cambiar de bicho es lo más caro de todo.
-export const PRECIO_ANIMAL = 1000;
-// Ponerle tu nombre es lo más caro de todo: es lo único que no se puede
-// deshacer con otra compra, así que se gana a base de practicar.
-export const PRECIO_NOMBRE = 2000;
+// Cada especie nueva se desbloquea con una compra única.
+export const PRECIO_ANIMAL = 500;
+// Cambiar el nombre se desbloquea con un único pago de monedas.
+export const PRECIO_NOMBRE = 1000;
 const LLAVE_NOMBRE = 'nombre';
 
 export function puedeCambiarNombre(f = getFuchs()) {
-  return true;
+  return Array.isArray(f.comprado) && f.comprado.includes(LLAVE_NOMBRE);
 }
 
 // Devuelve { ok, saldo } igual que comprar().
@@ -198,12 +193,9 @@ export const ANIMALES = [
   { id: 'gato', de: 'Katze', gen: 'f', es: 'Gato', en: 'Cat', precio: PRECIO_ANIMAL },
   { id: 'perro', de: 'Hund', gen: 'm', es: 'Perro', en: 'Dog', precio: PRECIO_ANIMAL },
   { id: 'conejo', de: 'Hase', gen: 'm', es: 'Conejo', en: 'Rabbit', precio: PRECIO_ANIMAL },
-  { id: 'oso', de: 'Bär', gen: 'm', es: 'Oso', en: 'Bear', precio: PRECIO_ANIMAL },
   { id: 'buho', de: 'Eule', gen: 'f', es: 'Búho', en: 'Owl', precio: PRECIO_ANIMAL },
   { id: 'rana', de: 'Frosch', gen: 'm', es: 'Rana', en: 'Frog', precio: PRECIO_ANIMAL },
-  { id: 'pato', de: 'Ente', gen: 'f', es: 'Pato', en: 'Duck', precio: PRECIO_ANIMAL },
-  { id: 'erizo', de: 'Igel', gen: 'm', es: 'Erizo', en: 'Hedgehog', precio: PRECIO_ANIMAL },
-  { id: 'mapache', de: 'Waschbär', gen: 'm', es: 'Mapache', en: 'Raccoon', precio: PRECIO_ANIMAL }
+  { id: 'pato', de: 'Ente', gen: 'f', es: 'Pato', en: 'Duck', precio: PRECIO_ANIMAL }
 ];
 
 // ---- fondos: donde esta Felix ------------------------------------------
@@ -249,6 +241,15 @@ const DEFAULT = {
 
 export function getFuchs() {
   const f = { ...DEFAULT, ...storage.get(KEY, {}) };
+  for (const campo of ['comprado', 'visto']) {
+    if (!Array.isArray(f[campo])) f[campo] = [];
+  }
+  const objetosRetirados = ['paraguas', 'alas', 'pendientes', 'balon', 'mariquita', 'brujula', 'galleta', 'relojArena', 'varita', 'grua', 'pikachu', 'barco', 'zombie'];
+  if (objetosRetirados.includes(f.objeto)) f.objeto = DEFAULT.objeto;
+  f.comprado = Array.isArray(f.comprado) ? f.comprado.filter((id) => !objetosRetirados.includes(id)) : [];
+  f.visto = Array.isArray(f.visto) ? f.visto.filter((id) => !objetosRetirados.includes(id)) : [];
+  // Si una especie deja de estar disponible, recuperar el animal gratuito.
+  if (!ANIMALES.some((a) => a.id === f.especie)) f.especie = DEFAULT.especie;
   const col = COLORES.find((c) => c.id === f.color);
   if (col?.req && !cumple(col.req)) {
     f.color = DEFAULT.color;
@@ -259,6 +260,12 @@ export function getFuchs() {
   // comprueba aquí y no con una migración suelta para que valga también si
   // mañana se retira otro.
   if (!FONDOS.some((x) => x.id === f.fondo)) {
+    f.fondo = DEFAULT.fondo;
+  }
+  // Un paisaje puede seguir guardado de una sesión antigua aunque ya no esté
+  // desbloqueado. No debe teñir la portada si no se puede equipar: en ese caso
+  // se recupera el cielo azul predeterminado ("Sin fondo").
+  if (!tienes(f.fondo, f)) {
     f.fondo = DEFAULT.fondo;
   }
   return f;
@@ -286,14 +293,18 @@ export function getCosa(id) {
   return MAPA_COSAS.get(id);
 }
 
-// Colores con si los tienes abiertos, para pintar el selector.
-export function coloresDisponibles(l = null) {
-  return COLORES.map((c) => ({ ...c, abierto: true }));
+// Colores y complementos respetan sus compras y requisitos de progreso.
+export function coloresDisponibles(f = getFuchs(), l = null) {
+  const logr = l || logros();
+  return COLORES.map((c) => ({ ...c, abierto: tienes(c.id, f, logr) }));
 }
 
-// Lo gratis se tiene siempre; lo demás, si lo has comprado (desbloqueado para testing).
 export function tienes(id, f = getFuchs(), l = null) {
-  return true;
+  const cosa = getCosa(id);
+  if (!cosa) return false;
+  if (cosa.req) return cumple(cosa.req, l || logros());
+  if ((cosa.precio ?? 0) <= 0) return true;
+  return Array.isArray(f.comprado) && f.comprado.includes(id);
 }
 
 // Devuelve { ok, saldo } — ok en false si no llegabas.
@@ -302,6 +313,7 @@ export function comprar(id) {
   const cosa = getCosa(id);
   if (!cosa) return { ok: false, saldo: saldo() };
   if (tienes(id, f)) return { ok: true, saldo: saldo() };
+  if (cosa.req || !(cosa.precio > 0)) return { ok: false, saldo: saldo() };
   if (!gastar(cosa.precio)) return { ok: false, saldo: saldo() };
   setFuchs({ comprado: [...f.comprado, id] });
   return { ok: true, saldo: saldo() };
@@ -323,20 +335,39 @@ export function animalesDisponibles(f = getFuchs(), l = null) {
 // Cuántas lecciones tienes dominadas del todo. Es la misma corona que sale en
 // la lista de Grammatik. Ya no abre nada, pero se sigue enseñando como marca.
 let cacheCoronas = null;
+let cargaCoronas = null;
+const oyentesCoronas = new Set();
 export function limpiarCacheCoronas() {
   cacheCoronas = null;
+  cargaCoronas = null;
 }
 export function coronas() {
   if (cacheCoronas !== null) return cacheCoronas;
-  let n = 0;
-  for (const banda of BAENDE) {
-    for (const l of banda.lektionen) {
-      const p = lektionProgress(l);
-      if (p?.grammatik >= 100) n += 1;
-    }
+  if (!cargaCoronas) {
+    cargaCoronas = Promise.all([
+      import('./kursbuch/index.js'),
+      import('./lektionProgress.js')
+    ]).then(([{ BAENDE }, { lektionProgress }]) => {
+      let n = 0;
+      for (const banda of BAENDE) {
+        for (const leccion of banda.lektionen) {
+          if (lektionProgress(leccion)?.grammatik >= 100) n += 1;
+        }
+      }
+      cacheCoronas = n;
+      oyentesCoronas.forEach((fn) => fn(n));
+      return n;
+    }).catch(() => {
+      cargaCoronas = null;
+      return 0;
+    });
   }
-  cacheCoronas = n;
-  return n;
+  return 0;
+}
+export function onCoronasListo(fn) {
+  oyentesCoronas.add(fn);
+  if (cacheCoronas !== null) fn(cacheCoronas);
+  return () => oyentesCoronas.delete(fn);
 }
 
 export function logros() {

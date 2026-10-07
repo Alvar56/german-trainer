@@ -10,7 +10,7 @@ import { t } from '../lib/i18n.js';
 // Va controlado: el color tambien lo usa quien lo pinta (para la raya de la
 // ficha y para el color del texto), asi que el estado vive fuera y aqui solo
 // esta si la paleta esta abierta.
-export const COLORES = [
+const COLORES = [
   { val: 'transparent', clave: 'voc.colNinguno' },
   { val: '#ef4444', clave: 'voc.colRojo' },
   { val: '#3b82f6', clave: 'voc.colAzul' },

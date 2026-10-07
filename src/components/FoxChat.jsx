@@ -215,9 +215,6 @@ export default function FoxChat({ abrirCon = null, onClose }) {
             fuchs={fuchs}
             gesto={busy ? 'pensando' : gesto}
             size={78}
-            chispeando={bien > 0}
-            // Cada mensaje bien seguido aprieta mas, como la racha de aciertos.
-            racha={bien * 3}
           />
         </button>
         <div className="fox-chat-quien">

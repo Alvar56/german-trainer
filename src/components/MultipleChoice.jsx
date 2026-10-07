@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useTeclas, teclasDeOpciones } from '../lib/teclas.js';
 import { tc } from '../lib/contenido/index.js';
+import { capitalizarInicioFrase } from '../lib/frases.js';
 
 function norm(s) {
   return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -65,52 +66,64 @@ export default function MultipleChoice({ item, onAnswer }) {
   // pintado en el botón: un atajo que no se anuncia no lo usa nadie.
   useTeclas(teclasDeOpciones(safeOptions, choose), !done);
 
-  const parts = String(item.sentence).split('___');
-  const answerParts = String(item.answer || '').split(/\s*\.\.\.\s*/);
+  const parts = capitalizarInicioFrase(tc(item.sentence)).split('___');
+  const answerParts = String(tc(item.answer || '')).split(/\s*\.\.\.\s*/);
+  // En el formato inverso las opciones son el primer turno y la frase final
+  // es la respuesta del segundo hablante: se invierten las colas visuales.
+  const marcoFrase = item.sentenceAfterOptions ? 'tuyo' : item.marco;
+  const marcoOpciones = item.sentenceAfterOptions ? 'dicho' : item.marcoOpciones;
+  const sentence = (
+    <div className={'sentence' + (marcoFrase ? ' sentence-' + marcoFrase : '')}>
+      {marcoFrase === 'dicho' && <TailLeft />}
+      {marcoFrase === 'tuyo' && <TailRight />}
+      {parts.map((p, i) => (
+        <React.Fragment key={i}>
+          {p}
+          {i < parts.length - 1 && (
+            <span className={'blank' + (done ? ' filled' : '')}>
+              {done ? (answerParts[i] || ' ') : ' '}
+            </span>
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+  const options = (
+    <div className={'options' + (marcoOpciones ? ' options-' + marcoOpciones : '')}>
+      {safeOptions.map((opt, i) => {
+        let cls = 'option';
+        if (done) {
+          if (norm(opt) === norm(item.answer)) cls += ' correct';
+          else if (opt === picked || norm(opt) === norm(picked)) cls += ' wrong';
+          else cls += ' dim';
+        }
+        return (
+          <button key={i} className={cls} disabled={done} onClick={() => choose(opt)}>
+            {marcoOpciones === 'tuyo' && <TailRight />}
+            {marcoOpciones === 'dicho' && <TailLeft />}
+            {i < 9 && <span className="op-tecla">{i + 1}</span>}
+            {marcoOpciones ? capitalizarInicioFrase(tc(opt)) : tc(opt)}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
-    <div>
+    <div className={item.sentenceAfterOptions ? 'reply-backwards' : undefined}>
       <div className="prompt-label">{tc(item.prompt || item.anweisung || '')}</div>
       {/* `marco` enmarca la frase segun lo que sea: algo que te DICEN se
           pinta como un bocadillo y no como una frase suelta en negrita. Sin
           esto, el enunciado y la frase salian uno debajo del otro con la
           misma pinta y no se sabia cual era cual. */}
-      <div className={'sentence' + (item.marco ? ' sentence-' + item.marco : '')}>
-        {item.marco === 'dicho' && <TailLeft />}
-        {item.marco === 'tuyo' && <TailRight />}
-        {parts.map((p, i) => (
-          <React.Fragment key={i}>
-            {p}
-            {i < parts.length - 1 && (
-              <span className={'blank' + (done ? ' filled' : '')}>
-                {done ? (answerParts[i] || ' ') : ' '}
-              </span>
-            )}
-          </React.Fragment>
-        ))}
-      </div>
+      {!item.sentenceAfterOptions && sentence}
       {/* `marcoOpciones`: cuando las opciones son cosas que DICES -las
           respuestas de "¿Que le contestas?", las frases de "Elegir la
           frase"- se pintan como bocadillos hacia el otro lado, para que se
           vea de un vistazo quien habla en cada sitio. Cuando son
           traducciones ("¿Que significa?") no: eso no lo dice nadie. */}
-      <div className={'options' + (item.marcoOpciones ? ' options-' + item.marcoOpciones : '')}>
-        {safeOptions.map((opt, i) => {
-          let cls = 'option';
-          if (done) {
-            if (norm(opt) === norm(item.answer)) cls += ' correct';
-            else if (opt === picked || norm(opt) === norm(picked)) cls += ' wrong';
-            else cls += ' dim';
-          }
-          return (
-            <button key={i} className={cls} disabled={done} onClick={() => choose(opt)}>
-              {item.marcoOpciones === 'tuyo' && <TailRight />}
-              {i < 9 && <span className="op-tecla">{i + 1}</span>}
-              {opt}
-            </button>
-          );
-        })}
-      </div>
+      {options}
+      {item.sentenceAfterOptions && sentence}
     </div>
   );
 }

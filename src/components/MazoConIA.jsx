@@ -11,12 +11,12 @@ import { getSettings } from '../lib/settings.js';
 // Va aquí y no dentro de cada juego porque los seis reciben el mazo por la
 // misma puerta: así Emparejar, Wortsalat, Blitz, Ahorcado, Test y Escribir se
 // enteran a la vez sin tocar ninguno.
-export default function MazoConIA({ deck, children }) {
+export default function MazoConIA({ deck, enabled = true, children }) {
   const [mazo, setMazo] = useState(null);
 
   useEffect(() => {
     const size = getSettings().sessionSize || 10;
-    if (!deck || cuantasIA(size) === 0) {
+    if (!enabled || !deck || cuantasIA(size) === 0) {
       setMazo(deck);
       return;
     }
@@ -31,7 +31,7 @@ export default function MazoConIA({ deck, children }) {
     };
     // El mazo se rearma al cambiar de mazo o al volver a entrar (la k de la
     // vista); dentro de una partida no tiene que moverse.
-  }, [deck?.id]);
+  }, [deck?.id, enabled]);
 
   if (!mazo) {
     return (

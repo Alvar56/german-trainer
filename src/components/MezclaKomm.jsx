@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { t } from '../lib/i18n.js';
 import { BAENDE, getLektion, lektionKommunikation } from '../lib/kursbuch/index.js';
+import MezclaFiltros, { alternarFiltroSeleccionado } from './MezclaFiltros.jsx';
 
 // Practicar comunicación sin elegir lección, igual que la mezcla de gramática
 // y la de vocabulario. Cuando quieres repasar no sabes QUÉ repasar, y tener que
@@ -11,8 +12,9 @@ import { BAENDE, getLektion, lektionKommunikation } from '../lib/kursbuch/index.
 // visto.
 
 // Todas las frases de un tomo, o del libro entero si no se pasa ninguno.
-export function frasesDe(bandId = null) {
-  const bandas = bandId ? BAENDE.filter((b) => b.id === bandId) : BAENDE;
+export function frasesDe(bandIds = null) {
+  const seleccionadas = Array.isArray(bandIds) ? bandIds : bandIds ? [bandIds] : [];
+  const bandas = seleccionadas.length ? BAENDE.filter((b) => seleccionadas.includes(b.id)) : BAENDE;
   return bandas.flatMap((b) =>
     b.lektionen.flatMap((l) => {
       const lek = getLektion(l.id);
@@ -24,7 +26,7 @@ export function frasesDe(bandId = null) {
   );
 }
 
-export function bandasConKommunikation() {
+function bandasConKommunikation() {
   return BAENDE.map((b) => ({
     id: b.id,
     name: b.name,
@@ -34,7 +36,13 @@ export function bandasConKommunikation() {
 
 export default function MezclaKomm({ onMezcla }) {
   const bandas = bandasConKommunikation();
+  const [bandasSeleccionadas, setBandasSeleccionadas] = useState([]);
+  const [dificultadesSeleccionadas, setDificultadesSeleccionadas] = useState([]);
   if (!bandas.length) return null;
+  const iniciarMezcla = () => onMezcla({
+    bandIds: bandas.filter((b) => bandasSeleccionadas.includes(b.id)).map((b) => b.id),
+    difficultyIds: dificultadesSeleccionadas
+  });
 
   return (
     <div className="panel" style={{ marginTop: 22 }}>
@@ -43,18 +51,18 @@ export default function MezclaKomm({ onMezcla }) {
         {t('komm.mixSub')}
       </p>
 
-      <button className="btn-primary home-todo" onClick={() => onMezcla(null)}>
+      <button className="btn-primary home-todo" onClick={iniciarMezcla}>
         <span className="gt-ico">🎲</span>
         <span className="gt-txt">{t('komm.mixAll')}</span>
       </button>
 
-      <div className="mezcla-niveles">
-        {bandas.map((b) => (
-          <button key={b.id} className="btn-ghost btn-sm" onClick={() => onMezcla(b.id)}>
-            {t('gr.mixBand', { b: b.name })}
-          </button>
-        ))}
-      </div>
+      <MezclaFiltros
+        bandas={bandas}
+        bandasSeleccionadas={bandasSeleccionadas}
+        onCambiarBandas={(id) => setBandasSeleccionadas((actuales) => alternarFiltroSeleccionado(actuales, id))}
+        dificultadesSeleccionadas={dificultadesSeleccionadas}
+        onCambiarDificultades={(id) => setDificultadesSeleccionadas((actuales) => alternarFiltroSeleccionado(actuales, id))}
+      />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import Sugerencias from './Sugerencias.jsx';
 import { guardados, estaGuardado, alternarGuardado, borrarGuardado, idDe, otroIdioma } from '../lib/guardados.js';
 import { getUserGrammarTopics, saveUserGrammarTopic, deleteUserGrammarTopic, userTopicStats } from '../lib/userGrammar.js';
 import TemasGramatica from './TemasGramatica.jsx';
+import Desplegable from './Desplegable.jsx';
 
 const JOB = 'grammar:ask';
 
@@ -184,17 +185,17 @@ export default function GrammarAsk({ niveau = 'A2', onPractise, onOpen }) {
             className="btn-primary"
             onClick={() => crearTemaGramatica()}
             disabled={!aiOn || busy || generandoTema || !q.trim()}
-            title="Crea un tema completo con tarjetas de teoría y ejercicios"
+            title={pick('Crea un tema completo con tarjetas de teoría y ejercicios', 'Create a full topic with theory cards and exercises')}
           >
-            {generandoTema ? t('generating') : '✨ Crear tema'}
+            {generandoTema ? t('generating') : t('ask.createTopic')}
           </button>
           <button
             className="btn-ghost"
             onClick={() => ask()}
             disabled={!aiOn || busy || generandoTema || !q.trim()}
-            title="Explicación rápida de una duda puntual"
+            title={pick('Explicación rápida de una duda puntual', 'Quick explanation of a specific question')}
           >
-            {busy ? t('ask.thinking') : 'Explicar'}
+            {busy ? t('ask.thinking') : t('ask.explain')}
           </button>
         </div>
 
@@ -208,22 +209,22 @@ export default function GrammarAsk({ niveau = 'A2', onPractise, onOpen }) {
           )}
 
           {misTemas.length > 0 && (
-            <button className="link-btn pie-abrir" onClick={() => setShowMisTemas(!showMisTemas)}>
+            <button className="link-btn pie-abrir" onClick={() => setShowMisTemas(!showMisTemas)} aria-expanded={showMisTemas}>
               {showMisTemas ? 'Ocultar mis temas' : `✨ Mis temas con IA (${misTemas.length})`}
             </button>
           )}
 
           {misApuntes.length > 0 && (
-            <button className="link-btn pie-abrir" onClick={() => setVerApuntes(!verApuntes)}>
+            <button className="link-btn pie-abrir" onClick={() => setVerApuntes(!verApuntes)} aria-expanded={verApuntes}>
               {verApuntes ? t('save.hideMine') : t('save.showMine', { n: misApuntes.length })}
             </button>
           )}
 
-          <button className="link-btn pie-abrir" onClick={() => setShowExtra(!showExtra)}>
+          <button className="link-btn pie-abrir" onClick={() => setShowExtra(!showExtra)} aria-expanded={showExtra}>
             {showExtra ? t('gr.hideTemas') : t('gr.showTemas')}
           </button>
 
-          {verApuntes && misApuntes.length > 0 && (
+          <Desplegable abierto={verApuntes && misApuntes.length > 0} className="desplegable-guardados">
             <div className="guardados-lista">
               {misApuntes.map((g) => (
                 <span className="guardado-chip" key={g.id}>
@@ -236,7 +237,7 @@ export default function GrammarAsk({ niveau = 'A2', onPractise, onOpen }) {
                 </span>
               ))}
             </div>
-          )}
+          </Desplegable>
         </div>
 
         {!aiOn && (
@@ -248,7 +249,9 @@ export default function GrammarAsk({ niveau = 'A2', onPractise, onOpen }) {
         {errTema && <p style={{ color: 'var(--bad)', fontSize: '0.85rem', marginTop: 10 }}>{errTema}</p>}
       </div>
 
-      {showExtra && <TemasGramatica onOpen={onOpen} />}
+      <Desplegable abierto={showExtra} className="grammar-extra-lista">
+        <TemasGramatica onOpen={onOpen} />
+      </Desplegable>
 
       {generandoTema && (
         <div style={{ marginTop: 14 }}>
@@ -265,7 +268,7 @@ export default function GrammarAsk({ niveau = 'A2', onPractise, onOpen }) {
         </div>
       )}
 
-      {showMisTemas && misTemas.length > 0 && (
+      <Desplegable abierto={showMisTemas && misTemas.length > 0} className="grammar-extra-lista">
         <div style={{ marginTop: 20 }}>
           <div className="sec-title">
             <h2>✨ {pick('Mis temas de gramática creados con IA', 'My AI Grammar Topics')}</h2>
@@ -319,7 +322,7 @@ export default function GrammarAsk({ niveau = 'A2', onPractise, onOpen }) {
             })}
           </div>
         </div>
-      )}
+      </Desplegable>
 
       {busy && (
         <div style={{ marginTop: 14 }}>

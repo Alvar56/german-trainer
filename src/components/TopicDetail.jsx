@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { t, pick } from '../lib/i18n.js';
 import { getStarredItems, useStars } from '../lib/stars.js';
 import { SIN_IA, PORTABLE } from '../lib/modo.js';
-import { topicMastery, weakConcepts, conceptosQueFaltan, UMBRAL_TERMINAR } from '../lib/progress.js';
+import { topicMastery, failedItemsForConcepts, conceptosQueFaltan, aciertosQueFaltan, UMBRAL_TERMINAR } from '../lib/progress.js';
 import MatchGame from './MatchGame.jsx';
 import VocabSummary from './VocabSummary.jsx';
 import BlitzGame from './BlitzGame.jsx';
 import { paresDeGramatica } from '../lib/paresJuego.js';
+import { aplicarBonoRachaFinal } from '../lib/monedas.js';
 import { recordAnswer } from '../lib/progress.js';
 import { aiAvailable } from '../lib/settings.js';
 import { deleteUserGrammarTopic } from '../lib/userGrammar.js';
@@ -118,6 +119,13 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
   // no pasan por onStart: se pintan aqui mismo en lugar del tema.
   const [juego, setJuego] = useState(null);
   const [resumenJuego, setResumenJuego] = useState(null);
+  const [volverAListaDeEjercicios, setVolverAListaDeEjercicios] = useState(false);
+  useLayoutEffect(() => {
+    if (!volverAListaDeEjercicios || resumenJuego) return;
+    window.scrollTo(0, 0);
+    document.querySelector('.main')?.scrollTo(0, 0);
+    setVolverAListaDeEjercicios(false);
+  }, [volverAListaDeEjercicios, resumenJuego]);
   // Arriba del todo, antes de cualquier return.
   //
   // Estaba abajo, junto al resto del cuerpo, y por eso abrir Emparejar o Blitz
@@ -144,7 +152,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
     const acabar = (data) => {
       // `cual` va con el resultado: al salir del juego se pierde `juego` y
       // "Otra ronda" necesita saber cual volver a abrir.
-      setResumenJuego({ ...data, cual: juego, volverA: 'ejercicios', deck: { emoji: ctx.emoji, name: ctx.nombre } });
+      setResumenJuego(aplicarBonoRachaFinal({ ...data, cual: juego, volverA: 'ejercicios', deck: { emoji: ctx.emoji, name: ctx.nombre } }));
       setJuego(null);
     };
     return juego === 'match' ? (
@@ -156,10 +164,13 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
   }
 
   if (topic && resumenJuego) {
-    const volver = () => setResumenJuego(null);
+    const volver = () => {
+      setVolverAListaDeEjercicios(true);
+      setResumenJuego(null);
+    };
     const otraRonda = () => { const cual = resumenJuego.cual; setResumenJuego(null); setJuego(cual); };
     return (
-      <VocabSummary data={resumenJuego} onRepeat={otraRonda} onDeck={volver} onHome={volver} />
+      <VocabSummary data={resumenJuego} onRepeat={otraRonda} onDeck={volver} />
     );
   }
 
@@ -173,9 +184,11 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
   }
   const ids = topic.concepts.map((c) => c.id);
   const m = topicMastery(ids);
+  const conceptosPendientes = conceptosQueFaltan(ids);
+  const aciertosPendientes = aciertosQueFaltan(ids);
   // Aquí había un `if (m.pct >= 100) {}` vacío: es lo que quedó al quitar el
   // premio por dejar un tema al 100%.
-  const weak = weakConcepts(ids);
+  const weakItems = failedItemsForConcepts(ids).map((item, index) => ({ ...item, _reviewPosition: index + 1 }));
   const aiOn = aiAvailable();
   const topicLektionId = topic.lektionId || (topic.id?.startsWith('kb-') ? topic.id.replace('kb-', '') : null);
   const topicIdClean = topic.id?.replace(/^kb-/, '');
@@ -227,7 +240,9 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
         <div className="min0">
           <h1><button type="button" className="titulo-volver" onClick={onBack}>{topic.emoji && <span style={{ marginRight: 8 }}>{topic.emoji}</span>}{pick(topic.nameEs, topic.nameEn || topic.name)}</button></h1>
           <p className="muted" style={{ marginTop: 4, fontSize: '0.9rem' }}>
-            {topic.name} · {pick(topic.blurb, topic.blurbEn || tc(topic.blurb))}
+            {topic.lektionId
+              ? <>{pick(topic.blurb, topic.blurbEn || tc(topic.blurb))} · {m.practiced}/{m.total} {pick('practicadas', 'practised')} ({m.pct}%)</>
+              : <>{topic.name} · {pick(topic.blurb, topic.blurbEn || tc(topic.blurb))}</>}
             {topic.custom && <span className="pill" style={{ marginLeft: 8, fontSize: '0.75rem' }}>✨ {pick('Creado con IA', 'Created with AI')}</span>}
           </p>
         </div>
@@ -455,23 +470,23 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                 {starred.length > 0 && (
                   <button
                     className="btn-ghost btn-sm"
-                    onClick={() => onStart(topic.id, 'mixed', 'mixed', starred)}
+                    onClick={() => onStart(topic.id, 'mixed', 'mixed', starred, null, 'marked')}
                   >
                     {t('star.review', { n: starred.length })}
                   </button>
                 )}
-                <button
-                  className="btn-ghost btn-sm"
-                  onClick={() => onStart(topic.id, 'weak', 'mixed')}
-                  disabled={weak.length === 0}
-                  title={weak.length ? t('gr.reviewWeakHint') : t('gr.reviewWeakNone')}
-                >
-                  {weak.length ? t('gr.reviewWeakN', { n: weak.length }) : t('gr.reviewWeak')}
-                </button>
+                {weakItems.length > 0 && (
+                  <button
+                    className="btn-ghost btn-sm"
+                    onClick={() => onStart(topic.id, 'weak', 'mixed', weakItems)}
+                    title={t('gr.reviewWeakHint')}
+                  >
+                    {t('gr.reviewWeakN', { n: weakItems.length })}
+                  </button>
+                )}
                 {/* Solo del 70% para arriba. Debajo de eso falta casi todo y
                     seria la sesion normal con otro nombre. */}
-                {/* Visible siempre por debajo del 100%, apagado hasta el 70%. */}
-                {m.pct < 100 && (
+                {conceptosPendientes.length > 0 && (
                   <button
                     className="btn-ghost btn-sm"
                     onClick={() => onStart(topic.id, 'faltan', 'mixed')}
@@ -480,7 +495,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                   >
                     {m.pct < UMBRAL_TERMINAR
                       ? t('voc.finishLocked', { p: UMBRAL_TERMINAR })
-                      : t('voc.finish', { n: conceptosQueFaltan(topic.concepts.map((c) => c.id)).length })}
+                      : t('voc.finish', { n: aciertosPendientes })}
                   </button>
                 )}
                 {aiOn && (
@@ -493,11 +508,6 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                   </button>
                 )}
               </div>
-              {weak.length > 0 && (
-                <p className="muted" style={{ fontSize: '0.78rem', marginTop: 10 }}>
-                  {t(weak.length === 1 ? 'gr.missedRules' : 'gr.missedRulesPl', { n: weak.length })}
-                </p>
-              )}
               </>
               )}
               {!SIN_IA && !aiOn && !topic.aiOnly && (
@@ -506,10 +516,9 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                 </p>
               )}
 
-              {/* Al llegar al 100% se abre el desglose: en qué formato aciertas
-                  y en cuál no. Antes solo estorbaría. */}
-              <CoronaPanel topicId={topic.id} pct={m.pct} />
+              {m.pct < 100 && <CoronaPanel topicId={topic.id} pct={m.pct} />}
           </div>
+          {m.pct >= 100 && <CoronaPanel topicId={topic.id} pct={m.pct} />}
         </div>
       )}
 

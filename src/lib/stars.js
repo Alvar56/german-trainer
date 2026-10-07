@@ -59,3 +59,9 @@ export function getStarredItems(category = 'all') {
   if (category === 'grammar') return all.filter(i => !String(i.id).startsWith('vocab:') && !String(i.id).startsWith('ueb:') && !String(i.id).startsWith('komm:'));
   return all;
 }
+
+// Los favoritos de vocabulario se repasan juntos, aunque se marcaran desde
+// formatos distintos. Cada tarjeta conserva _deToEs para mantener su sentido.
+export function groupStarredVocab(items) {
+  return items?.length ? [{ mode: 'starred-mixed', dir: null, items: [...items] }] : [];
+}

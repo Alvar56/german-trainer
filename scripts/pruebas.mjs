@@ -15,7 +15,10 @@ const mem = new Map();
 globalThis.localStorage = {
   getItem: (k) => (mem.has(k) ? mem.get(k) : null),
   setItem: (k, v) => mem.set(k, String(v)),
-  removeItem: (k) => mem.delete(k)
+  removeItem: (k) => mem.delete(k),
+  // Para recorrerlo, como hacen exportAll() y resetAll().
+  get length() { return mem.size; },
+  key: (i) => [...mem.keys()][i] ?? null
 };
 globalThis.window = { addEventListener() {} };
 globalThis.fetch = async () => ({ ok: false, status: 0, json: async () => ({}) });
@@ -58,13 +61,59 @@ const streak = await import('../src/lib/streak.js');
 const progress = await import('../src/lib/progress.js');
 const vocab = await import('../src/lib/vocab.js');
 const { fusionarClave } = await import('../src/lib/fusion.js');
+const kommTipos = await import('../src/lib/kursbuch/kommTipos.js');
+const kommBook = await import('../src/lib/kursbuch/index.js');
+const kommRespuestas = await import('../src/lib/kursbuch/respuestas.js');
+
+// Las pruebas preparan y borran los datos directamente en `mem`, por debajo
+// de storage.js: su caché de lecturas tiene que enterarse.
+const { olvidarCache } = await import('../src/lib/storage.js');
+for (const metodo of ['clear', 'set', 'delete']) {
+  const original = mem[metodo].bind(mem);
+  mem[metodo] = (...args) => {
+    const r = original(...args);
+    olvidarCache();
+    return r;
+  };
+}
+
+// ---------------------------------------------------------------------------
+grupo('Los huecos no piden nombres ni datos memorizados');
+{
+  const frase = 'Zu mir, und wenn ich nicht da bin, zu Frau Berger.';
+  const palabras = frase.split(/\s+/);
+  const indice = kommTipos.palabraTapable(palabras);
+  comprobar('no se tapa el apellido de Frau Berger', indice !== null && palabras[indice] !== 'Berger.');
+  comprobar('el hueco propuesto en esa frase se puede deducir',
+    indice !== null && kommTipos.palabraHuecoValida(palabras[indice]),
+    indice === null ? 'no hay palabra apta' : palabras[indice]);
+  comprobar('se rechazan nombres, fechas y cifras',
+    !kommTipos.palabraHuecoValida('Berger') &&
+    !kommTipos.palabraHuecoValida('Montag') &&
+    !kommTipos.palabraHuecoValida('18'));
+
+  const frases = kommBook.KURSBUCH.lektionen.flatMap((l) =>
+    (l.kommunikation || []).flatMap((k) =>
+      (k.wendungen || []).flatMap((w) => [w, ...kommRespuestas.seguimientoDe(w.de)])
+    )
+  );
+  const inseguras = frases.flatMap((w) => {
+    const tokens = String(w.de).trim().split(/\s+/);
+    const i = kommTipos.palabraTapable(tokens);
+    return i !== null && !kommTipos.palabraHuecoValida(tokens[i])
+      ? [{ frase: w.de, respuesta: tokens[i] }]
+      : [];
+  });
+  comprobar('todas las lecciones evitan huecos con nombres, fechas o cifras', inseguras.length === 0,
+    `${inseguras.length} respuestas no aptas de ${frases.length} frases`);
+}
 
 // ---------------------------------------------------------------------------
 grupo('Racha de dias y congeladores');
 {
   const jugar = (dias) => {
     mem.clear();
-    for (const d of dias) { enElDia(d); streak.recordActivity(10); }
+    for (const d of dias) { enElDia(d); streak.recordActivity(10, 11_000); }
     relojNormal();
     return streak.getStreak();
   };
@@ -182,6 +231,30 @@ grupo('Sincronizar entre dos aparatos no pierde nada');
   comprobar('da igual el orden',
     iguales(fusionarClave('vocab:progress', movil, orden), j));
 
+  const resetServer = {
+    concepts: { rule: { resetAt: 1000, correct: 6, correctBase: 6, correctCarriles: {}, wrong: 2, lastSeen: 500 } },
+    kommPracticed: { 'L:funktion': { resetAt: 1000, aciertos: 6, aciertosBase: 6, aciertosCarriles: {}, at: 500 } },
+    sessions: 3
+  };
+  const datosAntiguos = {
+    concepts: { rule: { correct: 32, correctBase: 31, correctCarriles: { device: 1 }, wrong: 5, lastSeen: 900 } },
+    kommPracticed: { 'L:funktion': { aciertos: 28, at: 900, preguntas: 30 } },
+    sessions: 5
+  };
+  const resetFusionado = fusionarClave('progress', datosAntiguos, resetServer);
+  comprobar('el reinicio prevalece sobre conceptos antiguos', resetFusionado.concepts.rule.correct === 6,
+    String(resetFusionado.concepts.rule.correct));
+  comprobar('el reinicio prevalece sobre funciones antiguas', resetFusionado.kommPracticed['L:funktion'].aciertos === 6,
+    String(resetFusionado.kommPracticed['L:funktion'].aciertos));
+  comprobar('el contador de sesiones sigue conservando el mayor', resetFusionado.sessions === 5);
+  const progresoNuevo = {
+    concepts: { rule: { resetAt: 1000, correct: 7, correctBase: 6, correctCarriles: { device: 1 }, wrong: 2, lastSeen: 1100 } },
+    kommPracticed: { 'L:funktion': { resetAt: 1000, aciertos: 7, aciertosBase: 6, aciertosCarriles: { device: 1 }, at: 1100 } }
+  };
+  const respuestaPosterior = fusionarClave('progress', progresoNuevo, resetServer);
+  comprobar('el reinicio conserva respuestas posteriores', respuestaPosterior.concepts.rule.correct === 7
+    && respuestaPosterior.kommPracticed['L:funktion'].aciertos === 7);
+
   const notasA = [{ id: 1, updatedAt: 100, title: 'vieja' }, { id: 2, updatedAt: 200, title: 'solo aqui' }];
   const notasB = [{ id: 1, updatedAt: 300, title: 'nueva' }, { id: 3, updatedAt: 400, title: 'solo alli' }];
   const n = fusionarClave('notebook:notes', notasA, notasB);
@@ -195,6 +268,25 @@ grupo('Sincronizar entre dos aparatos no pierde nada');
   comprobar('el historial de dias se junta', Object.keys(r.history).length === 2);
   comprobar('el record se queda con el mas alto', r.longest === 8);
   comprobar('los congeladores se quedan con el mas bajo (se gastan)', r.freezes === 1);
+
+  const crucigramasA = {
+    'a11-l1': { updatedAt: 100, signature: 'tema-1', puzzles: [{ entries: ['HAUS'] }] },
+    'a11-l2': { updatedAt: 120, signature: 'tema-2', puzzles: [{ entries: ['BROT'] }] }
+  };
+  const crucigramasB = {
+    'a11-l1': { updatedAt: 200, signature: 'tema-1', puzzles: [{ entries: ['LAND'] }] },
+    'a21-l1': { updatedAt: 180, signature: 'tema-3', puzzles: [{ entries: ['WASSER'] }] }
+  };
+  const c = fusionarClave('vocab:crossword-sessions', crucigramasA, crucigramasB);
+  comprobar('cada leccion conserva su sesion de crucigrama',
+    iguales(Object.keys(c).sort(), ['a11-l1', 'a11-l2', 'a21-l1']));
+  comprobar('la sesion mas reciente conserva su tablero y sus respuestas',
+    c['a11-l1'].puzzles[0].entries[0] === 'LAND');
+  const borrada = fusionarClave('vocab:crossword-sessions', c, {
+    'a11-l1': { updatedAt: 300, deleted: true }
+  });
+  comprobar('al cerrar la ultima sesion prevalece el cierre al sincronizar',
+    borrada['a11-l1'].deleted === true);
 
   comprobar('una clave sin forma de juntarse se deja al que llama',
     fusionarClave('monedas', 10, 20) === undefined);
@@ -291,6 +383,39 @@ grupo('Practicar mueve la barra del mazo');
   comprobar('y la tanda siguiente sigue prefiriendolas',
     alFinal.aciertos - entre.aciertos === 10,
     `+${alFinal.aciertos - entre.aciertos} aciertos de 10 preguntas`);
+}
+
+// ---------------------------------------------------------------------------
+grupo('La cache del almacen no se queda con datos viejos');
+{
+  mem.clear();
+  const { storage } = await import('../src/lib/storage.js');
+
+  storage.set('prueba:cache', { n: 1 });
+  const a = storage.get('prueba:cache', {});
+  comprobar('dos lecturas seguidas devuelven el mismo objeto (no se relee)',
+    a === storage.get('prueba:cache', {}));
+
+  storage.update('prueba:cache', {}, (p) => ({ ...p, n: 2 }));
+  const b = storage.get('prueba:cache', {});
+  comprobar('tras escribir se lee lo nuevo', b.n === 2, JSON.stringify(b));
+  // React compara por referencia: si esto devolviera el mismo objeto, una
+  // pantalla que guarda y vuelve a leer no se repintaria.
+  comprobar('y en un objeto nuevo, para que React repinte', a !== b);
+
+  const DEFECTO = { lista: [] };
+  storage.get('prueba:vacia', DEFECTO).lista.push('x');
+  comprobar('lo que falta sale como copia del valor por defecto, que no se ensucia',
+    DEFECTO.lista.length === 0 && storage.get('prueba:vacia', DEFECTO).lista.length === 0);
+
+  storage.remove('prueba:cache');
+  comprobar('lo borrado deja de leerse', storage.get('prueba:cache', 'nada') === 'nada');
+
+  storage.set('prueba:cache', { n: 3 });
+  storage.get('prueba:cache', {});
+  storage.resetAll();
+  comprobar('reiniciar el progreso vacia tambien la cache',
+    storage.get('prueba:cache', 'nada') === 'nada');
 }
 
 // ---------------------------------------------------------------------------

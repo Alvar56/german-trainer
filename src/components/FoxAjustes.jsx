@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Desplegable from './Desplegable.jsx';
 import FoxFace from './FoxFace.jsx';
 import {
@@ -9,12 +10,15 @@ import {
   animalesDisponibles,
   comprar,
   logros,
+  onCoronasListo,
   textoReq,
   puedeCambiarNombre,
   comprarNombre,
   PRECIO_NOMBRE
 } from '../lib/fuchs.js';
 import { saldo } from '../lib/monedas.js';
+import { ganar } from '../lib/monedas.js';
+import { storage } from '../lib/storage.js';
 import { useTeclas } from '../lib/teclas.js';
 
 // La tienda del zorro va ENTERA en alemán, títulos y nombres de las cosas
@@ -41,6 +45,20 @@ const RANURAS = [
 function Ficha({ cosa, puesta, monedas, onPoner, onComprar, dot = null }) {
   const trofeo = !!cosa.req;
   const puedes = monedas >= cosa.precio;
+
+  // Los objetos se pueden probar y equipar directamente: ya no se desbloquean
+  // con monedas, así que la ficha no debe insinuar que existe un coste.
+  if (cosa.vistaPrevia) {
+    return (
+      <button className={'fox-item bloqueado comprable' + (puesta ? ' on' : '')} onClick={onPoner}>
+        <span className="fci-fila">
+          {dot}
+          <span>{cosa.de}</span>
+        </span>
+        <small>Anprobieren</small>
+      </button>
+    );
+  }
 
   if (cosa.abierto) {
     return (
@@ -138,16 +156,42 @@ export default function FoxAjustes({ onClose, onChange }) {
   const [f, setF] = useState(getFuchs);
   const [monedas, setMonedas] = useState(saldo);
   const [aviso, setAviso] = useState('');
+  const [previsualizarEfecto, setPrevisualizarEfecto] = useState(false);
+  const [desvaneciendoEfecto, setDesvaneciendoEfecto] = useState(false);
+  const [cerrando, setCerrando] = useState(false);
   const [abierta, setAbierta] = useState(null);
   const [nombreLibre, setNombreLibre] = useState(puedeCambiarNombre);
-  const l = useMemo(() => logros(), []);
+  const [l, setLogros] = useState(logros);
   const timerRef = useRef(null);
+  const efectoPreviewTimer = useRef(null);
+  const efectoFadeTimer = useRef(null);
+  const cierreTimer = useRef(null);
+  const cierreIniciado = useRef(false);
   const onChangeRef = useRef(onChange);
+  useEffect(() => onCoronasListo(() => setLogros(logros())), []);
   useEffect(() => {
+    // Compensa una sola vez las compras de objetos ya guardadas: ahora se
+    // pueden probar todos sin coste y sus compras previas no deben dejarte
+    // con menos monedas. Se conservan los objetos que ya tenías.
+    const claveCompensacion = 'fox:compensacion-vista-previa-objetos-v1';
+    if (!storage.get(claveCompensacion, false)) {
+      const idsComprados = new Set(f.comprado || []);
+      const reembolso = complementosDe('objeto', f, l)
+        .filter((c) => !c.req && c.precio > 0 && idsComprados.has(c.id))
+        .reduce((total, c) => total + c.precio, 0);
+      storage.set(claveCompensacion, true);
+      if (reembolso > 0) {
+        ganar(reembolso);
+        setMonedas(saldo());
+      }
+    }
     if (typeof document !== 'undefined' && document.body) {
       document.body.classList.add('fox-modal-abierto');
     }
     return () => {
+      clearTimeout(efectoPreviewTimer.current);
+      clearTimeout(efectoFadeTimer.current);
+      clearTimeout(cierreTimer.current);
       if (typeof document !== 'undefined' && document.body) {
         document.body.classList.remove('fox-modal-abierto');
       }
@@ -155,18 +199,42 @@ export default function FoxAjustes({ onClose, onChange }) {
   }, []);
 
   function cerrar() {
+    if (cierreIniciado.current) return;
+    cierreIniciado.current = true;
+    setCerrando(true);
     if (timerRef.current) clearTimeout(timerRef.current);
     onChangeRef.current?.(f);
-    onClose();
+    cierreTimer.current = setTimeout(onClose, 320);
   }
 
   // Y con Escape también. useTeclas no se mete cuando estás escribiendo, así
   // que ponerle nombre al zorro sigue funcionando.
   useTeclas({ Escape: cerrar });
 
+  function mostrarPrevisualizacionEfecto(id) {
+    clearTimeout(efectoPreviewTimer.current);
+    clearTimeout(efectoFadeTimer.current);
+    setDesvaneciendoEfecto(false);
+    if (!id || id === 'p0') {
+      setPrevisualizarEfecto(false);
+      return;
+    }
+    setPrevisualizarEfecto(true);
+    efectoPreviewTimer.current = setTimeout(() => {
+      setDesvaneciendoEfecto(true);
+      efectoFadeTimer.current = setTimeout(() => {
+        setPrevisualizarEfecto(false);
+        setDesvaneciendoEfecto(false);
+      }, 650);
+    }, 3000);
+  }
+
   function cambiar(patch) {
     const next = setFuchs(patch);
     setF(next);
+    if (Object.prototype.hasOwnProperty.call(patch, 'particulas')) {
+      mostrarPrevisualizacionEfecto(patch.particulas);
+    }
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       onChangeRef.current?.(next);
@@ -194,15 +262,15 @@ export default function FoxAjustes({ onClose, onChange }) {
     cambiar(ranura ? { [ranura]: id } : { especie: id });
   }
 
-  return (
+  return createPortal(
     <div
-      className="fox-modal"
+      className={'fox-modal' + (cerrando ? ' fox-modal-saliendo' : '')}
       role="dialog"
       aria-modal="true"
       // Pinchar en el gris de alrededor cierra, como en cualquier ventana. Se
       // comprueba que el clic sea EN el fondo y no en algo de dentro: si no,
       // comprar una gorra cerraría la tienda.
-      onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}
+      onClick={(e) => { if (!cerrando && e.target === e.currentTarget) cerrar(); }}
     >
       <div className="fox-modal-caja">
         <div className={'fox-hero-escena fox-escena-' + (f.fondo || 'nadaFondo')}>
@@ -221,7 +289,16 @@ export default function FoxAjustes({ onClose, onChange }) {
           </div>
 
           <div className="fox-hero-personaje">
-            <FoxFace fuchs={f} gesto="feliz" size={152} conCuerpo chispeando racha={12} separarObjetos />
+            <FoxFace
+              fuchs={f}
+              gesto="feliz"
+              size={152}
+              conCuerpo
+              separarObjetos
+              chispeando={previsualizarEfecto}
+              desvaneciendoEfecto={desvaneciendoEfecto}
+              racha={20}
+            />
           </div>
 
           <div className="fox-hero-stats-wrap">
@@ -261,7 +338,7 @@ export default function FoxAjustes({ onClose, onChange }) {
                 disabled={monedas < PRECIO_NOMBRE}
                 onClick={pagarNombre}
               >
-                {/* Decia solo "2000 Münzen", sin decir para que: al lado de
+                {/* El texto indica para qué sirve el precio: al lado de
                     un campo de nombre bloqueado parecia el precio del zorro. */}
                 <small>Namen ändern · {PRECIO_NOMBRE} Münzen{monedas >= PRECIO_NOMBRE ? ' · kaufen' : ''}</small>
               </button>
@@ -288,7 +365,7 @@ export default function FoxAjustes({ onClose, onChange }) {
             ico="🎨"
             abierto={abierta === 'farbe'}
             onAbrir={() => setAbierta((x) => (x === 'farbe' ? null : 'farbe'))}
-            cosas={coloresDisponibles(l)}
+            cosas={coloresDisponibles(f, l)}
             esPuesta={(c) => f.color === c.id}
             monedas={monedas}
             dot={(c) => {
@@ -311,8 +388,14 @@ export default function FoxAjustes({ onClose, onChange }) {
               titulo={r.de}
               ico={r.ico}
               abierto={abierta === r.id}
-              onAbrir={() => setAbierta((x) => (x === r.id ? null : r.id))}
-              cosas={complementosDe(r.id, f, l)}
+              onAbrir={() => {
+                const siguiente = abierta === r.id ? null : r.id;
+                setAbierta(siguiente);
+                if (siguiente === 'particulas') mostrarPrevisualizacionEfecto(f.particulas);
+              }}
+              cosas={complementosDe(r.id, f, l)
+                .map((c) => ({ ...c, vistaPrevia: r.id === 'objeto' && !c.abierto && !c.req }))
+                .sort((a, b) => r.id === 'objeto' ? (a.precio ?? Infinity) - (b.precio ?? Infinity) : 0)}
               esPuesta={(c) => f[r.id] === c.id}
               monedas={monedas}
               onPoner={(c) => cambiar({ [r.id]: c.id })}
@@ -346,6 +429,7 @@ export default function FoxAjustes({ onClose, onChange }) {
         </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

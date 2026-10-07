@@ -1903,7 +1903,7 @@ export const A21 = {
             { de: 'die Kopfhörer', es: 'los auriculares', ex: 'Ohne Kopfhörer höre ich nichts.', exEs: 'Sin auriculares no oigo nada.' },
             { de: 'das Interview', es: 'la entrevista', ex: 'Das Interview war wirklich interessant.', exEs: 'La entrevista fue realmente interesante.' },
             { de: 'der Moderator', es: 'el presentador', ex: 'Der Moderator stellt gute Fragen.', exEs: 'El presentador hace buenas preguntas.' },
-            { de: 'die Quelle', es: 'la fuente', ex: 'Prüf immer zuerst die Quelle.', exEs: 'Comprueba siempre primero la fuente.' },
+            { de: 'die Quelle', es: 'la fuente de información', ex: 'Prüf immer zuerst die Quelle.', exEs: 'Comprueba siempre primero la fuente.' },
             { de: 'die Falschmeldung', es: 'la noticia falsa', ex: 'Im Netz kursiert eine Falschmeldung.', exEs: 'Por la red circula una noticia falsa.' },
             { de: 'das Gerücht', es: 'el rumor', ex: 'Das ist nur ein Gerücht.', exEs: 'Eso es solo un rumor.' },
             { de: 'abonnieren', es: 'suscribirse', ex: 'Ich habe den Kanal abonniert.', exEs: 'Me he suscrito al canal.' },

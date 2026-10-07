@@ -4,7 +4,8 @@ import { aiAvailable } from '../lib/settings.js';
 import { allRuns } from '../lib/leaderboard.js';
 import { bestStreak } from '../lib/rachas.js';
 import { t, pick } from '../lib/i18n.js';
-import { SIN_IA } from '../lib/modo.js';
+import { PORTABLE, SIN_IA } from '../lib/modo.js';
+import { getFuchs } from '../lib/fuchs.js';
 import FoxCard from './FoxCard.jsx';
 
 const WD_ES = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
@@ -18,7 +19,7 @@ function recentRunsStats(limit) {
   return { acc: Math.round(acc * 100), count: runs.length };
 }
 
-export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards }) {
+export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, onDiaryNew }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const [slideDir, setSlideDir] = useState('none');
 
@@ -32,11 +33,12 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards }) 
   const last10 = recentRunsStats(10);
   const aiOn = aiAvailable();
   const WD = pick(WD_ES, WD_EN);
+  const fondoFelix = getFuchs().fondo || 'nadaFondo';
 
   const recordSeguidas = bestStreak();
 
   return (
-    <div className="wide">
+    <div className="wide dashboard-startseite" data-fondo={fondoFelix}>
       <div className="page-head">
         <h1>Startseite</h1>
         <p>{t('home.sub')}</p>
@@ -44,7 +46,7 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards }) 
 
       {onFox && <FoxCard onAbrir={onFox} />}
 
-      <div className="statcards">
+      <div className="statcards statcards-inicio">
         {/* La de nivel es la que ocupa la fila entera en el movil: va marcada
             aqui y no con :first-child, que se colaba en las otras rejillas de
             statcards (el examen, el diario) y les descuadraba el reparto. */}
@@ -83,7 +85,7 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards }) 
           </div>
           <div>
             <div className="l">{t('home.bestRun')}</div>
-            <div className="sub">{t('home.bestRunSub')}</div>
+            <div className="sub best-run-sub">{t('home.bestRunSub')}</div>
           </div>
         </div>
         <div className="card statcard">
@@ -106,93 +108,12 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards }) 
 
       <div className="dash-cols">
         <div className="panel">
-          {/* Sin titulo ni pastilla de dias seguidos: la tarjeta de datos de
-              justo arriba ya lleva ese nombre y ese numero. Aqui manda el mes,
-              que es lo unico que esta tarjeta anade. */}
-          <div className="row spread" style={{ marginBottom: 8, overflow: 'hidden' }}>
-            <div
-              key={'label-' + cal.label}
-              className={'cal-label ' + (slideDir === 'next' ? 'cal-slide-next' : slideDir === 'prev' ? 'cal-slide-prev' : slideDir === 'fade' ? 'cal-fade' : '')}
-              style={{ marginBottom: 0 }}
-            >
-              {cal.label}
-            </div>
-            <div className="row" style={{ gap: 8 }}>
-              <button
-                className="btn btn-sm"
-                style={{ padding: '2px 8px' }}
-                onClick={() => {
-                  setSlideDir('prev');
-                  setMonthOffset(m => m - 1);
-                }}
-              >
-                &lt;
-              </button>
-              {monthOffset !== 0 && (
-                <button
-                  className="btn btn-sm"
-                  style={{ padding: '2px 10px' }}
-                  onClick={() => {
-                    setSlideDir('fade');
-                    setMonthOffset(0);
-                  }}
-                >
-                  {t('home.todayBtn')}
-                </button>
-              )}
-              <button
-                className="btn btn-sm"
-                style={{ padding: '2px 8px' }}
-                onClick={() => {
-                  setSlideDir('next');
-                  setMonthOffset(m => m + 1);
-                }}
-              >
-                &gt;
-              </button>
-            </div>
-          </div>
-          <div
-            key={'grid-' + monthOffset}
-            className={'month-cal ' + (slideDir === 'next' ? 'cal-slide-next' : slideDir === 'prev' ? 'cal-slide-prev' : slideDir === 'fade' ? 'cal-fade' : '')}
-          >
-            {WD.map((d, i) => (
-              <div className="mc-head" key={i}>
-                {d}
-              </div>
-            ))}
-            {cal.cells.map((c, i) =>
-              c ? (
-                <div
-                  key={i}
-                  className={'mc-cell' + (c.active ? ' active' : '') + (c.isToday ? ' today' : '')}
-                  title={c.key}
-                >
-                  {c.day}
-                </div>
-              ) : (
-                <div key={i} className="mc-cell empty" />
-              )
-            )}
-          </div>
-          <div className="muted cal-pie">
-            {t('home.calMonth', { a: cal.activeThisMonth, b: cal.daysInMonth })}
-            {s.atRisk && (
-              <>
-                {' · '}
-                <span className="cal-aviso" title={t('home.atRiskWhy')}>{t('home.atRisk')}</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="panel">
           <h2>{t('home.practice')}</h2>
 
           <p className="muted" style={{ fontSize: '0.83rem', marginBottom: 12 }}>
             {pick(
-              <>Gramática, vocabulario y comunicación mezclados: test, ordenar frases, cazar el error, artículos, diálogos y traducciones.</>,
-              <>Grammar, vocabulary and communication mixed: quiz, sentence order, spot the mistake, articles, dialogues and translations.</>
+              <>Practica un poco de todo con ejercicios variados.</>,
+              <>Practise a bit of everything with a variety of exercises.</>
             )}
           </p>
           <button className="btn-primary home-todo" onClick={() => onStart('mix', 'mixed', 'todo')}>
@@ -229,7 +150,12 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards }) 
               tarjetas de arriba, porque centrado y de una linea parecia un
               cacho roto pegado al final de la lista. En el escritorio se queda
               como esta. */}
-          {aiOn && (
+          {PORTABLE ? (
+            <button className="btn-ghost btn-sm home-ai-repaso home-diary-new" onClick={() => onDiaryNew?.()}>
+              <span className="gt-ico">✍️</span>
+              <span className="gt-txt">{t('home.newDiaryEntry')}</span>
+            </button>
+          ) : aiOn && (
             <button className="btn-ghost btn-sm home-ai-repaso" onClick={() => onStart('mix', 'ai', 'mixed')}>
               {/* El emoji, separado del texto: asi en el movil entra en la
                   misma pastilla que los iconos de las tarjetas de arriba. En
@@ -259,6 +185,93 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards }) 
           <p className="muted home-practica-nota">
             {t(SIN_IA ? 'home.practiceNoteSinIA' : 'home.practiceNote')}
           </p>
+        </div>
+
+        <div className="panel dash-cal">
+          {/* Sin titulo ni pastilla de dias seguidos: la tarjeta de datos de
+              justo arriba ya lleva ese nombre y ese numero. Aqui manda el mes,
+              que es lo unico que esta tarjeta anade. */}
+          <div className="row spread" style={{ marginBottom: 8, overflow: 'hidden' }}>
+            <div
+              key={'label-' + cal.label}
+              className={'cal-label ' + (slideDir === 'next' ? 'cal-slide-next' : slideDir === 'prev' ? 'cal-slide-prev' : slideDir === 'fade' ? 'cal-fade' : '')}
+              style={{ marginBottom: 0 }}
+            >
+              {cal.label}
+            </div>
+            <div className="row" style={{ gap: 8 }}>
+              <button
+                className="btn btn-sm"
+                style={{ padding: '2px 8px' }}
+                onClick={() => {
+                  setSlideDir('prev');
+                  setMonthOffset(m => m - 1);
+                }}
+              >
+                <span className="cal-month-arrow" aria-hidden="true">&lt;</span>
+              </button>
+              {monthOffset !== 0 && (
+                <button
+                  className="btn btn-sm"
+                  style={{ padding: '2px 10px' }}
+                  onClick={() => {
+                    setSlideDir('fade');
+                    setMonthOffset(0);
+                  }}
+                >
+                  {t('home.todayBtn')}
+                </button>
+              )}
+              <button
+                className="btn btn-sm"
+                style={{ padding: '2px 8px' }}
+                onClick={() => {
+                  setSlideDir('next');
+                  setMonthOffset(m => m + 1);
+                }}
+              >
+                <span className="cal-month-arrow" aria-hidden="true">&gt;</span>
+              </button>
+            </div>
+          </div>
+          <div
+            key={'grid-' + monthOffset}
+            className={'month-cal ' + (slideDir === 'next' ? 'cal-slide-next' : slideDir === 'prev' ? 'cal-slide-prev' : slideDir === 'fade' ? 'cal-fade' : '')}
+          >
+            {WD.map((d, i) => (
+              <div className="mc-head" key={i}>
+                {d}
+              </div>
+            ))}
+            {cal.cells.map((c, i) => {
+              if (!c) return <div key={i} className="mc-cell empty" />;
+              const prevActive = i % 7 > 0 && cal.cells[i - 1]?.active;
+              const nextActive = i % 7 < 6 && cal.cells[i + 1]?.active;
+              const prevIsToday = i % 7 > 0 && cal.cells[i - 1]?.isToday;
+              const nextIsToday = i % 7 < 6 && cal.cells[i + 1]?.isToday;
+              const classes = [
+                'mc-cell',
+                c.active && 'active',
+                c.active && prevActive && !c.isToday && !prevIsToday && 'joined-left',
+                c.active && nextActive && !c.isToday && !nextIsToday && 'joined-right',
+                c.isToday && 'today'
+              ].filter(Boolean).join(' ');
+              return (
+                <div key={i} className={classes} title={c.key}>
+                  {c.day}
+                </div>
+              );
+            })}
+          </div>
+          <div className="muted cal-pie">
+            {t('home.calMonth', { a: cal.activeThisMonth, b: cal.daysInMonth })}
+            {s.atRisk && (
+              <>
+                {' · '}
+                <span className="cal-aviso" title={t('home.atRiskWhy')}>{t('home.atRisk')}</span>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

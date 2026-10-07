@@ -2,9 +2,9 @@
 // tema, p.ej. "modal:muessen" o "prep:akkusativ:durch"). Con esto la app
 // sabe donde fallas y te lo vuelve a preguntar (repeticion espaciada simple).
 
-import { storage, KEYS } from './storage.js';
+import { storage, KEYS, sumarContadorLocal } from './storage.js';
 
-const DEFAULT = { concepts: {}, seenItems: {}, kommPracticed: {}, sessions: 0 };
+const DEFAULT = { concepts: {}, seenItems: {}, failedItems: {}, kommPracticed: {}, kommEscuchadas: {}, kommFailedItems: {}, sessions: 0 };
 
 // Apartados de Kommunikation que cambiaron de nombre al reorganizar las
 // lecciones (8 funciones de 10 conversaciones cada una).
@@ -85,23 +85,32 @@ export function recordAnswer(conceptId, correct, extra = {}) {
     // que ya lleva recordKommPracticed.
     p.concepts = p.concepts || {};
     p.seenItems = p.seenItems || {};
+    p.failedItems = p.failedItems || {};
     const c = { ...blank(), ...(p.concepts[conceptId] || {}) };
     const now = Date.now();
     // Lo que no sea tipo test (mc) cuenta por dos para el progreso / porcentaje
     const peso = extra.peso != null ? extra.peso : (extra.type && extra.type !== 'mc' ? 2 : 1);
     if (correct) {
-      c.correct += peso;
+      sumarContadorLocal(c, 'correct', peso);
       c.streak += 1;
       c.strength = Math.min(6, c.strength + peso);
     } else {
-      c.wrong += 1;
+      sumarContadorLocal(c, 'wrong', 1);
       c.streak = 0;
       c.strength = Math.max(0, c.strength - 2);
     }
+    if (extra.reviewMistake && correct) c.reviewCleared = true;
+    else if (!correct) delete c.reviewCleared;
     c.lastSeen = now;
     c.due = now + INTERVALS[Math.min(c.strength, INTERVALS.length - 1)];
     p.concepts[conceptId] = c;
     if (extra.itemKey) p.seenItems[extra.itemKey] = now;
+    if (extra.itemKey && extra.item) {
+      const failureKey = `${extra.itemKey}|${extra.item.type || 'unknown'}`;
+      p.failedItems[failureKey] = correct
+        ? { conceptId, item: null, at: now, resolved: true }
+        : { conceptId, item: extra.item, at: now, resolved: false };
+    }
     return p;
   });
 }
@@ -129,10 +138,22 @@ export function weakConcepts(allConceptIds, limit = 12) {
   const now = Date.now();
   return allConceptIds
     .map((id) => ({ id, score: priority(p.concepts[id], now) }))
-    .filter((x) => x.score > 0.5)
+    .filter((x) => x.score > 0.5 && !p.concepts[x.id]?.reviewCleared)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((x) => x.id);
+}
+
+// Los ejercicios fallados se guardan enteros para que «Repasar mis fallos»
+// vuelva a preguntar lo mismo, con el mismo tipo, y no regenere una pregunta
+// aleatoria del concepto. Las entradas resueltas son tombstones para que una
+// sincronización antigua no vuelva a traer un fallo ya corregido.
+export function failedItemsForConcepts(allConceptIds) {
+  const allowed = new Set(allConceptIds || []);
+  return Object.values(load().failedItems || {})
+    .filter((entry) => entry && !entry.resolved && entry.item && allowed.has(entry.conceptId))
+    .sort((a, b) => (a.at || 0) - (b.at || 0))
+    .map((entry) => entry.item);
 }
 
 // Conceptos que aun no has practicado (para introducir cosas nuevas).
@@ -169,9 +190,18 @@ export function conceptosQueFaltan(conceptIds) {
     .sort((a, b) => (p.concepts[a]?.correct || 0) - (p.concepts[b]?.correct || 0));
 }
 
+// Aciertos que faltan, sumados, para completar los conceptos seleccionados.
+export function aciertosQueFaltan(conceptIds) {
+  const p = load();
+  return (conceptIds || []).reduce((total, id) => {
+    const correct = Math.min(ACIERTOS_POR_CONCEPTO, p.concepts[id]?.correct || 0);
+    return total + Math.max(0, ACIERTOS_POR_CONCEPTO - correct);
+  }, 0);
+}
+
 export function topicMastery(conceptIds) {
   const p = load();
-  if (!conceptIds.length) return { pct: 0, practiced: 0, total: 0 };
+  if (!conceptIds.length) return { pct: 0, practiced: 0, total: 0, complete: false };
   let sum = 0;
   let practiced = 0;
   conceptIds.forEach((id) => {
@@ -181,10 +211,16 @@ export function topicMastery(conceptIds) {
       if (c.correct > 0) sum += Math.min(ACIERTOS_POR_CONCEPTO, c.correct);
     }
   });
+  const complete = conceptIds.every((id) => (p.concepts[id]?.correct || 0) >= ACIERTOS_POR_CONCEPTO);
   return {
-    pct: Math.round((sum / (Math.max(1, conceptIds.length) * ACIERTOS_POR_CONCEPTO)) * 100),
+    // El redondeo podía convertir 239/240 en 100% y conceder la corona con
+    // una regla todavía incompleta. Solo el dominio exacto llega al 100.
+    pct: complete
+      ? 100
+      : Math.min(99, Math.round((sum / (Math.max(1, conceptIds.length) * ACIERTOS_POR_CONCEPTO)) * 100)),
     practiced,
-    total: conceptIds.length
+    total: conceptIds.length,
+    complete
   };
 }
 
@@ -229,20 +265,100 @@ export function pesoDeApartado(v) {
 
 // Se apunta lo que has acertado de ese apartado en la tanda. No hay nota que
 // pasar: fallar no resta, solo no suma, igual que en los otros dos.
-export function recordKommPracticed(lektionId, funktion, aciertos = 0, preguntas = 0) {
+export function recordKommPracticed(lektionId, funktion, aciertos = 0, preguntas = 0, extra = {}) {
   storage.update(KEYS.progress, DEFAULT, (p) => {
     p.kommPracticed = p.kommPracticed || {};
     const clave = `${lektionId}:${funktion}`;
     const antes = p.kommPracticed[clave];
     const veces = (typeof antes === 'object' && antes?.veces) || (antes ? 1 : 0);
-    p.kommPracticed[clave] = {
+    const fallosPrevios = typeof antes === 'object' && antes
+      ? (typeof antes.fallos === 'number' ? antes.fallos : Math.max(0, (antes.preguntas || 0) - (antes.aciertos || 0)))
+      : 0;
+    const actualizado = {
+      ...(typeof antes === 'object' && antes ? antes : {}),
       at: Date.now(),
-      aciertos: aciertosDe(antes) + Math.max(0, aciertos),
-      preguntas: ((typeof antes === 'object' && antes?.preguntas) || 0) + Math.max(0, preguntas),
-      veces: veces + 1
+      aciertos: aciertosDe(antes),
+      preguntas: (typeof antes === 'object' && antes?.preguntas) || 0,
+      fallos: fallosPrevios,
+      veces
     };
+    sumarContadorLocal(actualizado, 'aciertos', Math.max(0, aciertos));
+    sumarContadorLocal(actualizado, 'preguntas', Math.max(0, preguntas));
+    sumarContadorLocal(actualizado, 'fallos', preguntas > 0 && aciertos <= 0 ? preguntas : 0);
+    sumarContadorLocal(actualizado, 'veces', 1);
+    if (extra.reviewMistake && aciertos > 0) actualizado.reviewCleared = true;
+    else if (preguntas > aciertos) delete actualizado.reviewCleared;
+    p.kommPracticed[clave] = actualizado;
     return p;
   });
+}
+
+function clavePreguntaKomm(lektionId, pregunta) {
+  const item = pregunta?.item || {};
+  const solucion = Array.isArray(item.solution) ? item.solution.join(' ') : (item.answer || '');
+  return JSON.stringify([
+    lektionId,
+    pregunta?.seccion || '',
+    pregunta?.tipo || '',
+    pregunta?.explica?.de || '',
+    pregunta?.explica?.es || '',
+    item.prompt || '',
+    item.sentence || '',
+    item.anweisung || '',
+    solucion,
+    Boolean(item.sentenceAfterOptions)
+  ]);
+}
+
+// Guarda el ejercicio exacto de Kommunikation, con su formato y opciones,
+// para que el repaso vuelva a mostrar lo que se falló y no genere otra pregunta.
+export function recordKommQuestion(lektionId, pregunta, correcta) {
+  if (!lektionId || String(lektionId).startsWith('mix') || !pregunta) return;
+  const key = clavePreguntaKomm(lektionId, pregunta);
+  storage.update(KEYS.progress, DEFAULT, (p) => {
+    p.kommFailedItems = p.kommFailedItems || {};
+    p.kommFailedItems[key] = correcta
+      ? { at: Date.now(), lektionId, question: null, resolved: true }
+      : { at: Date.now(), lektionId, question: pregunta, resolved: false };
+    return p;
+  });
+}
+
+export function kommFailedQuestions(lektionId) {
+  return Object.values(load().kommFailedItems || {})
+    .filter((entry) => entry?.lektionId === lektionId && !entry.resolved && entry.question)
+    .sort((a, b) => (a.at || 0) - (b.at || 0))
+    .map((entry) => entry.question);
+}
+
+// Marca una conversación como escuchada solo cuando termina su reproducción
+// completa. Se guarda aparte de los aciertos de ejercicios para que el tick
+// de la pestaña Teoría represente haber oído el diálogo entero.
+export function recordKommEscuchada(lektionId, funktion) {
+  if (!lektionId || !funktion) return;
+  const clave = `${lektionId}:${funktion}`;
+  storage.update(KEYS.progress, DEFAULT, (p) => {
+    p.kommEscuchadas = p.kommEscuchadas || {};
+    if (!p.kommEscuchadas[clave]) p.kommEscuchadas[clave] = Date.now();
+    return p;
+  });
+}
+
+export function kommListeningProgress(lektionId, kommunikationArray) {
+  const escuchadas = load().kommEscuchadas || {};
+  const lista = kommunikationArray || [];
+  const hechas = {};
+  for (const k of lista) {
+    const at = escuchadas[`${lektionId}:${k.funktion}`];
+    if (at) hechas[k.funktion] = { at };
+  }
+  const completadas = Object.keys(hechas).length;
+  return {
+    hechas,
+    completadas,
+    total: lista.length,
+    pct: lista.length ? Math.round((completadas / lista.length) * 100) : 0
+  };
 }
 
 export function kommMastery(lektionId, kommunikationArray) {
@@ -266,8 +382,12 @@ export function kommMastery(lektionId, kommunikationArray) {
     practiced += 1;
     hechas[k.funktion] = typeof v === 'object' ? v : { at: v, veces: 1 };
   });
+  const porcentaje = Math.round((suma / kommunikationArray.length) * 100);
+  const completo = practiced === kommunikationArray.length;
   return {
-    pct: Math.round((suma / kommunikationArray.length) * 100),
+    // El redondeo podía mostrar 100% con un punto pendiente y conceder la
+    // corona antes de terminar el último apartado.
+    pct: completo ? 100 : Math.min(99, porcentaje),
     practiced,
     total: kommunikationArray.length,
     hechas
@@ -286,8 +406,12 @@ export function kommApartadosFallados(lektionId, kommunikationArray) {
   return (kommunikationArray || []).filter((k) => {
     const v = kp[`${lektionId}:${k.funktion}`];
     if (!v || typeof v !== 'object') return false;
-    const fallos = (v.preguntas || 0) - (v.aciertos || 0);
-    return fallos > 0 && aciertosDe(v) < ACIERTOS_POR_APARTADO;
+    const fallos = typeof v.fallos === 'number'
+      ? v.fallos
+      : Math.max(0, (v.preguntas || 0) - (v.aciertos || 0));
+    // Un apartado ya dominado también puede contener errores recientes: la
+    // maestría no debe esconderlos del botón «Review my mistakes».
+    return fallos > 0 && !v.reviewCleared;
   });
 }
 
@@ -301,6 +425,15 @@ export function kommApartadosQueFaltan(lektionId, kommunikationArray) {
     .filter(({ n }) => n < ACIERTOS_POR_APARTADO)
     .sort((a, b) => a.n - b.n)
     .map(({ k }) => k);
+}
+
+// Aciertos que quedan dentro de los apartados seleccionados de Kommunikation.
+export function kommPuntosQueFaltan(lektionId, apartados) {
+  const kp = load().kommPracticed || {};
+  return (apartados || []).reduce((total, apartado) => {
+    const hechos = Math.min(ACIERTOS_POR_APARTADO, aciertosDe(kp[`${lektionId}:${apartado.funktion}`]));
+    return total + Math.max(0, ACIERTOS_POR_APARTADO - hechos);
+  }, 0);
 }
 
 export function resetProgress() {

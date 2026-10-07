@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { analyzeImage } from '../lib/ai.js';
 import { runJob } from '../lib/aiJobs.js';
 import { useAiJob } from '../lib/useAiJob.js';
@@ -79,6 +80,97 @@ function ListaItems({ items }) {
         </li>
       ))}
     </ol>
+  );
+}
+
+// Una foto puede quedarse en el cuaderno sin pedirle a la IA que la lea.
+function FotoGuardada({ a, onBorrar }) {
+  const [img, setImg] = useState(a.thumb || null);
+  const [ampliada, setAmpliada] = useState(false);
+  const cerrarRef = useRef(null);
+  useEffect(() => {
+    if (a.thumb || !a.thumbRef) return undefined;
+    let vivo = true;
+    leerFoto(a.thumbRef)
+      .then((url) => { if (vivo) setImg(url); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [a.thumb, a.thumbRef]);
+
+  useEffect(() => {
+    if (!ampliada) return undefined;
+    const overflowOriginal = document.body.style.overflow;
+    const principal = document.querySelector('.main');
+    const overflowPrincipal = principal?.style.overflowY || '';
+    const alPulsar = (event) => {
+      if (event.key === 'Escape') setAmpliada(false);
+    };
+    document.body.style.overflow = 'hidden';
+    if (principal) principal.style.overflowY = 'hidden';
+    window.addEventListener('keydown', alPulsar);
+    cerrarRef.current?.focus();
+    return () => {
+      document.body.style.overflow = overflowOriginal;
+      if (principal) principal.style.overflowY = overflowPrincipal;
+      window.removeEventListener('keydown', alPulsar);
+    };
+  }, [ampliada]);
+
+  return (
+    <div className="foto-resuelto stack foto-guardada">
+      <div className="row" style={{ alignItems: 'center', gap: 12, flexWrap: 'nowrap' }}>
+        <span className="muted" style={{ fontSize: '0.78rem' }}>
+          {a.at ? new Date(a.at).toLocaleDateString(localeFecha()) : ''}
+        </span>
+        <span className="muted" style={{ fontSize: '0.86rem' }}>{t('foto.savedOnly')}</span>
+        <button
+          className="link-btn"
+          style={{ padding: 0, fontSize: '0.8rem', color: 'var(--bad)' }}
+          onClick={onBorrar}
+          title={t('foto.deleteOne')}
+        >
+          ✕ {t('foto.deleteOne')}
+        </button>
+      </div>
+      {img && (
+        <div className="foto-preview">
+          <button
+            type="button"
+            className="foto-ampliar"
+            onClick={() => setAmpliada(true)}
+            aria-label={t('foto.openSaved')}
+            title={t('foto.openSaved')}
+          >
+            <img src={img} alt="" />
+          </button>
+        </div>
+      )}
+      {ampliada && img && createPortal(
+        <div
+          className="foto-ampliada-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setAmpliada(false);
+          }}
+        >
+          <div className="foto-ampliada-caja" role="dialog" aria-modal="true" aria-label={t('foto.openSaved')}>
+            <button
+              ref={cerrarRef}
+              type="button"
+              className="foto-ampliada-cerrar"
+              onClick={() => setAmpliada(false)}
+              aria-label={t('foto.close')}
+              title={t('foto.close')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+            <img src={img} alt="" />
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
   );
 }
 
@@ -235,6 +327,7 @@ export default function NotePhoto({ noteId, modo = 'aufgabe', lektion, analisis 
   const [foto, setFoto] = useState(null);      // versión grande, solo en memoria
   const [thumb, setThumb] = useState(null);
   const [err, setErr] = useState('');
+  const [guardando, setGuardando] = useState(false);
   const fileRef = useRef(null);
   const raiz = useRef(null);
   const [arrastra, setArrastra] = useState(false);
@@ -330,6 +423,28 @@ export default function NotePhoto({ noteId, modo = 'aufgabe', lektion, analisis 
     quitar();
   }
 
+  async function guardarSinResolver() {
+    if (!thumb || busy || guardando) return;
+    setErr('');
+    setGuardando(true);
+    try {
+      // La imagen a tamaño de lectura se guarda fuera de localStorage; si
+      // IndexedDB no esta disponible, se conserva la miniatura como respaldo.
+      const thumbRef = await guardarFoto(foto);
+      const nueva = thumbRef
+        ? { soloFoto: true, thumbRef, at: Date.now() }
+        : { soloFoto: true, thumb, at: Date.now() };
+      const campo = modo === 'aufgabe' ? 'fotoAufgaben' : 'fotoBilder';
+      const previas = noteId ? fotosDeNota(getNote(noteId), modo) : analisis;
+      const lista = [nueva, ...previas];
+      if (noteId) updateNote(noteId, { [campo]: lista, fotoAnalyse: null });
+      onCambio?.(lista);
+      quitar();
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   function quitar() {
     setFoto(null);
     setThumb(null);
@@ -361,6 +476,47 @@ export default function NotePhoto({ noteId, modo = 'aufgabe', lektion, analisis 
       onDragLeave={() => setArrastra(false)}
       onDrop={soltar}
     >
+      {/* La galería guardada queda antes del selector para volver a ver las
+          fotos anteriores antes de añadir una nueva. */}
+      {(analisis.length > 0 || busy) && (
+        <>
+          {analisis.some((a) => a.soloFoto) && (
+            <>
+              <div className="lk-block-title" style={{ marginTop: 12 }}>
+                {t('foto.savedCount', { n: analisis.filter((a) => a.soloFoto).length })}
+              </div>
+              <p className="muted" style={{ fontSize: '0.8rem', margin: '2px 0 0' }}>{t('foto.keepHint')}</p>
+              <div className="foto-guardadas-grid">
+                {analisis.map((a, i) => a.soloFoto && (
+                  <FotoGuardada key={a.at || i} a={a} onBorrar={() => borrar(i)} />
+                ))}
+              </div>
+            </>
+          )}
+          {analisis.some((a) => !a.soloFoto) && (
+            <>
+              <div className="lk-block-title" style={{ marginTop: 20 }}>
+                {t(esAufgabe ? 'foto.doneA' : 'foto.doneB', { n: analisis.filter((a) => !a.soloFoto).length })}
+              </div>
+              <p className="muted" style={{ fontSize: '0.8rem', margin: '2px 0 0' }}>{t('foto.keepHint')}</p>
+              {analisis.map((a, i) => !a.soloFoto && (
+                <Resultado key={a.at || i} a={a} esAufgabe={esAufgabe} onBorrar={() => borrar(i)} />
+              ))}
+            </>
+          )}
+          {busy && !analisis.some((a) => !a.soloFoto) && (
+            <div className="lk-block-title" style={{ marginTop: 20 }}>
+              {t(esAufgabe ? 'foto.doneA' : 'foto.doneB', { n: 0 })}
+            </div>
+          )}
+          {busy && (
+            <div className="card center muted" style={{ marginTop: 14, fontSize: '0.85rem' }}>
+              {t(esAufgabe ? 'foto.solving' : 'foto.describing')}
+            </div>
+          )}
+        </>
+      )}
+
       <div className="lk-block-title">{t(esAufgabe ? 'foto.titleA' : 'foto.titleB')}</div>
       <p className="muted" style={{ fontSize: '0.84rem', marginBottom: 12 }}>
         {t(esAufgabe ? 'foto.subA' : 'foto.subB')}
@@ -384,12 +540,15 @@ export default function NotePhoto({ noteId, modo = 'aufgabe', lektion, analisis 
 
       {foto && (
         <div className="row" style={{ gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-          <button className="btn-primary" onClick={analizar} disabled={!aiOn || busy}>
+          <button className="btn-primary" onClick={analizar} disabled={!aiOn || busy || guardando}>
             {busy
               ? t(esAufgabe ? 'foto.solving' : 'foto.describing')
               : t(esAufgabe ? 'foto.solve' : 'foto.describe')}
           </button>
-          <button className="btn-ghost btn-sm" onClick={quitar} disabled={busy} style={{ marginLeft: 'auto' }}>
+          <button className="btn-ghost btn-sm" onClick={guardarSinResolver} disabled={busy || guardando}>
+            {guardando ? t('foto.saving') : t('foto.savePhoto')}
+          </button>
+          <button className="btn-ghost btn-sm" onClick={quitar} disabled={busy || guardando} style={{ marginLeft: 'auto' }}>
             {t('foto.remove')}
           </button>
         </div>
@@ -399,33 +558,6 @@ export default function NotePhoto({ noteId, modo = 'aufgabe', lektion, analisis 
       {(err || job.error) && <p style={{ color: 'var(--bad)', fontSize: '0.85rem', marginTop: 10 }}>{err || job.error}</p>}
       {busy && <p className="muted" style={{ fontSize: '0.83rem', marginTop: 10 }}>{t('foto.wait')}</p>}
 
-      {/* ---------- los que ya están resueltos ---------- */}
-      {/* Todos los de esta nota, del más nuevo al más viejo, y se quedan hasta
-          que tú borres uno con su ✕.
-          Antes esto colgaba de !busy, así que mientras se resolvía una foto
-          nueva desaparecían TODOS los anteriores. No se perdían —seguían
-          guardados— pero dejabas de verlos justo cuando mirabas, y parecía
-          que la nueva había borrado la de antes. */}
-      {(analisis.length > 0 || busy) && (
-        <>
-          <div className="lk-block-title" style={{ marginTop: 20 }}>
-            {t(esAufgabe ? 'foto.doneA' : 'foto.doneB', { n: analisis.length })}
-          </div>
-          {analisis.length > 0 && (
-            <p className="muted" style={{ fontSize: '0.8rem', margin: '2px 0 0' }}>
-              {t('foto.keepHint')}
-            </p>
-          )}
-          {busy && (
-            <div className="card center muted" style={{ marginTop: 14, fontSize: '0.85rem' }}>
-              {t(esAufgabe ? 'foto.solving' : 'foto.describing')}
-            </div>
-          )}
-          {analisis.map((a, i) => (
-            <Resultado key={a.at || i} a={a} esAufgabe={esAufgabe} onBorrar={() => borrar(i)} />
-          ))}
-        </>
-      )}
     </div>
   );
 }
