@@ -7926,3 +7926,35 @@ body[data-juego] .fox-difuminado-suelo[class*='fox-difuminado-']:not(.fox-difumi
   pointer-events: none;
 }
 .fox-card.con-paisaje:has(.fox-escena-weltraum) .fox-card-cara::after { display: none; }
+
+/* Rendimiento de la tienda de Felix.
+   1) Mientras esta abierta, la pagina de debajo no se anima: el Felix de la
+      portada seguia flotando y meneando la cola detras, tapado, y el
+      navegador lo repintaba igual. En el movil la tienda ocupa la pantalla
+      entera, asi que la pagina de detras ni se pinta.
+   2) La cola menea y descansa, en vez de moverse sin parar: cada fotograma
+      con la cola en movimiento obliga a repintar el dibujo entero. */
+body.fox-modal-abierto #root *,
+body:has(.fox-modal) #root * { animation-play-state: paused !important; }
+@media (max-width: 880px) {
+  body.fox-modal-abierto #root,
+  body:has(.fox-modal) #root { visibility: hidden; }
+}
+@keyframes fox-menea-descanso {
+  0%, 52%, 100% { transform: rotate(0deg); }
+  64% { transform: rotate(-5deg); }
+  78% { transform: rotate(4deg); }
+  90% { transform: rotate(-2deg); }
+}
+.fox-modal .fox-face .fox-cola { animation: fox-menea-descanso 5s ease-in-out infinite; }
+
+/* En el ordenador, con la tarjeta muy ancha, el paisaje se difumina hacia la
+   derecha y la tarjeta acaba en su color de siempre. Solo con raton
+   (pointer: fine) y pantalla ancha: en el movil y la tablet, en vertical o
+   girados, el paisaje sigue llegando hasta el final. */
+@media (min-width: 1200px) and (pointer: fine) {
+  .fox-card-paisaje {
+    -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 45%, rgba(0, 0, 0, 0.35) 75%, transparent 96%);
+    mask-image: linear-gradient(90deg, #000 0%, #000 45%, rgba(0, 0, 0, 0.35) 75%, transparent 96%);
+  }
+}

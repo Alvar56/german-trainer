@@ -841,6 +841,44 @@ function juntarPixeles(lista, paso, anima) {
   });
   return out;
 }
+// Cache de lo que se pinta de cada complemento: [tiras, medidas] por dibujo y
+// alto. Los dibujos (EXTRAS) no cambian, asi que una WeakMap basta.
+const CACHE_EXTRAS = new WeakMap();
+function pixelesDeExtra(ex, alto) {
+  let porAlto = CACHE_EXTRAS.get(ex);
+  if (!porAlto) { porAlto = new Map(); CACHE_EXTRAS.set(ex, porAlto); }
+  const hecho = porAlto.get(alto);
+  if (hecho) return hecho;
+  const vis = ex.px.filter(([, y]) => y < alto);
+  const pixelStep = ex.pixelStep ?? 1;
+  const pixeles = [
+    ...vis.flatMap(([x, y, color]) => {
+      if (pixelStep === 1 || ex.medio) return [[x, y, color]];
+      const celdas = [];
+      for (let py = 0; py < 1; py += pixelStep) {
+        for (let px = 0; px < 1; px += pixelStep) celdas.push([x + px, y + py, color]);
+      }
+      return celdas;
+    }),
+    ...(ex.microPx || []).filter(([, y]) => y < alto)
+  ];
+  const xs = vis.map((q) => q[0]);
+  const ys = vis.map((q) => q[1]);
+  const res = {
+    tiras: juntarPixeles(pixeles, ex.medio ? .5 : pixelStep, ex.anima),
+    x0: Math.min(...xs), x1: Math.max(...xs), ymin: Math.min(...ys), ymax: Math.max(...ys)
+  };
+  porAlto.set(alto, res);
+  return res;
+}
+// Los zapatos ensanchados de la rana, uno por zapato (para que la cache de
+// arriba los reconozca en vez de ver un dibujo nuevo en cada repintado).
+const PIES_RANA = new WeakMap();
+function piesDeRana(base) {
+  let ex = PIES_RANA.get(base);
+  if (!ex) { ex = { ...base, px: ensancharPies(base.px) }; PIES_RANA.set(base, ex); }
+  return ex;
+}
 function doblarResolucion(filas) {
   return filas.flatMap((fila) => {
     const doble = [...fila].map((k) => k + k).join('');
@@ -2303,7 +2341,7 @@ export default function FoxFace({
   ]
     .map((id, i) => {
       const base = EXTRAS[id];
-      const ex = base && i === 4 && especie === 'rana' ? { ...base, px: ensancharPies(base.px) } : base;
+      const ex = base && i === 4 && especie === 'rana' ? piesDeRana(base) : base;
       // El objeto de la mano se dibuja algo mas grande que el resto: a tamaño
       // de rejilla se quedaba en un manchurron de cinco pixeles y no se
       // distinguia un libro de una taza. Crece desde su base, que es donde lo
@@ -2509,27 +2547,17 @@ export default function FoxFace({
           ))
         )}
         {extras.map(({ id, ex, escala, esObjeto }, i) => {
-          const vis = ex.px.filter(([, y]) => y < alto);
           const pixelStep = ex.pixelStep ?? 1;
-          const pixelesRender = [
-            ...vis.flatMap(([x, y, color]) => {
-              if (pixelStep === 1 || ex.medio) return [[x, y, color]];
-              const celdas = [];
-              for (let py = 0; py < 1; py += pixelStep) {
-                for (let px = 0; px < 1; px += pixelStep) celdas.push([x + px, y + py, color]);
-              }
-              return celdas;
-            }),
-            ...(ex.microPx || []).filter(([, y]) => y < alto)
-          ];
+          // Los pixeles ya juntados en tiras y las medidas del dibujo salen de
+          // una cache: antes se recalculaban en cada parpadeo y cada cambio de
+          // gesto, para toda la ropa puesta.
+          const { tiras: tirasExtra, x0, x1, ymax } = pixelesDeExtra(ex, alto);
           // El ancla es la base del propio dibujo. Y cada pixel se coloca ya
           // escalado en vez de meterlo todo en un <g transform>: asi los
           // cuadrados siguen encajando justos entre si y no salen las rayas
           // finas de fondo que deja el redondeo.
-          const x0 = escala === 1 ? 0 : Math.min(...vis.map((q) => q[0]));
-          const x1 = escala === 1 ? 0 : Math.max(...vis.map((q) => q[0]));
           const cx = escala === 1 ? 0 : (x0 + x1 + 1) / 2;
-          const cy = escala === 1 ? 0 : Math.max(...vis.map((q) => q[1])) + 1;
+          const cy = escala === 1 ? 0 : ymax + 1;
           const der = cx + (x1 - cx) * escala + escala;
           const izq = cx + (x0 - cx) * escala;
           // Los objetos sostenidos en la mano derecha (libro, taza, brezel, bastón, trofeo, etc.)
@@ -2540,7 +2568,7 @@ export default function FoxFace({
           const separacionX = (esObjetoSuelto && separarObjetos) ? 3.6 : 0;
           const ajuste = (esObjetoSuelto && separarObjetos) ? 0 : (der > W ? W - der : izq < 0 ? -izq : 0);
           // Y lo mismo por arriba: nada puede quedar por encima del lienzo.
-          const arriba = cy + (Math.min(...vis.map((q) => q[1])) - cy) * escala;
+          const arriba = cy + (pixelesDeExtra(ex, alto).ymin - cy) * escala;
           const ajusteY = arriba < 0 ? -arriba : 0;
           // Cada complemento en su grupo, con su id de clase: asi el CSS le
           // puede dar vida a uno solo (por ejemplo, el globo flotante).
@@ -2577,7 +2605,7 @@ export default function FoxFace({
               {id === 'laterne' && <title>Toca tres veces para encender el farolillo</title>}
               {id === 'globo' && <title>Toca dos veces para inflarlo</title>}
               {id === 'cohete' && <title>Toca tres veces para despegar</title>}
-              {juntarPixeles(pixelesRender, ex.medio ? .5 : pixelStep, ex.anima).map(([x, y, k, ancho], j) => (
+              {tirasExtra.map(([x, y, k, ancho], j) => (
                 <rect
                   key={j}
                   className={ex.anima && ex.anima(x, y) ? 'fox-px-mueve' : undefined}

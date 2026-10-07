@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import Desplegable from './Desplegable.jsx';
 import FoxFace from './FoxFace.jsx';
@@ -110,7 +110,14 @@ function Ficha({ cosa, puesta, monedas, onPoner, onComprar, dot = null }) {
 // Un bloque de la tienda, plegable: lo que se compra arriba y lo que se gana
 // debajo, separado. Solo evalúa sus fichas cuando está abierto para no saturar
 // el hilo principal con 100+ botones en cada render.
-function Bloque({ titulo, ico, cosas, esPuesta, monedas, onPoner, onComprar, dot, abierto, onAbrir }) {
+// memo: al ponerle algo a Felix solo cambia el bloque de esa ranura; el resto
+// recibe las mismas props y no se vuelve a pintar (antes se repintaba la
+// tienda entera, ~165 ms por clic en un movil modesto).
+const Bloque = memo(function Bloque({ ranura, puestaId, titulo, ico, cosas, esPuesta: esPuestaProp, monedas, onPoner, onComprar, dot, abierto, onAbrir }) {
+  const esPuesta = useCallback(
+    (c) => (puestaId !== undefined ? c.id === puestaId : esPuestaProp(c)),
+    [puestaId, esPuestaProp]
+  );
   const puesta = useMemo(() => cosas.find((c) => esPuesta(c)), [cosas, esPuesta]);
   const aTiro = useMemo(
     () => cosas.filter((c) => !c.abierto && !c.req && monedas >= c.precio).length,
@@ -129,8 +136,8 @@ function Bloque({ titulo, ico, cosas, esPuesta, monedas, onPoner, onComprar, dot
           puesta={esPuesta(c)}
           monedas={monedas}
           dot={dot ? dot(c) : null}
-          onPoner={() => onPoner(c)}
-          onComprar={() => onComprar(c)}
+          onPoner={() => (ranura ? onPoner(ranura, c) : onPoner(c))}
+          onComprar={() => (ranura ? onComprar(ranura, c) : onComprar(c))}
         />
       ))}
     </div>
@@ -138,7 +145,7 @@ function Bloque({ titulo, ico, cosas, esPuesta, monedas, onPoner, onComprar, dot
 
   return (
     <div className={'fox-bloque' + (abierto ? ' abierto' : '')}>
-      <button className="fox-tirador" onClick={onAbrir} aria-expanded={abierto}>
+      <button className="fox-tirador" onClick={() => (ranura ? onAbrir(ranura) : onAbrir())} aria-expanded={abierto}>
         <span className="fox-tirador-izq">
           <span className="fox-ico" aria-hidden="true">{ico}</span>
           <span className="fox-titulo">{titulo}</span>
@@ -168,7 +175,7 @@ function Bloque({ titulo, ico, cosas, esPuesta, monedas, onPoner, onComprar, dot
       </Desplegable>
     </div>
   );
-}
+});
 
 export default function FoxAjustes({ onClose, onChange }) {
   const [f, setF] = useState(getFuchs);
@@ -279,6 +286,33 @@ export default function FoxAjustes({ onClose, onChange }) {
     // recién comprado, se pone puesto
     cambiar(ranura ? { [ranura]: id } : { especie: id });
   }
+
+  // Lo de cada ranura, calculado una vez por cambio y reutilizando la lista
+  // anterior si no ha cambiado nada en ella: asi el memo de Bloque funciona.
+  const cosasPrevias = useRef({});
+  const cosasPorRanura = useMemo(() => {
+    const out = {};
+    for (const r of RANURAS) {
+      const lista = complementosDe(r.id, f, l)
+        .sort((a, b) => r.id === 'objeto' ? (a.precio ?? Infinity) - (b.precio ?? Infinity) : 0);
+      const firma = lista.map((c) => c.id + (c.abierto ? '1' : '0')).join(',');
+      const previa = cosasPrevias.current[r.id];
+      out[r.id] = previa && previa.firma === firma ? previa.lista : lista;
+      cosasPrevias.current[r.id] = { firma, lista: out[r.id] };
+    }
+    return out;
+  }, [f, l]);
+  // Callbacks estables para los bloques: leen el estado actual de una ref.
+  const actual = useRef({});
+  actual.current = { abierta, f, cambiar, pagar, mostrarPrevisualizacionEfecto };
+  const abrirRanura = useCallback((id) => {
+    const { abierta: ab, f: ff, mostrarPrevisualizacionEfecto: prev } = actual.current;
+    const siguiente = ab === id ? null : id;
+    setAbierta(siguiente);
+    if (siguiente === 'particulas') prev(ff.particulas);
+  }, []);
+  const ponerEnRanura = useCallback((id, c) => actual.current.cambiar({ [id]: c.id }), []);
+  const comprarEnRanura = useCallback((id, c) => actual.current.pagar(c.id, id), []);
 
   return createPortal(
     <div
@@ -405,20 +439,16 @@ export default function FoxAjustes({ onClose, onChange }) {
           {RANURAS.map((r) => (
             <Bloque
               key={r.id}
+              ranura={r.id}
+              puestaId={f[r.id]}
               titulo={r.de}
               ico={r.ico}
               abierto={abierta === r.id}
-              onAbrir={() => {
-                const siguiente = abierta === r.id ? null : r.id;
-                setAbierta(siguiente);
-                if (siguiente === 'particulas') mostrarPrevisualizacionEfecto(f.particulas);
-              }}
-              cosas={complementosDe(r.id, f, l)
-                .sort((a, b) => r.id === 'objeto' ? (a.precio ?? Infinity) - (b.precio ?? Infinity) : 0)}
-              esPuesta={(c) => f[r.id] === c.id}
+              onAbrir={abrirRanura}
+              cosas={cosasPorRanura[r.id]}
               monedas={monedas}
-              onPoner={(c) => cambiar({ [r.id]: c.id })}
-              onComprar={(c) => pagar(c.id, r.id)}
+              onPoner={ponerEnRanura}
+              onComprar={comprarEnRanura}
             />
           ))}
         </div>
