@@ -2,6 +2,7 @@ import React from 'react';
 import { getLang, setLang, LANGS, pick } from '../lib/i18n.js';
 import { SIN_IA, PORTABLE } from '../lib/modo.js';
 import Pomodoro from './Pomodoro.jsx';
+import IconoMenu from './IconoMenu.jsx';
 
 // El menú va en alemán. La traducción se queda en el tooltip, no en pantalla.
 // Examen, noticias y canciones se generan enteras con IA: sin ella no son
@@ -10,17 +11,17 @@ import Pomodoro from './Pomodoro.jsx';
 const SOLO_IA = ['pruefung', 'news', 'lieder'];
 
 const NAV_TODO = [
-  { id: 'home', ico: '🏠', label: 'Startseite', es: 'Inicio', en: 'Home' },
-  { id: 'grammar', ico: '📖', label: 'Grammatik', es: 'Gramática', en: 'Grammar' },
-  { id: 'vocab', ico: '📚', label: 'Wortschatz', es: 'Vocabulario', en: 'Vocabulary' },
-  { id: 'komm', ico: '💬', label: 'Kommunikation', es: 'Comunicación', en: 'Communication' },
-  { id: 'notebook', ico: '📓', label: 'Notizbuch', es: 'Cuaderno', en: 'Notebook' },
-  { id: 'diary', ico: '✍️', label: 'Tagebuch', es: 'Diario', en: 'Diary' },
-  { id: 'pruefung', ico: '🎓', label: 'Prüfung', es: 'Examen A2', en: 'A2 exam' },
-  { id: 'news', ico: '📰', label: 'Nachrichten', es: 'Noticias', en: 'News' },
-  { id: 'lieder', ico: '🎵', label: 'Lieder', es: 'Canciones', en: 'Songs' },
-  { id: 'leaderboard', ico: '🏅', label: 'Bestenliste', es: 'Clasificación', en: 'Leaderboard' },
-  { id: 'settings', ico: '⚙️', label: 'Einstellungen', es: 'Ajustes', en: 'Settings' }
+  { id: 'home', label: 'Startseite', es: 'Inicio', en: 'Home' },
+  { id: 'grammar', label: 'Grammatik', es: 'Gramática', en: 'Grammar' },
+  { id: 'vocab', label: 'Wortschatz', es: 'Vocabulario', en: 'Vocabulary' },
+  { id: 'komm', label: 'Kommunikation', es: 'Comunicación', en: 'Communication' },
+  { id: 'notebook', label: 'Notizbuch', es: 'Cuaderno', en: 'Notebook' },
+  { id: 'diary', label: 'Tagebuch', es: 'Diario', en: 'Diary' },
+  { id: 'pruefung', label: 'Prüfung', es: 'Examen A2', en: 'A2 exam' },
+  { id: 'news', label: 'Nachrichten', es: 'Noticias', en: 'News' },
+  { id: 'lieder', label: 'Lieder', es: 'Canciones', en: 'Songs' },
+  { id: 'leaderboard', label: 'Bestenliste', es: 'Clasificación', en: 'Leaderboard' },
+  { id: 'settings', label: 'Einstellungen', es: 'Ajustes', en: 'Settings' }
 ];
 
 const NAV = NAV_TODO
@@ -45,7 +46,7 @@ export default function Sidebar({ current, onNavigate }) {
             onClick={() => onNavigate(n.id)}
             title={pick(n.es, n.en)}
           >
-            <span className="ico">{n.ico}</span>
+            <IconoMenu id={n.id} />
             <span className="nav-de">{n.label}</span>
           </button>
         ))}

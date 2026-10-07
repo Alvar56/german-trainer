@@ -479,6 +479,28 @@ button.pill.star-pill.starred {
 .nav-item.active { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .nav-item.active:hover { background: var(--accent); }
 .nav-item .ico { width: 18px; text-align: center; opacity: 0.95; font-size: 0.95rem; }
+/* Iconos del menu (IconoMenu.jsx): simbolo oscuro en un circulo pastel, un
+   color por seccion. --ico-bg es el circulo y --ico-fg el simbolo. */
+.nav-item .ico {
+  width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--ico-bg, #e3e3e3); opacity: 1;
+}
+.nav-item .ico svg { width: 17px; height: 17px; fill: var(--ico-fg, #3c3c3c); }
+.ico-home        { --ico-bg: #c2e7ff; --ico-fg: #004a77; }
+.ico-grammar     { --ico-bg: #d3e3fd; --ico-fg: #0842a0; }
+.ico-vocab       { --ico-bg: #c4eed0; --ico-fg: #0d5226; }
+.ico-komm        { --ico-bg: #ffd8e4; --ico-fg: #7d1d4a; }
+.ico-notebook    { --ico-bg: #ffe08a; --ico-fg: #5c4300; }
+.ico-diary       { --ico-bg: #ffdbc8; --ico-fg: #6b2a00; }
+.ico-pruefung    { --ico-bg: #e8def8; --ico-fg: #4a2a8a; }
+.ico-news        { --ico-bg: #d7e3ec; --ico-fg: #1f3a4d; }
+.ico-lieder      { --ico-bg: #fbd9f3; --ico-fg: #6d1b5c; }
+.ico-leaderboard { --ico-bg: #fff0b3; --ico-fg: #6b4e00; }
+.ico-settings    { --ico-bg: #e3e3e3; --ico-fg: #3c3c3c; }
+/* En el tema oscuro, circulo oscuro y simbolo claro del mismo color. */
+[data-theme='dark'] .nav-item .ico { background: color-mix(in srgb, var(--ico-fg) 55%, #111); }
+[data-theme='dark'] .nav-item .ico svg { fill: var(--ico-bg); }
 .sidebar .sep { flex: 1; min-height: 10px; }
 /* En el escritorio el contenedor de las secciones no pinta nada: los botones
    se comportan como hijos directos de la columna, igual que antes. */
