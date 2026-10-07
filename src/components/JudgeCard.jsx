@@ -33,12 +33,16 @@ export default function JudgeCard({ item, onAnswer }) {
       {/* Lo que la frase QUIERE decir. Sin esto, «Woher kommt sie?» es
           correcta en sí misma aunque el ejercicio pidiera «ihr». */}
       {item.translation && <div className="judge-translation muted">«{tc(item.translation)}»</div>}
+      {/* Al corregir, el boton de la respuesta buena se pinta con su propio
+          color: «Correcta» en verde y «Tiene un error» en rojo (en verde
+          parecia que la frase estaba bien). El otro se apaga; si has
+          acertado o no lo dice el recuadro de debajo. */}
       <div className="judge-row">
         <button
           className={
             'judge-btn' +
             ' yes' +
-            (done ? (item.isCorrect ? ' good' : picked === true ? ' bad' : ' dim') : '')
+            (done ? (item.isCorrect ? ' good' : ' dim') : '')
           }
           disabled={done}
           onClick={() => choose(true)}
@@ -49,7 +53,7 @@ export default function JudgeCard({ item, onAnswer }) {
           className={
             'judge-btn' +
             ' no' +
-            (done ? (!item.isCorrect ? ' good' : picked === false ? ' bad' : ' dim') : '')
+            (done ? (!item.isCorrect ? ' bad' : ' dim') : '')
           }
           disabled={done}
           onClick={() => choose(false)}
