@@ -7647,3 +7647,30 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
   width: 1.05em; height: 1.05em; fill: currentColor; flex: 0 0 auto;
   vertical-align: -0.17em; margin-right: 0.4em; opacity: 0.85;
 }
+
+/* Las tarjetas de juego llevan un degradado suave de su color, que sale de
+   detras del icono y se pierde hacia la derecha. El color lo toman del icono
+   (:has), asi no hay que marcar cada tarjeta en el JSX. */
+.gametype:has(.gt-sim) {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 55%, transparent) 0%, var(--surface-2) 55%);
+}
+.gametype:has(.gt-sim):hover {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 70%, transparent) 0%, var(--surface) 60%);
+}
+.gametype:has(.gj-test)    { --gj-card: #c4eed0; }
+.gametype:has(.gj-judge)   { --gj-card: #ffe8a3; }
+.gametype:has(.gj-match)   { --gj-card: #e8def8; }
+.gametype:has(.gj-blitz)   { --gj-card: #ffd8c2; }
+.gametype:has(.gj-order)   { --gj-card: #c2e7ff; }
+.gametype:has(.gj-write)   { --gj-card: #dde3ea; }
+.gametype:has(.gj-cards)   { --gj-card: #ffd8e4; }
+.gametype:has(.gj-random)  { --gj-card: #c2e7ff; }
+.gametype:has(.gj-diary)   { --gj-card: #ffdbcc; }
+.gametype:has(.gj-ai)      { --gj-card: #e8def8; }
+.gametype:has(.gj-reply)   { --gj-card: #b8ece6; }
+.gametype:has(.gj-gap)     { --gj-card: #d6dcff; }
+.gametype:has(.gj-letters) { --gj-card: #c0ecf5; }
+.gametype:has(.gj-hangman) { --gj-card: #ffdad6; }
+[data-theme='dark'] .gametype:has(.gt-sim) {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 14%, var(--surface-2)) 0%, var(--surface-2) 55%);
+}
