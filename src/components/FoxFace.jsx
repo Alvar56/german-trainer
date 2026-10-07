@@ -555,7 +555,7 @@ function rasgos(g, especie) {
 // ---------- cuerpo sentado ----------
 // Rechoncho a propósito: un zorro sentado se ensancha hacia abajo, y así
 // además hay sitio de sobra para vestirlo.
-function cuerpo(g) {
+function cuerpo(g, especie = 'zorro') {
   fila(g, 18, 9, 18, 'f');
   fila(g, 19, 8, 19, 'f');
   bloque(g, 20, 27, 7, 20, 'f');
@@ -583,6 +583,17 @@ function cuerpo(g) {
   bloque(g, 28, 29, 16, 20, 'l');
   px(g, 8, 29, 'm');
   px(g, 19, 29, 'm');
+
+  // La rana apoya unos pies anchos y abiertos, con tres dedos: asoman un
+  // par de pixeles por fuera de las patas (y de los zapatos, si los lleva).
+  if (especie === 'rana') {
+    fila(g, 28, 5, 11, 'f');
+    fila(g, 28, 16, 22, 'f');
+    fila(g, 29, 4, 11, 'l');
+    fila(g, 29, 16, 23, 'l');
+    espejoPx(g, 6, 29, 'm');
+    espejoPx(g, 9, 29, 'm');
+  }
 }
 
 // ---------- ojos y boca ----------
@@ -1920,7 +1931,7 @@ export default function FoxFace({
 
   const celdas = useMemo(() => {
     const g = lienzo();
-    if (conCuerpo) cuerpo(g);
+    if (conCuerpo) cuerpo(g, especie);
     cabeza(g, especie);
     (GESTOS[gestoFinal] || GESTOS.normal)(g);
     rasgos(g, especie);
