@@ -7905,23 +7905,13 @@ body[data-juego] .fox-difuminado-suelo[class*='fox-difuminado-']:not(.fox-difumi
 /* En la tarjeta de la portada (muy ancha y baja) el paisaje se ve en una
    franja: se encuadra para que el suelo quede a los pies de Felix y se vea
    lo que hay justo encima del horizonte. */
-/* Cada paisaje con su encuadre: lo que lo caracteriza (el molino, la pizarra,
-   la aurora, el volcan...) dentro de la franja, y el suelo a los pies. */
+/* El paisaje se encuadra para que su suelo quede justo a los pies de Felix,
+   que va pegado abajo en la tarjeta: con el encuadre centrado, el suelo caia
+   por debajo del borde y Felix parecia flotar sobre las colinas. */
 @media (min-width: 721px) {
-  .fox-card-paisaje { background-position: center 50%; }
-  .fox-card-paisaje.fox-escena-wiese { background-position: center 45%; }
-  .fox-card-paisaje.fox-escena-strand { background-position: center 52%; }
-  .fox-card-paisaje.fox-escena-wueste { background-position: center 55%; }
-  .fox-card-paisaje.fox-escena-eis { background-position: center 55%; }
-  .fox-card-paisaje.fox-escena-klasse { background-position: center 40%; }
-  .fox-card-paisaje.fox-escena-weltraum { background-position: center 60%; }
-  .fox-card-paisaje.fox-escena-vulkan { background-position: center 56%; }
-  .fox-card-paisaje.fox-escena-himmel { background-position: center 60%; }
-  .fox-card-paisaje.fox-escena-dschungel { background-position: center 58%; }
-  .fox-card-paisaje.fox-escena-unterwasser { background-position: center 62%; }
-  .fox-card-paisaje.fox-escena-alpen { background-position: center 62%; }
-  .fox-card-paisaje.fox-escena-herbstwald { background-position: center 52%; }
-  .fox-card-paisaje.fox-escena-grossstadt { background-position: center 66%; }
+  .fox-card-paisaje { background-position: center 66%; }
+  .fox-card.con-paisaje { align-items: flex-end; }
+  .fox-card.con-paisaje .fox-card-cara { align-self: flex-end; margin-bottom: -6px; }
 }
 /* Felix en su propia capa: al moverse (cola, saltitos) el navegador ya no
    tiene que repintar el paisaje de debajo en cada fotograma. */
