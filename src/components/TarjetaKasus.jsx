@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import IconoJuego from './IconoJuego.jsx';
 import { t, pick } from '../lib/i18n.js';
 import { kasusStats, KASUS_FILTROS_CASO, KASUS_FILTROS_ART } from '../lib/kasus.js';
 import EtiquetaChip from './EtiquetaChip.jsx';
@@ -11,7 +12,7 @@ export default function TarjetaKasus({ onJugar }) {
   return (
     <div className="juego-seccion">
       <button className={'gender-cta' + (st.pct >= 100 ? ' dominado' : '')} onClick={() => onJugar(filtro)}>
-        <span className="gc-emoji">🧭</span>
+        <IconoJuego e="🧭" />
         <span style={{ flex: 1 }}>
           <div className="gc-title">{t('kasus.title')}</div>
           <div className="gc-sub">

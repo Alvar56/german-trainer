@@ -504,7 +504,7 @@ function VocabHome({ onOpenLektion, onOpen, onGenderGame, onChanged, onStart }) 
     <>
     <div className="juego-seccion vocab-home-seccion">
       <button className={'gender-cta' + (gs.pct >= 100 ? ' dominado' : '')} onClick={() => onGenderGame(nivelGen)}>
-        <span className="gc-emoji">🎯</span>
+        <IconoJuego e="🎯" />
         <span style={{ flex: 1 }}>
           <div className="gc-title">{t('voc.genderTitle')}</div>
           <div className="gc-sub">

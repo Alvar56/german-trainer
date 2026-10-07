@@ -7714,3 +7714,23 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
   .tv-raya { transition: none; }
   .tabla-captura.tv-entra-adelante, .tabla-captura.tv-entra-atras { animation: none; }
 }
+
+/* Las tarjetas grandes de Kasus Trainer, der/die/das y Traducir frases: el
+   mismo simbolo en circulo y el mismo degradado que las de los juegos. */
+.gj-kasus     { --gj-bg: #ffe8a3; --gj-fg: #7a4f01; }
+.gj-gender    { --gj-bg: #ffd8d2; --gj-fg: #8c1d18; }
+.gj-translate { --gj-bg: #b8ece6; --gj-fg: #00504a; }
+.gender-cta .gt-ico.gt-sim { width: 40px; height: 40px; flex: 0 0 40px; }
+.gender-cta .gt-ico.gt-sim svg { width: 22px; height: 22px; }
+.gender-cta:has(.gj-kasus)     { --gj-card: #ffe8a3; }
+.gender-cta:has(.gj-gender)    { --gj-card: #ffd8d2; }
+.gender-cta:has(.gj-translate) { --gj-card: #b8ece6; }
+.gender-cta:not(.dominado):has(.gt-sim) {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 75%, transparent) 0%, var(--accent-soft) 55%);
+}
+.gender-cta:not(.dominado):has(.gt-sim):hover {
+  background: linear-gradient(90deg, var(--gj-card) 0%, var(--accent-soft) 65%);
+}
+[data-theme='dark'] .gender-cta:not(.dominado):has(.gt-sim) {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 16%, var(--accent-soft)) 0%, var(--accent-soft) 55%);
+}

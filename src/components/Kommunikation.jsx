@@ -300,7 +300,7 @@ function TarjetaTraducir({ onTraducir }) {
         className={'gender-cta' + (st.pct >= 100 ? ' dominado' : '')}
         onClick={() => onTraducir(null, dir, nivel)}
       >
-        <span className="gc-emoji">🔁</span>
+        <IconoJuego e="🔁" />
         <span style={{ flex: 1 }}>
           <div className="gc-title">{t('ueb.title')}</div>
           <div className="gc-sub">
