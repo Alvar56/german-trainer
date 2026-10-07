@@ -39,8 +39,10 @@ const RANURAS = [
 
 // El Felix grande de la tienda, con su propia cara cambiante. Va aparte para
 // que cada cambio de gesto solo vuelva a pintar a Felix y no toda la tienda.
-// Antes estaba fijo en «feliz», con los ojos cerrados todo el rato.
-const RONDA_GESTOS = ['normal', 'feliz', 'normal', 'guino', 'normal', 'pensando', 'normal', 'sorpresa'];
+// Antes estaba fijo en «feliz», con los ojos cerrados todo el rato. Cambia
+// cada 5,5 s y la mayoria de las veces vuelve a la cara normal: mas seguido
+// abrumaba.
+const RONDA_GESTOS = ['normal', 'feliz', 'normal', 'normal', 'guino', 'normal', 'normal', 'pensando', 'normal', 'normal', 'sorpresa', 'normal'];
 function FelixConGestos({ reaccionRef, ...props }) {
   const [gesto, setGesto] = useState('normal');
   const hasta = useRef(0);
@@ -51,7 +53,7 @@ function FelixConGestos({ reaccionRef, ...props }) {
       if (Date.now() < hasta.current) return;
       i = (i + 1) % RONDA_GESTOS.length;
       setGesto(RONDA_GESTOS[i]);
-    }, 2600);
+    }, 5500);
     reaccionRef.current = (g, ms = 1800) => {
       hasta.current = Date.now() + ms;
       setGesto(g);
