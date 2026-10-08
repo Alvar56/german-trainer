@@ -8117,3 +8117,76 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
 [data-theme='dark'] .gn-der { --gn-fondo: rgba(59, 130, 246, 0.12); --gn-fuerte: #93c5fd; }
 [data-theme='dark'] .gn-die { --gn-fondo: rgba(236, 72, 153, 0.12); --gn-fuerte: #f9a8d4; }
 [data-theme='dark'] .gn-das { --gn-fondo: rgba(34, 197, 94, 0.12); --gn-fuerte: #86efac; }
+
+/* Tablas de teoria en tarjetas, con el estilo de la de der / die / das
+   (components/tablas/comun.jsx). Generos: der azul, das verde, die rosa,
+   plural ambar. Casos: Nominativ celeste, Akkusativ naranja, Dativ violeta y
+   las Wechselpräpositionen turquesa. */
+.tc-m { --c-borde: #93c5fd; --c-fondo: #eff6ff; --c-fuerte: #1d4ed8; }
+.tc-n { --c-borde: #86efac; --c-fondo: #f0fdf4; --c-fuerte: #15803d; }
+.tc-f { --c-borde: #f9a8d4; --c-fondo: #fdf2f8; --c-fuerte: #be185d; }
+.tc-pl { --c-borde: #fcd34d; --c-fondo: #fffbeb; --c-fuerte: #b45309; }
+.tc-nom { --c-borde: #7dd3fc; --c-fondo: #f0f9ff; --c-fuerte: #0369a1; }
+.tc-akk { --c-borde: #fdba74; --c-fondo: #fff7ed; --c-fuerte: #c2410c; }
+.tc-dat { --c-borde: #c4b5fd; --c-fondo: #f5f3ff; --c-fuerte: #6d28d9; }
+.tc-wechsel { --c-borde: #5eead4; --c-fondo: #f0fdfa; --c-fuerte: #0f766e; }
+[data-theme='dark'] .tc-m { --c-fondo: rgba(59, 130, 246, 0.12); --c-fuerte: #93c5fd; }
+[data-theme='dark'] .tc-n { --c-fondo: rgba(34, 197, 94, 0.12); --c-fuerte: #86efac; }
+[data-theme='dark'] .tc-f { --c-fondo: rgba(236, 72, 153, 0.12); --c-fuerte: #f9a8d4; }
+[data-theme='dark'] .tc-pl { --c-fondo: rgba(245, 158, 11, 0.12); --c-fuerte: #fcd34d; }
+[data-theme='dark'] .tc-nom { --c-fondo: rgba(14, 165, 233, 0.12); --c-fuerte: #7dd3fc; }
+[data-theme='dark'] .tc-akk { --c-fondo: rgba(249, 115, 22, 0.12); --c-fuerte: #fdba74; }
+[data-theme='dark'] .tc-dat { --c-fondo: rgba(139, 92, 246, 0.14); --c-fuerte: #c4b5fd; }
+[data-theme='dark'] .tc-wechsel { --c-fondo: rgba(20, 184, 166, 0.12); --c-fuerte: #5eead4; }
+
+.tc-columnas { display: grid; gap: 12px; margin-bottom: 12px; }
+.tc-4 { grid-template-columns: repeat(4, 1fr); }
+.tc-3 { grid-template-columns: repeat(3, 1fr); }
+.tc-2 { grid-template-columns: repeat(2, 1fr); }
+.tc-col { border-radius: 12px; padding: 12px 14px; border: 1.5px solid var(--c-borde); background: var(--c-fondo); min-width: 0; }
+.tc-titulo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 1.5rem; font-weight: 800; color: var(--c-fuerte); line-height: 1.15; margin-bottom: 4px; }
+.tc-sub { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+.tc-apartado { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 10px 0 6px; }
+.tc-preg { text-transform: none; letter-spacing: 0; font-weight: 500; margin-left: 4px; }
+.tc-etiqueta { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--c-borde); background: var(--surface); color: var(--c-fuerte); font-size: 0.66rem; letter-spacing: 0; text-transform: none; }
+.tc-ojo { background: var(--c-borde); color: var(--text); border-color: transparent; }
+.tc-igual .tc-formas { opacity: 0.55; }
+.tc-formas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.tc-forma { display: flex; flex-direction: column; align-items: center; padding: 5px 2px 3px; border-radius: 8px; background: var(--surface); border: 1px solid var(--c-borde); }
+.tc-forma b { font-size: 0.95rem; color: var(--text); }
+.tc-forma small { font-size: 0.6rem; color: var(--muted); }
+.tc-hi { color: var(--c-fuerte); background: color-mix(in srgb, var(--c-borde) 45%, transparent); border-radius: 3px; padding: 0 1px; font-weight: 800; }
+.tc-hi2 { color: var(--text-2); background: var(--surface-2); border-radius: 3px; padding: 0 1px; font-weight: 700; }
+.tc-nota { margin-top: 8px; font-size: 0.78rem; color: var(--text-2); line-height: 1.35; }
+.tc-nota b { color: var(--c-fuerte); }
+.tc-nota em { font-style: normal; font-weight: 600; }
+.tc-lineas { display: flex; flex-direction: column; gap: 3px; }
+.tc-linea { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+.tc-linea2 { color: var(--text-2); font-weight: 500; }
+.tc-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.tc-chip { display: inline-flex; padding: 3px 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--c-borde); font-size: 0.82rem; }
+.tc-chip b { color: var(--c-fuerte); }
+.tc-filas, .tc-pronombres { display: flex; flex-direction: column; }
+.tc-fila, .tc-pron { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dashed color-mix(in srgb, var(--c-borde) 70%, transparent); font-size: 0.85rem; color: var(--text-2); }
+.tc-fila:last-child, .tc-pron:last-child { border-bottom: 0; }
+.tc-fila b, .tc-pron b { color: var(--text); text-align: right; }
+.tc-pron-base { color: var(--muted); }
+.tc-kurz { display: flex; flex-direction: column; gap: 6px; }
+.tc-kurz-fila { display: grid; grid-template-columns: 54px auto 1fr; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-2); }
+.tc-kurz-fila .tc-chip { justify-content: center; }
+.tc-kurz-larga { color: var(--muted); }
+.tc-kurz-fila em { font-style: normal; text-align: right; }
+.tc-ejemplos { display: flex; flex-direction: column; gap: 3px; font-size: 0.85rem; color: var(--text-2); }
+.tc-leyenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--text-2); margin-bottom: 10px; }
+.tc-pistas { display: grid; gap: 8px; margin-top: 4px; }
+.tc-pista { display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.85rem; color: var(--text-2); }
+.tc-pista b { color: var(--text); flex: 0 0 auto; }
+@media (max-width: 960px) {
+  .tc-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .tc-4, .tc-3, .tc-2 { grid-template-columns: 1fr; }
+  .tc-pista { flex-direction: column; gap: 2px; }
+  .tc-kurz-fila { grid-template-columns: 54px 1fr; }
+  .tc-kurz-fila em { grid-column: 1 / -1; text-align: left; }
+}
