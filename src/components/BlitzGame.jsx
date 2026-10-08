@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { SimboloSeccion, SimboloDeContexto } from './IconoMenu.jsx';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
 import GameModePill from './GameModePill.jsx';
 import { recordCard, deckStats } from '../lib/vocab.js';
@@ -301,7 +302,7 @@ export default function BlitzGame({ deck, cartas, apuntar, contexto, cartasFijas
 
       <div className="ctx-fila">
         <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
-          <span className="pill ctx-tema">{ctx.emoji} {ctx.nombre}</span>
+          <span className="pill ctx-tema"><SimboloDeContexto emoji={ctx.emoji} />{ctx.nombre}</span>
           <GameModePill mode="blitz" />
         </span>
         <span className="row" style={{ gap: 8 }}>

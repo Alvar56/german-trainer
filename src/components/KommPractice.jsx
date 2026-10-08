@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { SimboloSeccion, SimboloDeContexto } from './IconoMenu.jsx';
 import { conSimbolo } from './IconoJuego.jsx';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
@@ -731,7 +732,7 @@ export default function KommPractice({
           <div className="confetti-badge">{fin.pct === 100 ? '🏆' : aprobado ? '🎉' : '💪'}</div>
           <h2>{fin.pct === 100 ? t('sum.perfect') : aprobado ? t('sum.good') : t('sum.keep')}</h2>
           <div className="vsummary-pills">
-            <span className="pill ctx-tema">💬 {contextTitle}</span>
+            <span className="pill ctx-tema"><SimboloSeccion id="komm" />{contextTitle}</span>
             {coronaGanadaEnEstaSesion && <span className="pill monedas vocab-corona-ganada">👑 {t('voc.crownEarned')}</span>}
           </div>
           <div className="stat-grid">
@@ -859,14 +860,14 @@ export default function KommPractice({
       <div className="ctx-fila">
         <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
           <span className="pill ctx-tema">
-            💬 {contextTitle}
+            <SimboloSeccion id="komm" />{contextTitle}
           </span>
           {mezcla && mixBandNames.map((name) => <span key={name} className="pill ctx-tema">{name}</span>)}
           {mezcla && mixDifficultyIds.map((id) => (
             <span key={id} className="pill ctx-tema">{id === 'easy' ? pick('Fácil', 'Easy') : pick('Difícil', 'Difficult')}</span>
           ))}
           {!(mezcla && gameId === 'komm') && <GameModePill mode={gameId} />}
-          {finishTopic && <span className="pill ctx-tema">{t('voc.finishPill')}</span>}
+          {finishTopic && <span className="pill ctx-tema">{conSimbolo(t('voc.finishPill'))}</span>}
           {contextReviewLabel && <span className="pill ctx-tema">{contextReviewLabel}</span>}
         </span>
         <span className="row" style={{ gap: 8 }}>

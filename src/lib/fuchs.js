@@ -328,7 +328,9 @@ export const VER_TODO = true;
 export function tienes(id, f = getFuchs(), l = null) {
   const cosa = getCosa(id);
   if (!cosa) return false;
-  if (VER_TODO) return true;
+  // Lo que se gana (trofeos, lo de rey, colores por nivel...) sigue pidiendo
+  // su logro aunque VER_TODO este activo: solo se abre lo que se compra.
+  if (VER_TODO && !cosa.req) return true;
   if (cosa.req) return cumple(cosa.req, l || logros());
   if ((cosa.precio ?? 0) <= 0) return true;
   return Array.isArray(f.comprado) && f.comprado.includes(id);

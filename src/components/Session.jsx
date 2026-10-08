@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { conSimbolo } from './IconoJuego.jsx';
+import { SimboloSeccion, SimboloDeContexto } from './IconoMenu.jsx';
 import { t, pick } from '../lib/i18n.js';
 import MultipleChoice from './MultipleChoice.jsx';
 import WriteCard from './WriteCard.jsx';
@@ -500,7 +502,7 @@ export default function Session({ topic, mode, game = 'mixed', itemsFijos = null
           a mitad de tanda ya no sabías en cuál estabas. */}
       <div className="ctx-fila">
         <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
-        <span className="pill ctx-tema">📖 {game === 'grammar-mixed'
+        <span className="pill ctx-tema"><SimboloSeccion id="grammar" />{game === 'grammar-mixed'
           ? pick('Gramática mixta', 'Mixed grammar')
           : game === 'todo'
           ? pick('De todo un poco', 'A bit of everything')
@@ -514,9 +516,9 @@ export default function Session({ topic, mode, game = 'mixed', itemsFijos = null
           <span key={id} className="pill ctx-tema">{id === 'easy' ? pick('Fácil', 'Easy') : pick('Difícil', 'Difficult')}</span>
         ))}
         {!['mixed', 'grammar-mixed', 'vocab-mixed', 'todo'].includes(game) && <GameModePill mode={game} />}
-        {mode === 'faltan' && <span className="pill ctx-tema">{t('voc.finishPill')}</span>}
-        {reviewWeak && <span className="pill ctx-tema review-mistakes-count">{t('gr.reviewWeakPill')}</span>}
-        {reviewMarked && <span className="pill ctx-tema">{t('star.reviewPill')}</span>}
+        {mode === 'faltan' && <span className="pill ctx-tema">{conSimbolo(t('voc.finishPill'))}</span>}
+        {reviewWeak && <span className="pill ctx-tema review-mistakes-count">{conSimbolo(t('gr.reviewWeakPill'))}</span>}
+        {reviewMarked && <span className="pill ctx-tema">{conSimbolo(t('star.reviewPill'))}</span>}
         </span>
         <span className="row" style={{ gap: 8 }}>
           {(() => {

@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { SimboloSeccion, SimboloDeContexto } from './IconoMenu.jsx';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
 import GameModePill from './GameModePill.jsx';
 import { pick, t } from '../lib/i18n.js';
@@ -339,7 +340,7 @@ export default function HangmanGame({ deck, cartasFijas, onExit, onFinish }) {
 
       <div className="ctx-fila">
         <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
-          <span className="pill ctx-tema">{deck.emoji} {deck.name}</span>
+          <span className="pill ctx-tema"><SimboloSeccion id="vocab" />{deck.name}</span>
           <GameModePill mode="hangman" />
         </span>
         <span className="row" style={{ gap: 8 }}>

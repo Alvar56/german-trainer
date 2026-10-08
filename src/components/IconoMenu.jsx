@@ -28,3 +28,22 @@ export default function IconoMenu({ id }) {
     </span>
   );
 }
+
+// El mismo simbolo, pequeño y sin circulo, en el color de su seccion: va
+// delante del texto en las pastillas de arriba de un ejercicio («Gramática ·
+// Lektion 1», «Vocabulario · ...»), que llevaban el emoji 📖 / 💬 / el del tema.
+export function SimboloSeccion({ id }) {
+  const d = SIMBOLOS[id];
+  if (!d) return null;
+  return (
+    <svg className={'sim-suelto sim-seccion ico-' + id} viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={d} /></svg>
+  );
+}
+
+// Para las pastillas que reciben un emoji de contexto (📖 gramatica,
+// 💬 comunicacion, el del tema de vocabulario...).
+export function SimboloDeContexto({ emoji }) {
+  if (emoji === '📖') return <SimboloSeccion id="grammar" />;
+  if (emoji === '💬') return <SimboloSeccion id="komm" />;
+  return <SimboloSeccion id="vocab" />;
+}

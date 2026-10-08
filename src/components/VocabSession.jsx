@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { conSimbolo } from './IconoJuego.jsx';
+import { SimboloSeccion, SimboloDeContexto } from './IconoMenu.jsx';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
@@ -534,7 +536,7 @@ export default function VocabSession({ deck, mode, finishTopic = false, fallos =
           hueco va en la clase, que en el móvil es otro. */}
       <div className="ctx-fila">
         <span className="row ctx-pills-left" style={{ gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
-          <span className="pill ctx-tema">{deck.emoji} {String(deck.id || '').startsWith('combi:')
+          <span className="pill ctx-tema"><SimboloSeccion id="vocab" />{String(deck.id || '').startsWith('combi:')
             ? pick('Vocabulario mixto', 'Mixed vocabulary')
             : reviewingMistakes || reviewingMarked
               ? `${pick('Vocabulario', 'Vocabulary')} · ${deck.name}`
@@ -542,9 +544,9 @@ export default function VocabSession({ deck, mode, finishTopic = false, fallos =
           {!((finishTopic || reviewingMistakes) && mode === 'quiz') && (
             <GameModePill mode={mode === 'write' ? 'write-vocab' : mode} />
           )}
-          {reviewingMistakes && <span className="pill ctx-tema review-mistakes-count">{t('gr.reviewWeakPill')}</span>}
-          {reviewingMarked && <span className="pill ctx-tema">{t('star.reviewPill')}</span>}
-          {finishTopic && <span className="pill ctx-tema">{t('voc.finishPill')}</span>}
+          {reviewingMistakes && <span className="pill ctx-tema review-mistakes-count">{conSimbolo(t('gr.reviewWeakPill'))}</span>}
+          {reviewingMarked && <span className="pill ctx-tema">{conSimbolo(t('star.reviewPill'))}</span>}
+          {finishTopic && <span className="pill ctx-tema">{conSimbolo(t('voc.finishPill'))}</span>}
         </span>
         {/* La flecha, en su propio <span>: el glifo → se dibuja centrado en la
             altura de una minúscula, y al lado de DE / EN, que son todo

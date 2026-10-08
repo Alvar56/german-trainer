@@ -1,4 +1,6 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { conSimbolo } from './IconoJuego.jsx';
+import { SimboloSeccion, SimboloDeContexto } from './IconoMenu.jsx';
 import { storage } from '../lib/storage.js';
 import GameModePill from './GameModePill.jsx';
 import { recordCard } from '../lib/vocab.js';
@@ -657,7 +659,7 @@ export default function CrosswordGame({ deck, onExit, onFinish }) {
     <div className="vocab-session crossword-session">
       <div className="crossword-toolbar">
         <button className="btn-ghost ses-icon-btn" onClick={salir} title={t('ses.exit')}>✕</button>
-        <span className="pill ctx-tema">🔠 {deck?.name}</span>
+        <span className="pill ctx-tema">{conSimbolo('🔠 ' + (deck?.name || ''))}</span>
         <GameModePill mode="crossword" />
         <Reloj desde={started.current} />
 

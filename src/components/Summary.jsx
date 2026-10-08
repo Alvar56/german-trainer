@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { SimboloSeccion, SimboloDeContexto } from './IconoMenu.jsx';
 import { conSimbolo } from './IconoJuego.jsx';
 import { t, pick, codigoIdioma } from '../lib/i18n.js';
 import { tc } from '../lib/contenido/index.js';
@@ -54,7 +55,7 @@ export default function Summary({ data, onRepeat, onRepetirFallos, onHome, onTem
             mientras la haces. */}
         {topic?.nameEs && (
           <div className="vsummary-pills">
-            <span className="pill ctx-tema">📖 {data.game === 'grammar-mixed'
+            <span className="pill ctx-tema"><SimboloSeccion id="grammar" />{data.game === 'grammar-mixed'
               ? pick('Gramática mixta', 'Mixed grammar')
               : data.game === 'todo'
               ? pick('De todo un poco', 'A bit of everything')
