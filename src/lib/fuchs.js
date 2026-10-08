@@ -226,14 +226,14 @@ const FONDOS = [
   // Aquí estaban 'schloss', 'cafe', 'wald', 'berge' y 'stadt'. Se retiraron.
   // Quien los tuviera puestos vuelve al fondo por defecto (ver getFuchs).
   { id: 'klasse', de: 'Klassenzimmer', ranura: 'fondo', es: 'Clase', en: 'Classroom', precio: 450 },
-  { id: 'weltraum', de: 'Weltraum', ranura: 'fondo', es: 'Espacio', en: 'Outer space', precio: 550 },
   { id: 'vulkan', de: 'Vulkan', ranura: 'fondo', es: 'Volcán', en: 'Volcano', precio: 600 },
   { id: 'himmel', de: 'Himmel', ranura: 'fondo', es: 'Cielo', en: 'Sky', precio: 400 },
   { id: 'dschungel', de: 'Dschungel', ranura: 'fondo', es: 'Jungla', en: 'Jungle', precio: 450 },
   { id: 'unterwasser', de: 'Unterwasser', ranura: 'fondo', es: 'Bajo el mar', en: 'Under the sea', precio: 500 },
   { id: 'alpen', de: 'Alpen', ranura: 'fondo', es: 'Montaña', en: 'Mountains', precio: 400 },
   { id: 'herbstwald', de: 'Herbstwald', ranura: 'fondo', es: 'Bosque en otoño', en: 'Autumn forest', precio: 350 },
-  { id: 'grossstadt', de: 'Großstadt', ranura: 'fondo', es: 'Ciudad', en: 'City', precio: 500 }
+  { id: 'grossstadt', de: 'Großstadt', ranura: 'fondo', es: 'Ciudad', en: 'City', precio: 500 },
+  { id: 'weltraum', de: 'Weltraum', ranura: 'fondo', es: 'Espacio', en: 'Outer space', precio: 550 }
 ];
 
 COMPLEMENTOS.push(...FONDOS);
