@@ -323,7 +323,7 @@ export function coloresDisponibles(f = getFuchs(), l = null) {
 // TEMPORAL: todo desbloqueado para ver como queda cada cosa puesta (lo pidio
 // el usuario). No toca lo guardado ni las monedas: al volver a false, todo
 // vuelve a como estaba.
-export const VER_TODO = true;
+export const VER_TODO = false;
 
 export function tienes(id, f = getFuchs(), l = null) {
   const cosa = getCosa(id);
