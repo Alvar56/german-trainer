@@ -19,12 +19,14 @@ export async function descargarTabla(nodo, nombre) {
     // esta oculta, y el boton se quedaba en "Preparando…".
     await new Promise((r) => setTimeout(r, 50));
     const fondo = getComputedStyle(nodo).backgroundColor;
-    png = await toPng(nodo, {
-      pixelRatio: 2,
-      backgroundColor: fondo && fondo !== 'rgba(0, 0, 0, 0)' ? fondo : '#ffffff',
+    const color = fondo && fondo !== 'rgba(0, 0, 0, 0)' ? fondo : '#ffffff';
+    const foto = await toPng(nodo, {
+      pixelRatio: 3,
+      backgroundColor: color,
       width: nodo.scrollWidth,
       height: nodo.scrollHeight
     });
+    png = await enFolioApaisado(foto, color);
   } finally {
     nodo.classList.remove('tabla-capturando');
   }
@@ -35,4 +37,36 @@ export async function descargarTabla(nodo, nombre) {
   a.click();
   a.remove();
   return pick('Descargada', 'Downloaded');
+}
+
+// Un A4 apaisado a 300 ppp (297 x 210 mm), con un centimetro de margen. La
+// tabla se encaja entera, sin deformarla, y se centra: asi se imprime en un
+// folio tal cual, sin que la impresora la recorte ni la deje diminuta.
+const FOLIO_ANCHO = 3508;
+const FOLIO_ALTO = 2480;
+const MARGEN = 118;
+
+function cargarImagen(src) {
+  return new Promise((ok, mal) => {
+    const img = new Image();
+    img.onload = () => ok(img);
+    img.onerror = mal;
+    img.src = src;
+  });
+}
+
+async function enFolioApaisado(png, fondo) {
+  const img = await cargarImagen(png);
+  const lienzo = document.createElement('canvas');
+  lienzo.width = FOLIO_ANCHO;
+  lienzo.height = FOLIO_ALTO;
+  const ctx = lienzo.getContext('2d');
+  ctx.fillStyle = fondo;
+  ctx.fillRect(0, 0, FOLIO_ANCHO, FOLIO_ALTO);
+  const escala = Math.min((FOLIO_ANCHO - 2 * MARGEN) / img.width, (FOLIO_ALTO - 2 * MARGEN) / img.height);
+  const w = img.width * escala;
+  const h = img.height * escala;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, (FOLIO_ANCHO - w) / 2, (FOLIO_ALTO - h) / 2, w, h);
+  return lienzo.toDataURL('image/png');
 }

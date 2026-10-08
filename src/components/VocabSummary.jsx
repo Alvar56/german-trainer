@@ -85,13 +85,13 @@ export default function VocabSummary({ data, onRepeat, onRepetirFallos, onDeck, 
       {isNotebook && puedeRepetirFallos && (
         <button className="btn-primary resumen-retry" onClick={onRepetirFallos}>
           <span className="op-tecla atajo-final">Enter</span>
-          {conSimbolo(t('sum.retryFails', { n: missed.length }))}
+          {conSimbolo(t(data.soloFlashcards ? 'sum.retryUnknown' : 'sum.retryFails', { n: missed.length }))}
         </button>
       )}
       {!isNotebook && !cierreConCorona && puedeRepetirFallos && (
         <button className="btn-primary resumen-retry" onClick={onRepetirFallos}>
           <span className="op-tecla atajo-final">Enter</span>
-          {conSimbolo(t('sum.retryFails', { n: missed.length }))}
+          {conSimbolo(t(data.soloFlashcards ? 'sum.retryUnknown' : 'sum.retryFails', { n: missed.length }))}
         </button>
       )}
       {!isNotebook && !cierreConCorona && !isCrossword && (

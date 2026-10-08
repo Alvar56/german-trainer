@@ -8190,3 +8190,14 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
   .tc-kurz-fila { grid-template-columns: 54px 1fr; }
   .tc-kurz-fila em { grid-column: 1 / -1; text-align: left; }
 }
+
+/* Al descargar una tabla se maqueta siempre como en el ordenador (todas las
+   columnas a lo ancho), tambien desde el movil: la imagen va a un folio A4
+   apaisado y en una sola columna quedaba larguisima y diminuta al imprimir. */
+.tabla-capturando .tc-4 { grid-template-columns: repeat(4, 1fr) !important; }
+.tabla-capturando .tc-3 { grid-template-columns: repeat(3, 1fr) !important; }
+.tabla-capturando .tc-2 { grid-template-columns: repeat(2, 1fr) !important; }
+.tabla-capturando .gn-columnas { grid-template-columns: repeat(3, 1fr) !important; }
+.tabla-capturando .tc-pista, .tabla-capturando .gn-pista { flex-direction: row !important; gap: 10px !important; }
+.tabla-capturando .tc-kurz-fila { grid-template-columns: 54px auto 1fr !important; }
+.tabla-capturando .tc-kurz-fila em { grid-column: auto !important; text-align: right !important; }

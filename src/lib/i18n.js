@@ -579,6 +579,8 @@ const DICT = {
   'sum.levelUp': ['¡Nivel {n}!', 'Level {n}!'],
   // El boton de volver a intentar SOLO lo que acabas de fallar.
   'sum.retryFails': ['🩹 Repetir mis fallos ({n})', '🩹 Retry my mistakes ({n})'],
+  // En las tarjetas no hay fallos: eres tu quien dice si la sabias o no.
+  'sum.retryUnknown': ['🩹 Repetir las que no sabía ({n})', '🩹 Retry the ones I didn’t know ({n})'],
   'sum.mistakes': ['Repaso de fallos ({n})', 'Mistake review ({n})'],
   'sum.noMistakes': ['Ningún fallo. ¡Impecable! 🎯', 'Not a single mistake. Flawless! 🎯'],
   'sum.again': ['Otra ronda', 'Another round'],
