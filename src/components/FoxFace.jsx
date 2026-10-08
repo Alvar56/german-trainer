@@ -372,10 +372,17 @@ function orejasBuho(g) {
   espejo(g, 2, 5, 5, 'd');
   espejo(g, 3, 5, 5, 'd');
 }
+// Buho: dos discos claros alrededor de los ojos (la cara de buho de verdad),
+// cejas de plumas oscuras en V encima y plumas entre los dos discos.
 function marcasBuho(g) {
-  bloque(g, 9, 13, 6, 21, 'l');
-  bloque(g, 9, 13, 13, 14, 'm');
-  espejo(g, 8, 7, 12, 'm');
+  for (const [y, x0, x1] of [[8, 9, 11], [9, 8, 12], [10, 7, 12], [11, 7, 12], [12, 7, 12], [13, 8, 12], [14, 9, 11]]) {
+    espejo(g, y, x0, x1, 'l');
+  }
+  espejo(g, 9, 8, 8, 'm'); espejo(g, 13, 8, 8, 'm'); espejo(g, 14, 9, 9, 'm');
+  espejo(g, 10, 7, 7, 'm'); espejo(g, 12, 7, 7, 'm');
+  espejo(g, 7, 8, 9, 'd');
+  espejo(g, 8, 10, 11, 'd');
+  espejo(g, 9, 12, 12, 'd');
 }
 
 // Rana: cúpulas redondeadas y suaves encima de los ojos, rubor tierno
@@ -417,13 +424,16 @@ function marcasRana(g) {
 }
 
 // Pato: el mechón de arriba, con su antenita.
+// Pato: cabeza redonda (una cupula, sin pico arriba) con un rizo de plumas
+// en la coronilla.
 function orejasPato(g) {
-  fila(g, 5, 11, 16, 'f');
-  fila(g, 4, 12, 15, 'f');
-  fila(g, 3, 13, 14, 'f');
+  fila(g, 6, 10, 17, 'f');
+  fila(g, 5, 12, 15, 'f');
+  fila(g, 6, 12, 15, 'h');
+  px(g, 14, 4, 'f');
+  px(g, 15, 3, 'f');
   px(g, 15, 2, 'f');
-  px(g, 16, 1, 'f');
-  px(g, 16, 0, 'f');
+  px(g, 14, 1, 'f');
 }
 
 // Erizo: corona de púas esponjosa y redondeada con orejitas adorables.
@@ -548,9 +558,15 @@ function bocaDeRana(g) {
 // el pico del pato y del búho, y el bocón de la rana.
 function rasgos(g, especie) {
   if (especie === 'pato') {
-    bloque(g, 13, 15, 10, 17, 'k');
+    // Pico ancho y redondeado, de dos tonos (arriba claro, abajo oscuro), con
+    // las dos narinas: el de antes era un rectangulo encima de la boca.
+    fila(g, 13, 11, 16, 'k');
+    fila(g, 14, 10, 17, 'k');
+    fila(g, 15, 10, 17, 'j');
     fila(g, 16, 11, 16, 'j');
-    fila(g, 13, 10, 17, 'j');
+    px(g, 12, 13, 'j');
+    px(g, 15, 13, 'j');
+    fila(g, 14, 11, 12, 'w');
   } else if (especie === 'buho') {
     fila(g, 12, 13, 14, 'k');
     fila(g, 13, 13, 14, 'k');
@@ -603,6 +619,25 @@ function cuerpo(g, especie = 'zorro') {
   bloque(g, 28, 29, 16, 20, 'l');
   px(g, 8, 29, 'm');
   px(g, 19, 29, 'm');
+
+  // El pato y el buho tienen alas a los costados y patas naranjas; el buho
+  // ademas lleva el pecho con plumas en V.
+  if (especie === 'pato' || especie === 'buho') {
+    bloque(g, 21, 25, 7, 8, 'd');
+    bloque(g, 21, 25, 19, 20, 'd');
+    espejoPx(g, 8, 26, 'd');
+    espejoPx(g, 9, 21, 'h');
+    bloque(g, 28, 29, 7, 11, 'k');
+    bloque(g, 28, 29, 16, 20, 'k');
+    espejoPx(g, 9, 29, 'j');
+    espejoPx(g, 7, 29, 'j');
+    espejoPx(g, 11, 29, 'j');
+  }
+  if (especie === 'buho') {
+    for (const [x, y] of [[11, 21], [14, 21], [12, 23], [15, 23], [11, 25], [14, 25]]) {
+      px(g, x, y, 'm'); px(g, x + 1, y + 1, 'm'); px(g, x + 2, y, 'm');
+    }
+  }
 
   // La rana apoya unos pies anchos y abiertos, con tres dedos: asoman un
   // par de pixeles por fuera de las patas (y de los zapatos, si los lleva).

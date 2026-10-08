@@ -332,7 +332,7 @@ export default function FoxAjustes({ onClose, onChange }) {
 
           {/* Como en la portada: salta al abrir la tienda y cada vez que lo tocas. */}
           <div className="fox-hero-personaje" onClick={saltos.saltar}>
-            <SaltosFelix saltos={saltos} espacio={f.fondo === 'weltraum'}>
+            <SaltosFelix saltos={saltos} espacio={f.fondo === 'weltraum'} agua={f.fondo === 'unterwasser'}>
             <FelixConGestos
               reaccionRef={reaccionRef}
               fuchs={f}

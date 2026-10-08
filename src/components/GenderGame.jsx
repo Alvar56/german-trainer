@@ -16,6 +16,8 @@ import Reloj from './Reloj.jsx';
 import RachaPill from './RachaPill.jsx';
 import Escuchar from './Escuchar.jsx';
 import PistaRevelable from './PistaRevelable.jsx';
+import TablaVentana from './tablas/TablaVentana.jsx';
+import { TABLA_GENUS } from './tablas/index.js';
 
 const ARTS = [
   { a: 'der', color: 'der' },
@@ -40,6 +42,21 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
   // Lo que llevas seguidas AHORA, para el rayito de la cabecera. Se
   // contaba desde el principio, pero solo se veia al terminar.
   const [seguidas, setSeguidas] = useState(() => currentStreak());
+  // La tabla de las reglas del genero, como la de casos del Kasus Trainer.
+  const [tabla, setTabla] = useState(false);
+  const [cerrandoTabla, setCerrandoTabla] = useState(false);
+  const tablaTimer = useRef(null);
+  useEffect(() => () => clearTimeout(tablaTimer.current), []);
+  function cerrarTabla() {
+    if (!tabla || cerrandoTabla) return;
+    setCerrandoTabla(true);
+    clearTimeout(tablaTimer.current);
+    tablaTimer.current = setTimeout(() => { setTabla(false); setCerrandoTabla(false); }, 320);
+  }
+  function alternarTabla() {
+    if (tabla) cerrarTabla();
+    else { clearTimeout(tablaTimer.current); setCerrandoTabla(false); setTabla(true); }
+  }
   const mejorSeguidas = useRef(0);
   const ultimaSeguidas = useRef(null);
   const monedas = useRef(0); // lo ganado en esta tanda, para el resumen
@@ -70,7 +87,9 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
     P: !picked && !pista ? pedirPista : undefined,
     h: !picked && !pista ? pedirPista : undefined,
     H: !picked && !pista ? pedirPista : undefined,
-    Escape: onExit
+    t: alternarTabla,
+    T: alternarTabla,
+    Escape: () => (tabla ? cerrarTabla() : onExit())
   }, nouns.length > 0);
 
   if (!nouns.length) {
@@ -207,7 +226,15 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
 
       <div className="ctx-fila">
         <GameModePill mode="gender" />
-        <span className="row" style={{ gap: 8 }}>
+        <span className="row" style={{ gap: 8, alignItems: 'center' }}>
+          <button
+            type="button"
+            className={'btn-tabla-toggle' + (tabla ? ' active' : '')}
+            onClick={alternarTabla}
+            title={pick('Mostrar u ocultar las reglas del género (Atajo: T)', 'Show or hide the gender rules (Shortcut: T)')}
+          >
+            📋 {tabla ? pick('Ocultar tabla', 'Hide table') : pick('Reglas del género', 'Gender rules')} <span className="op-tecla" style={{ marginLeft: 4 }}>T</span>
+          </button>
           <RachaPill n={seguidas} />
           <Reloj desde={started.current} />
         </span>
@@ -274,7 +301,8 @@ export default function GenderGame({ onExit, onFinish, nivel = 'all' }) {
             </button>
           </div>
         )}
-      <FoxOverlay fox={fox} mudo={!!picked} racha={seguidas} />
+      {tabla && <TablaVentana tablas={[TABLA_GENUS]} onClose={cerrarTabla} cerrando={cerrandoTabla} />}
+      {!tabla && <FoxOverlay fox={fox} mudo={!!picked} racha={seguidas} />}
       </div>
     </div>
   );

@@ -8047,3 +8047,70 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
 /* Simbolo de seccion en las pastillas de un ejercicio (SimboloSeccion). */
 .sim-seccion { fill: var(--ico-fg, currentColor); opacity: 1; }
 [data-theme='dark'] .sim-seccion { fill: var(--ico-bg, currentColor); }
+
+/* Bajo el mar (SaltosFelix con agua): sin botes ni sombra ni polvo. Felix
+   sube nadando despacio, se mece a un lado y a otro y le salen burbujitas que
+   suben y se van. */
+.fox-saludo-zona.bajo-agua .fox-sombra,
+.fox-saludo-zona.bajo-agua .fox-polvo { display: none; }
+.bajo-agua.saltando > .fox-saludo {
+  animation: fox-nada 3s cubic-bezier(.45, .05, .35, 1) var(--salto-ret) both;
+  transform-origin: 50% 70%;
+}
+@keyframes fox-nada {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  25%  { transform: translate(-4px, -14px) rotate(-8deg); }
+  50%  { transform: translate(5px, -20px) rotate(7deg); }
+  75%  { transform: translate(-3px, -10px) rotate(-5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+.fox-burbuja {
+  position: absolute; bottom: 45%; width: 8px; height: 8px; border-radius: 50%;
+  border: 1.5px solid rgba(224, 247, 255, 0.95); background: rgba(255, 255, 255, 0.25);
+  box-shadow: inset -1px -1px 0 rgba(255, 255, 255, 0.6); opacity: 0; pointer-events: none;
+}
+.fox-burbuja.fb-1 { left: 30%; }
+.fox-burbuja.fb-2 { left: 58%; width: 6px; height: 6px; }
+.fox-burbuja.fb-3 { left: 44%; width: 10px; height: 10px; }
+.fox-burbuja.fb-4 { left: 66%; width: 5px; height: 5px; }
+.fox-burbuja.fb-5 { left: 36%; width: 6px; height: 6px; }
+.bajo-agua.saltando > .fox-burbuja { animation: fox-burbujea 2.4s ease-in var(--salto-ret) both; }
+.bajo-agua.saltando > .fb-2 { animation-delay: calc(var(--salto-ret) + 0.35s); }
+.bajo-agua.saltando > .fb-3 { animation-delay: calc(var(--salto-ret) + 0.7s); }
+.bajo-agua.saltando > .fb-4 { animation-delay: calc(var(--salto-ret) + 1s); }
+.bajo-agua.saltando > .fb-5 { animation-delay: calc(var(--salto-ret) + 1.3s); }
+@keyframes fox-burbujea {
+  0%   { opacity: 0; transform: translate(0, 0) scale(.5); }
+  15%  { opacity: 1; }
+  50%  { transform: translate(6px, -50px) scale(1); }
+  100% { opacity: 0; transform: translate(-4px, -110px) scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bajo-agua.saltando > .fox-saludo, .bajo-agua.saltando > .fox-burbuja { animation: none; }
+}
+
+/* Tabla de las reglas del genero (GenusTabla): tres columnas, der azul,
+   die rosa y das verde, como en el juego de der / die / das. */
+.gn-columnas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.gn-columna { border-radius: 12px; padding: 12px 14px; border: 1.5px solid var(--gn-borde); background: var(--gn-fondo); }
+.gn-der { --gn-borde: #93c5fd; --gn-fondo: #eff6ff; --gn-fuerte: #1d4ed8; }
+.gn-die { --gn-borde: #f9a8d4; --gn-fondo: #fdf2f8; --gn-fuerte: #be185d; }
+.gn-das { --gn-borde: #86efac; --gn-fondo: #f0fdf4; --gn-fuerte: #15803d; }
+.gn-art { font-size: 1.6rem; font-weight: 800; color: var(--gn-fuerte); margin-bottom: 6px; }
+.gn-apartado { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 10px 0 6px; }
+.gn-endungen { display: flex; flex-wrap: wrap; gap: 5px; }
+.gn-endung { display: inline-flex; gap: 4px; align-items: baseline; padding: 3px 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--gn-borde); font-size: 0.8rem; color: var(--text-2); }
+.gn-endung b { color: var(--gn-fuerte); }
+.gn-bedeutung { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.gn-bedeutung li { display: flex; flex-direction: column; font-size: 0.82rem; color: var(--text-2); line-height: 1.3; }
+.gn-bedeutung em { font-style: normal; font-weight: 600; color: var(--gn-fuerte); font-size: 0.8rem; }
+.gn-pistas { display: grid; gap: 8px; margin-top: 12px; }
+.gn-pista { display: flex; gap: 10px; align-items: baseline; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); font-size: 0.85rem; color: var(--text-2); }
+.gn-pista b { color: var(--text); flex: 0 0 auto; }
+@media (max-width: 720px) {
+  .gn-columnas { grid-template-columns: 1fr; }
+  .gn-pista { flex-direction: column; gap: 2px; }
+}
+[data-theme='dark'] .gn-der { --gn-fondo: rgba(59, 130, 246, 0.12); --gn-fuerte: #93c5fd; }
+[data-theme='dark'] .gn-die { --gn-fondo: rgba(236, 72, 153, 0.12); --gn-fuerte: #f9a8d4; }
+[data-theme='dark'] .gn-das { --gn-fondo: rgba(34, 197, 94, 0.12); --gn-fuerte: #86efac; }

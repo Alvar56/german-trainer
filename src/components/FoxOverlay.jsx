@@ -200,7 +200,7 @@ export default function FoxOverlay({ fox, mudo = false, racha = 0, className = '
       >
         {mensaje && <div className={'fox-burbuja-dice' + (mudo && !dicho ? ' estorba' : '')}>{mensaje}</div>}
         <div className="fox-overlay-cara" style={{ pointerEvents: 'auto' }} onClick={tocar}>
-          <SaltosFelix saltos={saltos} espacio={fondo === 'weltraum'}>
+          <SaltosFelix saltos={saltos} espacio={fondo === 'weltraum'} agua={fondo === 'unterwasser'}>
           <FoxFace
             fuchs={f}
             gesto={fox.gesto}

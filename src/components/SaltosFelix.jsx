@@ -33,13 +33,24 @@ export function useSaltos(alAparecer = false) {
 
 // En el espacio (fondo "weltraum") Felix ya flota: en vez de botes con sombra
 // y polvo, da una voltereta ingravida con dos estrellitas.
-export default function SaltosFelix({ saltos, espacio = false, children }) {
+// Bajo el mar (fondo "unterwasser") tampoco hay botes: Felix sube nadando,
+// se mece como si lo llevara la corriente y le salen burbujitas hacia arriba.
+export default function SaltosFelix({ saltos, espacio = false, agua = false, children }) {
   return (
     <span
       key={saltos.vez}
-      className={'fox-saludo-zona' + (espacio ? ' en-espacio' : '') + (saltos.saltando ? ' saltando' : '') + (saltos.vez > 0 ? ' al-tocar' : '')}
-      onAnimationEnd={(e) => { if (e.animationName === 'fox-saltitos' || e.animationName === 'fox-voltereta') saltos.terminar(); }}
+      className={'fox-saludo-zona' + (espacio ? ' en-espacio' : '') + (agua ? ' bajo-agua' : '') + (saltos.saltando ? ' saltando' : '') + (saltos.vez > 0 ? ' al-tocar' : '')}
+      onAnimationEnd={(e) => { if (e.animationName === 'fox-saltitos' || e.animationName === 'fox-voltereta' || e.animationName === 'fox-nada') saltos.terminar(); }}
     >
+      {agua && (
+        <>
+          <span className="fox-burbuja fb-1" aria-hidden="true" />
+          <span className="fox-burbuja fb-2" aria-hidden="true" />
+          <span className="fox-burbuja fb-3" aria-hidden="true" />
+          <span className="fox-burbuja fb-4" aria-hidden="true" />
+          <span className="fox-burbuja fb-5" aria-hidden="true" />
+        </>
+      )}
       <span className="fox-sombra" aria-hidden="true" />
       <span className="fox-polvo fox-polvo-izq" aria-hidden="true" />
       <span className="fox-polvo fox-polvo-der" aria-hidden="true" />

@@ -79,7 +79,7 @@ export default function FoxCard({ onAbrir, onCambio }) {
             el viewBox y el zorro se dibujaba encogido para caber, asi que el
             160 de verdad se veia como 134. Al quitar ese margen aparecio a su
             tamano real y se comia la tarjeta. */}
-        <SaltosFelix saltos={saltos} espacio={fuchs.fondo === 'weltraum'}>
+        <SaltosFelix saltos={saltos} espacio={fuchs.fondo === 'weltraum'} agua={fuchs.fondo === 'unterwasser'}>
           <FoxFace fuchs={fuchs} gesto={cosquillas ? 'muyfeliz' : saltos.saltando ? 'feliz' : 'normal'} size={SIN_IA ? 138 : 136} conCuerpo className="flota" />
         </SaltosFelix>
       </button>
