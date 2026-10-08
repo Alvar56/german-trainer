@@ -44,11 +44,11 @@ export default function SaltosFelix({ saltos, espacio = false, agua = false, chi
     >
       {agua && (
         <>
-          <span className="fox-burbuja fb-1" aria-hidden="true" />
-          <span className="fox-burbuja fb-2" aria-hidden="true" />
-          <span className="fox-burbuja fb-3" aria-hidden="true" />
-          <span className="fox-burbuja fb-4" aria-hidden="true" />
-          <span className="fox-burbuja fb-5" aria-hidden="true" />
+          <span className="fox-pompa fp-1" aria-hidden="true" />
+          <span className="fox-pompa fp-2" aria-hidden="true" />
+          <span className="fox-pompa fp-3" aria-hidden="true" />
+          <span className="fox-pompa fp-4" aria-hidden="true" />
+          <span className="fox-pompa fp-5" aria-hidden="true" />
         </>
       )}
       <span className="fox-sombra" aria-hidden="true" />
