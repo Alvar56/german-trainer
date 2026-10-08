@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Altavoz } from './IconoMenu.jsx';
 import { t } from '../lib/i18n.js';
 import { hablar, hayVozAlemana, alCargarVoces } from '../lib/audio.js';
 
@@ -41,7 +42,7 @@ export default function Escuchar({ texto, className = '', frase = false, rate })
         hablar(limpio, rate ? { rate } : undefined);
       }}
     >
-      🔊
+      <Altavoz />
     </button>
   );
 }

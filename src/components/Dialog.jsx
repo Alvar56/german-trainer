@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Altavoz, Parar } from './IconoMenu.jsx';
 import { t } from '../lib/i18n.js';
 import Escuchar from './Escuchar.jsx';
 import BotonCopiar from './BotonCopiar.jsx';
@@ -94,7 +95,7 @@ export default function Dialog({ dialog, lektion, onBack, onRegenerate, busy, on
         </button>
         {hayVoz && turns.length > 0 && (
           <button className="btn-ghost btn-sm" onClick={leerTodo}>
-            {sonando >= 0 ? t('dlg.stop') : t('dlg.listen')}
+            {sonando >= 0 ? <><Parar texto />{t('dlg.stop')}</> : <><Altavoz texto />{t('dlg.listen')}</>}
           </button>
         )}
         {/* La conversación entera en alemán, para pegarla donde la voz sea

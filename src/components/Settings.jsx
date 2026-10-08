@@ -241,7 +241,7 @@ export default function Settings({ onBack }) {
       </div>
 
       <div className="panel">
-        <h2>🔊 {pick('Audio y pronunciación', 'Audio & Pronunciation')}</h2>
+        <h2>{pick('Audio y pronunciación', 'Audio & Pronunciation')}</h2>
         {esOrdenador() ? (
           <p className="muted" style={{ fontSize: '0.9rem', lineHeight: 1.5, marginBottom: 12 }}>
             {pick(

@@ -783,7 +783,7 @@ const DICT = {
     'The communicative functions of {libro}, with phrases, dialogues and practice.'
   ],
   'komm.conversation': ['Conversación', 'Conversation'],
-  'komm.listenConv': ['🔊 Escuchar conversación', '🔊 Listen to conversation'],
+  'komm.listenConv': ['Escuchar conversación', 'Listen to conversation'],
   'komm.exPick': ['¿Cómo se dice en alemán?', 'How do you say it in German?'],
   'komm.exSentido': ['¿Qué quiere decir?', 'What does it mean?'],
   // La mezcla de Kommunikation: frases de todas las lecciones a la vez.
@@ -819,8 +819,8 @@ const DICT = {
   'dlg.phrases': ['💡 Expresiones útiles del diálogo', '💡 Useful phrases from the dialogue'],
   'dlg.questions': ['❓ ¿Lo has entendido?', '❓ Did you get it?'],
   'dlg.other': ['🔄 Otra conversación', '🔄 Another conversation'],
-  'dlg.listen': ['🔊 Escuchar la conversación', '🔊 Listen to the conversation'],
-  'dlg.stop': ['⏹ Parar', '⏹ Stop'],
+  'dlg.listen': ['Escuchar la conversación', 'Listen to the conversation'],
+  'dlg.stop': ['Parar', 'Stop'],
 
   // Notizbuch
   'nb.sub': [
@@ -1079,9 +1079,9 @@ const DICT = {
   // Prüfung: pantallas de tarea
   'ex.backBtn': ['Volver al examen', 'Back to exam'],
   'ex.cantLoad': ['No se pudo cargar la tarea.', 'Could not load the task.'],
-  'ex.listen': ['▶ Escuchar', '▶ Listen'],
-  'ex.listenAgain': ['🔁 Escuchar de nuevo', '🔁 Listen again'],
-  'ex.stop': ['⏹ Detener', '⏹ Stop'],
+  'ex.listen': ['Escuchar', 'Listen'],
+  'ex.listenAgain': ['Escuchar de nuevo', 'Listen again'],
+  'ex.stop': ['Detener', 'Stop'],
   'ex.listenNote': ['En el examen se oye 1 o 2 veces', 'In the exam you hear it once or twice'],
   'ex.listenedN': ['escuchado {n} veces', 'listened {n} times'],
   'ex.listenedOnce': ['escuchado 1 vez', 'listened once'],

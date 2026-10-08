@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Altavoz, Parar } from './IconoMenu.jsx';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
 import { t } from '../lib/i18n.js';
 import Cargando from './Cargando.jsx';
@@ -198,7 +199,7 @@ export default function ExamLesenHoeren({ teil, typ, onBack }) {
           <div className="row spread" style={{ flexWrap: 'wrap', gap: 10 }}>
             <div className="row" style={{ gap: 10 }}>
               <button className="btn-primary" onClick={hablando ? parar : reproducir} disabled={!voz}>
-                {hablando ? t('ex.stop') : reproducciones === 0 ? t('ex.listen') : t('ex.listenAgain')}
+                {hablando ? <><Parar texto />{t('ex.stop')}</> : <><Altavoz texto />{reproducciones === 0 ? t('ex.listen') : t('ex.listenAgain')}</>}
               </button>
               {/* Copiar el texto para oírlo fuera con una voz mejor. Antes de
                   corregir: es ahí donde sirve de algo. */}

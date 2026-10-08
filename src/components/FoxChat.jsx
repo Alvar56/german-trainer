@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Altavoz } from './IconoMenu.jsx';
 import FoxFace from './FoxFace.jsx';
 import FoxAjustes from './FoxAjustes.jsx';
 import { foxChat } from '../lib/ai.js';
@@ -256,7 +257,7 @@ export default function FoxChat({ abrirCon = null, onClose }) {
                 <span>{m.texto}</span>
                 {hayVoz && (
                   <button className="fm-voz" onClick={() => hablar(m.texto)} title={t('fox.listen')}>
-                    🔊
+                    <Altavoz />
                   </button>
                 )}
               </div>

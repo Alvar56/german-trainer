@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Altavoz } from './IconoMenu.jsx';
 import FoxOverlay, { useFox } from './FoxOverlay.jsx';
 import { t } from '../lib/i18n.js';
 import Cargando from './Cargando.jsx';
@@ -162,7 +163,7 @@ export default function ExamSprechen({ typ, onBack }) {
                 <span className="de">
                   {r.de}
                   {hayVoz && (
-                    <button className="say-btn" title="Escuchar" onClick={() => leer(r.de)}>🔊</button>
+                    <button className="say-btn" title="Escuchar" onClick={() => leer(r.de)}><Altavoz /></button>
                   )}
                 </span>
                 <span className="es">{r.es}</span>
@@ -201,7 +202,7 @@ export default function ExamSprechen({ typ, onBack }) {
                   <div className="dlg-bubble">
                     <div className="dlg-de">
                       {turn.de}
-                      {hayVoz && <button className="say-btn" title="Escuchar" onClick={() => leer(turn.de)}>🔊</button>}
+                      {hayVoz && <button className="say-btn" title="Escuchar" onClick={() => leer(turn.de)}><Altavoz /></button>}
                     </div>
                     {turn.es && <div className="dlg-es">{turn.es}</div>}
                   </div>

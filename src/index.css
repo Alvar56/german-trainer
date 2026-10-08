@@ -8201,3 +8201,15 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
 .tabla-capturando .tc-pista, .tabla-capturando .gn-pista { flex-direction: row !important; gap: 10px !important; }
 .tabla-capturando .tc-kurz-fila { grid-template-columns: 54px auto 1fr !important; }
 .tabla-capturando .tc-kurz-fila em { grid-column: auto !important; text-align: right !important; }
+
+
+/* El altavoz y el «parar» (Altavoz / Parar en IconoMenu.jsx), en lugar de
+   los emojis. Toman el color del texto: azul en el boton suelto de las
+   palabras, blanco dentro de un boton primario. */
+.sim-voz {
+  width: 1.15em; height: 1.15em; fill: currentColor; flex: 0 0 auto;
+  vertical-align: -0.22em;
+}
+.sim-voz-texto { margin-right: 0.4em; }
+.say-btn, .fm-voz { color: var(--accent); }
+.say-btn .sim-voz { width: 1.2em; height: 1.2em; }

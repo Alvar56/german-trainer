@@ -47,3 +47,25 @@ export function SimboloDeContexto({ emoji }) {
   if (emoji === '💬') return <SimboloSeccion id="komm" />;
   return <SimboloSeccion id="vocab" />;
 }
+
+
+// El altavoz de «escuchar» y el cuadrado de «parar», con el mismo trazo que
+// los del menu. Eran los emojis 🔊 y ⏹: cada movil los pintaba a su manera y
+// no casaban con el resto de iconos. Con `texto` dejan hueco a la derecha,
+// para cuando van delante de una palabra («Escuchar», «Parar»).
+const ALTAVOZ = 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z';
+const PARAR = 'M7 6h10a1 1 0 011 1v10a1 1 0 01-1 1H7a1 1 0 01-1-1V7a1 1 0 011-1z';
+
+function Simbolo({ d, texto }) {
+  return (
+    <svg className={'sim-voz' + (texto ? ' sim-voz-texto' : '')} viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d={d} /></svg>
+  );
+}
+
+export function Altavoz({ texto = false }) {
+  return <Simbolo d={ALTAVOZ} texto={texto} />;
+}
+
+export function Parar({ texto = false }) {
+  return <Simbolo d={PARAR} texto={texto} />;
+}

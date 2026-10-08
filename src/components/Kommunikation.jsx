@@ -1,4 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { Altavoz, Parar } from './IconoMenu.jsx';
 import IconoJuego, { conSimbolo } from './IconoJuego.jsx';
 import { tc } from '../lib/contenido/index.js';
 import { hablarSeguido, pararVoz, hayVozAlemana, alCargarVoces } from '../lib/audio.js';
@@ -61,8 +62,8 @@ function EscucharConversacion({ texto, resetKey, onComplete }) {
         }));
       }}
     >
-      <span className="komm-label-desktop">{sonando ? t('dlg.stop') : t('komm.listenConv')}</span>
-      <span className="komm-label-mobile">{sonando ? t('dlg.stop') : pick('🔊 Escuchar', '🔊 Listen')}</span>
+      <span className="komm-label-desktop">{sonando ? <><Parar texto />{t('dlg.stop')}</> : <><Altavoz texto />{t('komm.listenConv')}</>}</span>
+      <span className="komm-label-mobile">{sonando ? <><Parar texto />{t('dlg.stop')}</> : <><Altavoz texto />{pick('Escuchar', 'Listen')}</>}</span>
     </button>
   );
 }
