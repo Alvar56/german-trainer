@@ -116,7 +116,7 @@ Sin texto fuera del JSON. Alemania estandar, ortografia con esszet cuando toque.
 async function callGemini({ key, model, prompt, json = true, image = null, search = false, retries = 2 }) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
     model
-  )}:generateContent?key=${encodeURIComponent(key)}`;
+  )}:generateContent`;
   const generationConfig = { temperature: json ? 1.0 : 0.6 };
   // Con Google Search activado, no forzamos application/json porque Gemini devuelve metadatos de búsqueda
   if (json && !search) generationConfig.responseMimeType = 'application/json';
@@ -143,7 +143,9 @@ async function callGemini({ key, model, prompt, json = true, image = null, searc
   while (true) {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // La clave va en cabecera, no en la URL: en la URL acababa en el
+      // historial de red, en los logs de cualquier proxy y en los errores.
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify(reqBody)
     });
     
@@ -2063,6 +2065,35 @@ para enseñarle algo que le permita escribir más rico. Sin texto fuera del JSON
       .filter((w) => w.besser),
     naechsterSchritt: String(raw.naechsterSchritt || '').trim()
   };
+}
+
+// Los modelos que tu clave puede usar hoy, preguntados al proveedor. El campo
+// de modelo era texto libre con un ejemplo fijo, y el ejemplo se quedaba viejo
+// (sugeria gemini-1.5-flash, que Google ya retiro). Sigue siendo texto libre:
+// esto solo rellena las sugerencias.
+export async function listarModelos({ provider, key, baseUrl }) {
+  if (!key) return [];
+  if (provider === 'gemini') {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', {
+      headers: { 'x-goog-api-key': key }
+    });
+    if (!res.ok) throw new Error(`Gemini ${res.status}`);
+    const data = await res.json();
+    return (data.models || [])
+      .filter((m) => m.name.startsWith('models/gemini-')
+        && (m.supportedGenerationMethods || []).includes('generateContent')
+        && !/embedding|tts|image|audio|live/i.test(m.name))
+      .map((m) => m.name.slice('models/'.length))
+      .sort((a, b) => b.localeCompare(a));
+  }
+  const res = await fetch(`${baseUrl || 'https://api.openai.com/v1'}/models`, {
+    headers: { Authorization: `Bearer ${key}` }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return (data.data || []).map((m) => m.id)
+    .filter((id) => !/audio|realtime|transcribe|tts|whisper|dall-e|embedding|moderation/i.test(id))
+    .sort((a, b) => a.localeCompare(b));
 }
 
 export async function testAi() {

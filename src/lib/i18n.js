@@ -1033,6 +1033,9 @@ const DICT = {
     'You have a key saved and the model "{modelo}". When the local bridge is not there, that key is used instead, so AI keeps working outside npm run dev. To use it always, pick Gemini or OpenAI above.'
   ],
   'set.model': ['Modelo', 'Model'],
+  'set.modelsLive': ['Tu clave puede usar {n} modelos: haz clic en el campo para verlos.', 'Your key can use {n} models: click the field to see them.'],
+  'set.modelsNeedKey': ['Pega tu clave abajo y aquí saldrán los modelos que puede usar.', 'Paste your key below and the models it can use will show up here.'],
+  'set.modelsError': ['No se pudo pedir la lista de modelos ({error}). Puedes escribir el nombre a mano.', 'Could not fetch the model list ({error}). You can type the name by hand.'],
   'set.keyPh': ['pega aquí tu clave', 'paste your key here'],
   'set.geminiHint': ['Se consigue gratis en aistudio.google.com/apikey', 'Get one free at aistudio.google.com/apikey'],
   'set.openaiHint': ['Endpoint compatible con /chat/completions', 'Endpoint compatible with /chat/completions'],

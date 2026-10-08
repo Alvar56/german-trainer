@@ -11,7 +11,7 @@ import { getLevel, liveStreak } from '../lib/streak.js';
 import { saldo } from '../lib/monedas.js';
 import { coronas, getFuchs, onCoronasListo } from '../lib/fuchs.js';
 import { bestStreak } from '../lib/rachas.js';
-import { generateItems } from '../lib/ai.js';
+import { generateItems, listarModelos } from '../lib/ai.js';
 import { esOrdenador } from '../lib/teclas.js';
 import { hablar, vozAlemana } from '../lib/audio.js';
 import { progresoHuerfano } from '../lib/progress.js';
@@ -37,6 +37,23 @@ export default function Settings({ onBack }) {
   useEffect(() => onCoronasListo(setNumCoronas), []);
 
   const up = (patch) => setS(setSettings(patch));
+
+  // Sugerencias del campo Modelo: lo que tu clave puede usar de verdad. Se
+  // pide un momento despues de dejar de teclear la clave, no a cada letra.
+  const [modelos, setModelos] = useState({ lista: [], error: '' });
+  useEffect(() => {
+    if (SIN_IA || !s.aiEnabled || s.aiProvider === 'claude-local' || !s.aiKey) {
+      setModelos({ lista: [], error: '' });
+      return;
+    }
+    let vivo = true;
+    const id = setTimeout(() => {
+      listarModelos({ provider: s.aiProvider, key: s.aiKey, baseUrl: s.aiBaseUrl })
+        .then((lista) => vivo && setModelos({ lista, error: '' }))
+        .catch((e) => vivo && setModelos({ lista: [], error: e.message }));
+    }, 600);
+    return () => { vivo = false; clearTimeout(id); };
+  }, [s.aiEnabled, s.aiProvider, s.aiKey, s.aiBaseUrl]);
 
   async function tryAi() {
     setTest(t('set.testing'));
@@ -143,10 +160,13 @@ export default function Settings({ onBack }) {
             'German is never translated: that is what you came for. This changes everything else.'
           )}
         </p>
-        <div className="idiomas">
+        <div className="idiomas" role="radiogroup" aria-label={pick('Idioma', 'Language')}>
           {LANGS.map((l) => (
             <button
               key={l.id}
+              type="button"
+              role="radio"
+              aria-checked={getLang() === l.id}
               className={'idioma' + (getLang() === l.id ? ' on' : '')}
               onClick={() => setLang(l.id)}
             >
@@ -155,7 +175,7 @@ export default function Settings({ onBack }) {
             </button>
           ))}
           {LANGS_PENDIENTES.map((l) => (
-            <button key={l.id} className="idioma pendiente" disabled>
+            <button key={l.id} type="button" role="radio" aria-checked={false} className="idioma pendiente" disabled>
               <span className="idioma-bandera">{l.flag}</span>
               <span>{l.label}</span>
               <small>{pick('Próximamente', 'Coming soon')}</small>
@@ -175,14 +195,17 @@ export default function Settings({ onBack }) {
             'On automatic it follows your system. If your browser does not pass dark mode on to the page, pick it here by hand.'
           )}
         </p>
-        <div className="idiomas">
+        <div className="idiomas" role="radiogroup" aria-label={pick('Aspecto', 'Appearance')}>
           {TEMAS.map((id) => (
             <button
               key={id}
+              type="button"
+              role="radio"
+              aria-checked={tema === id}
               className={'idioma' + (tema === id ? ' on' : '')}
               onClick={() => { setTema(id); setTemaLocal(id); }}
             >
-              <span className="idioma-bandera">{ICONO_TEMA[id]}</span>
+              <span className="idioma-bandera" aria-hidden="true">{ICONO_TEMA[id]}</span>
               <span>{NOMBRE_TEMA[id][getLang() === 'en' ? 1 : 0]}</span>
             </button>
           ))}
@@ -348,7 +371,18 @@ export default function Settings({ onBack }) {
                   <label className="field">
                     {t('set.model')}
                     <input type="text" value={s.aiModel} onChange={(e) => up({ aiModel: e.target.value })}
-                      placeholder={s.aiProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini'} />
+                      list="modelos-ia"
+                      placeholder={s.aiProvider === 'gemini' ? 'gemini-2.5-flash' : 'gpt-4o-mini'} />
+                    <datalist id="modelos-ia">
+                      {modelos.lista.map((m) => <option key={m} value={m} />)}
+                    </datalist>
+                    <span className="field-hint">
+                      {modelos.error
+                        ? t('set.modelsError', { error: modelos.error })
+                        : modelos.lista.length
+                          ? t('set.modelsLive', { n: modelos.lista.length })
+                          : t('set.modelsNeedKey')}
+                    </span>
                   </label>
                   <label className="field">
                     API key

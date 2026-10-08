@@ -43,6 +43,7 @@ export default function Sidebar({ current, onNavigate }) {
           <button
             key={n.id}
             className={'nav-item' + (current === n.id ? ' active' : '')}
+            aria-current={current === n.id ? 'page' : undefined}
             onClick={() => onNavigate(n.id)}
             title={pick(n.es, n.en)}
           >
@@ -61,6 +62,8 @@ export default function Sidebar({ current, onNavigate }) {
           <button
             key={l.id}
             className={'lang-btn' + (getLang() === l.id ? ' on' : '')}
+            aria-pressed={getLang() === l.id}
+            aria-label={l.label}
             onClick={() => {
               window.dispatchEvent(new Event('app:layout-transition'));
               setLang(l.id);
