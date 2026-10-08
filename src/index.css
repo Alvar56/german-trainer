@@ -7726,13 +7726,13 @@ input.crossword-answer { flex: 0 1 100%; width: 100%; max-width: 620px; height: 
 .gender-cta:has(.gj-gender)    { --gj-card: #ffd8d2; }
 .gender-cta:has(.gj-translate) { --gj-card: #b8ece6; }
 .gender-cta:not(.dominado):has(.gt-sim) {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 75%, transparent) 0%, var(--accent-soft) 55%);
+  background: linear-gradient(270deg, color-mix(in srgb, var(--gj-card) 75%, transparent) 0%, var(--accent-soft) 55%);
 }
 .gender-cta:not(.dominado):has(.gt-sim):hover {
-  background: linear-gradient(90deg, var(--gj-card) 0%, var(--accent-soft) 65%);
+  background: linear-gradient(270deg, var(--gj-card) 0%, var(--accent-soft) 65%);
 }
 [data-theme='dark'] .gender-cta:not(.dominado):has(.gt-sim) {
-  background: linear-gradient(90deg, color-mix(in srgb, var(--gj-card) 16%, var(--accent-soft)) 0%, var(--accent-soft) 55%);
+  background: linear-gradient(270deg, color-mix(in srgb, var(--gj-card) 16%, var(--accent-soft)) 0%, var(--accent-soft) 55%);
 }
 
 /* En un ejercicio, el degradado de abajo (el «suelo» del paisaje de Felix)
