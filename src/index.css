@@ -8223,9 +8223,9 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
 /* Los iconos de la fuente salen en el color del texto. Los que significan algo
    por su color (la estrella de la racha, el fuego del record, la corona)
    llevan el suyo. */
-.ico-estrella { color: #f5b301; }
-.ico-fuego { color: #f97316; }
-.ico-rayo { color: #eab308; }
+/* La estrella y el fuego de la portada, en gris: en color tiraban de la
+   vista mas que el numero. */
+.ico-estrella, .ico-fuego, .ico-rayo { color: var(--muted); }
 .lk-corona { color: #e0a100; }
 
 /* Los iconos de la tienda de Felix, como los del menu: simbolo oscuro sobre
