@@ -65,12 +65,12 @@ const NOMBRE_JUEGO = {
   todo: ['🎲 De todo un poco', '🎲 A bit of everything'],
   mc: ['✅ Test de gramática', '✅ Grammar quiz'],
   order: ['🔀 Ordenar frases', '🔀 Sentence order'],
-  judge: ['⚖️ ¿Correcto o no?', '⚖️ Right or wrong?'],
-  write: ['⌨️ Escribir (gramática)', '⌨️ Type it (grammar)'],
+  judge: ['⚖ ¿Correcto o no?', '⚖ Right or wrong?'],
+  write: ['⌨ Escribir (gramática)', '⌨ Type it (grammar)'],
   // Gramatica y vocabulario comparten el id `write`. En las estadisticas se
   // separan mirando el tema de la tanda (los de vocabulario empiezan por
   // "vocab:"), y a ese le toca esta etiqueta.
-  'write:voc': ['⌨️ Escribir (vocabulario)', '⌨️ Type it (vocabulary)'],
+  'write:voc': ['⌨ Escribir (vocabulario)', '⌨ Type it (vocabulary)'],
   weak: ['🩹 Solo mis fallos', '🩹 Just my mistakes'],
   flashcards: ['🃏 Tarjetas', '🃏 Flashcards'],
   quiz: ['✅ Test de vocabulario', '✅ Vocabulary quiz'],
@@ -84,7 +84,7 @@ const NOMBRE_JUEGO = {
   kasus: ['🧭 Kasus', '🧭 Kasus'],
   komm: ['💬 Kommunikation', '💬 Kommunikation'],
   'komm:decir': ['✅ Elegir la frase', '✅ Pick the phrase'],
-  'komm:responder': ['🗣️ Contestar', '🗣️ Reply'],
+  'komm:responder': ['🗣 Contestar', '🗣 Reply'],
   'komm:ordenar': ['🔀 Ordenar la frase', '🔀 Put it in order'],
   'komm:hueco': ['📝 La palabra que falta', '📝 The missing word'],
   'komm:review': ['🩹 Repasar fallos', '🩹 Review mistakes'],

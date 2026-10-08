@@ -525,7 +525,7 @@ export default function NotePhoto({ noteId, modo = 'aufgabe', lektion, analisis 
       {!foto && (
         <label className="foto-drop">
           <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={elegir} hidden />
-          <span className="foto-ico">{esAufgabe ? '📷' : '🖼️'}</span>
+          <span className="foto-ico">{esAufgabe ? '📷' : '🖼'}</span>
           <span className="foto-cta">{t(esAufgabe ? 'foto.pickA' : 'foto.pick')}</span>
           <span className="muted" style={{ fontSize: '0.78rem' }}>{t('foto.formats')}</span>
           <span className="foto-pegar">{t(esAufgabe ? 'foto.paste' : 'foto.pasteB')}</span>

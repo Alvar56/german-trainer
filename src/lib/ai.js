@@ -594,7 +594,7 @@ Devuelve SOLO un objeto JSON con este formato exacto:
 {
   "name": "nombre del tema en alemán (ej. 'Wechselpräpositionen' o 'Modalverben im Präteritum')",
   "nameEs": "nombre del tema en ${idiomaAlumno()} (ej. 'Preposiciones de cambio' o 'Verbos modales en pasado')",
-  "emoji": "un emoji representativo (ej. 🧭, 🏷️, ⏱️, ⚡, 📖)",
+  "emoji": "un emoji representativo (ej. 🧭, 🏷, ⏱, ⚡, 📖)",
   "blurb": "resumen en 1 frase de lo que se aprende",
   "cards": [
     {
@@ -1536,7 +1536,7 @@ existe), devuelve "wetter": null en vez de inventarte una.`,
       {
         "tag": "nombre del día en alemán (Samstag…) o 'heute'",
         "datum": "YYYY-MM-DD",
-        "symbol": "un emoji que represente el tiempo (☀️ ⛅ ☁️ 🌧️ ⛈️ 🌨️ 🌫️)",
+        "symbol": "un emoji que represente el tiempo (☀ ⛅ ☁ 🌧 ⛈ 🌨 🌫)",
         "text": "el tiempo de ese día en alemán, 1-2 frases sencillas",
         "textEs": "lo mismo en ${idioma}",
         "max": 18,

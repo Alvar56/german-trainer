@@ -39,7 +39,7 @@ export const TEILE = [
     id: 'schreiben',
     name: 'Schreiben',
     es: 'Expresión escrita',
-    ico: '✏️',
+    ico: '✏',
     min: 30,
     blurb: 'Mensajes cortos y correos. Lo que más puntúa es tocar todos los puntos.',
     typen: [
@@ -51,7 +51,7 @@ export const TEILE = [
     id: 'sprechen',
     name: 'Sprechen',
     es: 'Expresión oral',
-    ico: '🗣️',
+    ico: '🗣',
     min: 15,
     blurb: 'Se hace en pareja. Aquí practicas la tarea y ves cómo se resuelve.',
     typen: [

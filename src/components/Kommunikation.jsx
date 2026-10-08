@@ -80,7 +80,7 @@ const TIPOS_EJERCICIO = [
   { id: 'decir', emoji: '✅', tipos: ['decir', 'significado'],
     es: 'Elegir la frase', en: 'Pick the phrase',
     subEs: 'Del castellano al alemán y al revés', subEn: 'From your language into German and back' },
-  { id: 'responder', emoji: '🗣️', tipos: ['contestar', 'entender'],
+  { id: 'responder', emoji: '🗣', tipos: ['contestar', 'entender'],
     es: 'Contestar', en: 'Reply',
     subEs: 'Qué dices y qué te dicen', subEn: 'What you say and what they say' },
   // Estos dos no son tipos de pregunta: son juegos enteros, los mismos que
@@ -743,7 +743,7 @@ function KommDetail({
           <h1><button type="button" className="titulo-volver" onClick={onBack}>{lektionLabel(lektion)}</button></h1>
           <p className="muted" style={{ marginTop: 4, fontSize: '0.9rem' }}>
             {lektion.bandName} · {lektion.kommunikation.length} {t('functions')}
-            {escuchadas && escuchadas.total > 0 && ` · ${escuchadas.completadas}/${escuchadas.total} ${t('komm.hechas')} (${escuchadas.pct}%)`}
+            {escuchadas && escuchadas.total > 0 && ` · ${escuchadas.completadas}/${escuchadas.total} ${t('komm.hechas')}`}
           </p>
         </div>
         <button className="link-btn" onClick={onBack} style={{ flexShrink: 0 }}>

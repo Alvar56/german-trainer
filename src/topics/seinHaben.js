@@ -264,7 +264,7 @@ export default {
   id: 'seinHaben',
   name: 'sein oder haben',
   nameEs: 'Auxiliar del Perfekt: «sein» o «haben»',
-  emoji: '⚖️',
+  emoji: '⚖',
   blurb: 'Elegir el auxiliar del Perfekt, el orden en la subordinada y el Präteritum war / hatte',
   theory,
   concepts: [

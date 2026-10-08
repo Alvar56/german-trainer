@@ -154,7 +154,7 @@ export default function DiaryEntry({ entryId, onBack, onDeleted }) {
       {c && (
         <div className="lk-tabs lk-tabs-2 diary-tabs">
           <button className={'lk-tab' + (tab === 'schreiben' ? ' on' : '')} onClick={() => cambiarPestana('schreiben')}>
-            <span>✍️ Mein Text</span><small>{t('tb.tabMineSub')}</small>
+            <span>✍ Mein Text</span><small>{t('tb.tabMineSub')}</small>
           </button>
           <button className={'lk-tab' + (tab === 'korrektur' ? ' on' : '')} onClick={() => cambiarPestana('korrektur')}>
             <span>✅ Korrektur</span>

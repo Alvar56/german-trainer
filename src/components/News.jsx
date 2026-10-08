@@ -35,7 +35,7 @@ const PESTANAS = [
   { id: 'wissen', ico: '🔬', clave: 'news.tabWissen' },
   { id: 'events', ico: '🎪', clave: 'news.tabEvents' },
   { id: 'sport', ico: '⚽', clave: 'news.tabSport' },
-  { id: 'wetter', ico: '🌤️', clave: 'news.tabWeather' }
+  { id: 'wetter', ico: '🌤', clave: 'news.tabWeather' }
 ];
 
 function vistasDe(seccion) {
@@ -468,7 +468,7 @@ export default function News() {
           así la pantalla nunca queda gris mientras se actualiza en segundo plano. */}
       {cargando && !tieneAlgo && (
         <Buscando
-          icono={tab === 'wetter' ? '🌤️' : '📰'}
+          icono={tab === 'wetter' ? '🌤' : '📰'}
           titulo={tab === 'wetter' ? t('wait.wetterTitle') : t('wait.newsTitle')}
           pasos={[t('wait.news1'), t('wait.news2'), t('wait.news3'), t('wait.news4'), t('wait.news5')]}
           fuentes={FUENTES[tab] || FUENTES.news}
@@ -590,7 +590,7 @@ export default function News() {
         <div className="stack" style={{ gap: 18 }}>
           {wetter.hinweis && (
             <div className="card wetter-warn">
-              <span className="falle-ico">⚠️</span>
+              <span className="falle-ico">⚠</span>
               <div>
                 <strong>{t('news.warning')}</strong>
                 <p className="news-de" style={{ marginTop: 4 }}>{wetter.hinweis}</p>

@@ -29,6 +29,13 @@ const LEGACY = { start: 'a21-l1', 'a21-start': 'a21-l1', 'a12-start': 'a12-l9',
   l1: 'a21-l1', l2: 'a21-l2', l3: 'a21-l3',
   l4: 'a21-l4', l5: 'a21-l5', l6: 'a21-l6', l7: 'a21-l7', l8: 'a21-l8' };
 
+// Los temas de vocabulario del libro van a veces en minuscula («persönliche
+// Angaben…»); como titulo de un mazo quedaba raro al lado de los demas.
+function mayuscula(texto) {
+  const s = String(texto || '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function resolveLektionId(id) {
   if (!id) return DEFAULT_LEKTION_ID;
   if (LEGACY[id]) return LEGACY[id];
@@ -182,7 +189,7 @@ export function lektionKommunikation(lektion) {
 export function lektionWoerter(lektion) {
   return (lektion?.woerter || []).map((g) => ({
     ...g,
-    thema: tc(g.thema),
+    thema: mayuscula(tc(g.thema)),
     items: (g.items || []).map((it) => ({ ...it, es: tc(it.es), exEs: it.exEs ? tc(it.exEs) : it.exEs }))
   }));
 }
@@ -193,7 +200,7 @@ export function lektionDecks(lektion) {
   return lektion.woerter.map((g, i) => ({
     id: `kb-${lektion.id}-w${i}`,
     lektionId: lektion.id,
-    name: tc(g.thema),
+    name: mayuscula(tc(g.thema)),
     emoji: '📗',
     builtin: true,
     fromBook: true,

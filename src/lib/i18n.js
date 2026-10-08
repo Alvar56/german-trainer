@@ -414,7 +414,7 @@ const DICT = {
   'home.aiOff': ['modo plantillas', 'template mode'],
   'home.days': ['días', 'days'],
   'home.calMonth': ['{a} de {b} días practicados este mes', '{a} of {b} days practised this month'],
-  'home.atRisk': ['⚠️ Practica hoy', '⚠️ Practise today'],
+  'home.atRisk': ['⚠ Practica hoy', '⚠ Practise today'],
   'home.todayBtn': ['Hoy', 'Today'],
   'home.practice': ['Práctica', 'Practice'],
   'home.random': ['De todo un poco', 'A bit of everything'],
@@ -606,11 +606,11 @@ const DICT = {
   'ses.writePh': ['tu respuesta…', 'your answer…'],
   'ses.check': ['Comprobar', 'Check'],
   'gr.theory': ['📖 Teoría', '📖 Theory'],
-  'gr.exercises': ['✏️ Ejercicios', '✏️ Exercises'],
+  'gr.exercises': ['✏ Ejercicios', '✏ Exercises'],
   'gr.more': ['Más +', 'More +'],
   'gr.less': ['Menos −', 'Less −'],
   'gr.seeMore': ['Ver explicación y más ejemplos →', 'See explanation and more examples →'],
-  'gr.pitfalls': ['⚠️ Errores típicos', '⚠️ Common mistakes'],
+  'gr.pitfalls': ['⚠ Errores típicos', '⚠ Common mistakes'],
   'gr.toExercises': ['Ir a los ejercicios →', 'Go to the exercises →'],
   'gr.practise': ['Practicar', 'Practise'],
   'gr.crownTitle': ['Tema dominado', 'Topic mastered'],
@@ -766,7 +766,7 @@ const DICT = {
     'Turn on AI in the sidebar to use the question search.'
   ],
   'ask.remember': ['Para acordarte', 'To remember it'],
-  'ask.practise': ['✏️ Practicar esto', '✏️ Practise this'],
+  'ask.practise': ['✏ Practicar esto', '✏ Practise this'],
   'ask.another': ['Otra pregunta', 'Another question'],
 
 
@@ -856,7 +856,7 @@ const DICT = {
   ],
   'foto.ejercicioN': ['Ejercicio {n}', 'Exercise {n}'],
   'nb.analysing': ['analizando la foto', 'reading the photo'],
-  'nb.draft': ['✏️ Borrador', '✏️ Draft'],
+  'nb.draft': ['✏ Borrador', '✏ Draft'],
   'nb.notFound': ['No se encontró la entrada.', 'Entry not found.'],
   'nb.confirmDel': ['¿Borrar esta entrada del cuaderno?', 'Delete this notebook entry?'],
   'nb.titlePh': ['Título (p. ej. Clase del martes — weil)', 'Title (e.g. Tuesday class — weil)'],
@@ -881,7 +881,7 @@ const DICT = {
     'Guarda la foto para consultarla después, o pulsa «Resolver el ejercicio» para recibir correcciones y una explicación.',
     'Save the photo to review later, or choose “Solve the exercise” to get corrections and an explanation.'
   ],
-  'foto.titleB': ['🖼️ Describir una imagen', '🖼️ Describe a picture'],
+  'foto.titleB': ['🖼 Describir una imagen', '🖼 Describe a picture'],
   'foto.subB': [
     'Guarda cualquier imagen para verla más tarde, o pide que la describa en alemán con vocabulario, frases y preguntas.',
     'Save any picture to view it later, or ask for a German description with vocabulary, phrases and questions.'
@@ -891,7 +891,7 @@ const DICT = {
   'foto.formats': ['JPG, PNG, WEBP · máx. 12 MB', 'JPG, PNG, WEBP · max 12 MB'],
   'foto.solve': ['✅ Resolver el ejercicio', '✅ Solve the exercise'],
   'foto.solving': ['Resolviendo…', 'Solving…'],
-  'foto.describe': ['🗣️ Describir la imagen', '🗣️ Describe the picture'],
+  'foto.describe': ['🗣 Describir la imagen', '🗣 Describe the picture'],
   'foto.describing': ['Describiendo…', 'Describing…'],
   'foto.remove': ['Quitar foto', 'Remove photo'],
   'foto.wait': ['Leyendo la foto… tarda un minuto.', 'Reading the photo… this takes a minute.'],
@@ -1055,7 +1055,7 @@ const DICT = {
   'set.testConn': ['Probar conexión', 'Test connection'],
   'set.testing': ['Probando conexión…', 'Testing connection…'],
   'set.testOk': ['✅ Conecta bien ({n} ejercicios de prueba)', '✅ Connects fine ({n} test exercises)'],
-  'set.testWeird': ['⚠️ Responde pero sin ejercicios válidos: revisa el modelo.', '⚠️ It answers but with no valid exercises: check the model.'],
+  'set.testWeird': ['⚠ Responde pero sin ejercicios válidos: revisa el modelo.', '⚠ It answers but with no valid exercises: check the model.'],
   'set.data': ['Datos', 'Data'],
   // Lo que mas se pregunta de esto: "si me pasas una version nueva, pierdo lo
   // mio?". No: el progreso lo guarda el navegador y no va dentro del fichero.
@@ -1165,7 +1165,7 @@ const DICT = {
   'news.search': ['📰 Buscar noticias', '📰 Find news'],
   'news.searchEvents': ['🎪 Buscar eventos', '🎪 Find events'],
   'news.searchSport': ['⚽ Buscar deportes', '⚽ Find sport'],
-  'news.searchWeather': ['🌤️ Ver el tiempo', '🌤️ Get the weather'],
+  'news.searchWeather': ['🌤 Ver el tiempo', '🌤 Get the weather'],
   'news.city': ['Ciudad', 'City'],
   'news.cityPh': ['Wien, Graz, Salzburg, Madrid…', 'Wien, Graz, Salzburg, Madrid…'],
   'news.refresh': ['🔄 Actualizar', '🔄 Refresh'],

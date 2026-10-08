@@ -286,7 +286,7 @@ export default {
   id: 'trennbar',
   name: 'Trennbare Verben',
   nameEs: 'Verbos separables e inseparables',
-  emoji: '✂️',
+  emoji: '✂',
   blurb: 'Prefijo al final (aufstehen), sin ge- en inseparables (verstanden), zu en medio, y en subordinada',
   theory,
   concepts: [

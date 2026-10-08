@@ -42,7 +42,7 @@ export default function AskPractice({ pregunta, res, onExit, onFinish }) {
     return (
       <div className="stack">
         <Cargando
-          icono="✏️"
+          icono="✏"
           titulo={t('wait.itemsTitle')}
           pasos={[t('wait.items1'), t('wait.items2'), t('wait.items3'), t('wait.items4')]}
         />

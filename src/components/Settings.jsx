@@ -17,7 +17,7 @@ import { hablar, vozAlemana } from '../lib/audio.js';
 import { progresoHuerfano } from '../lib/progress.js';
 import { KURSBUCH, ruleConceptId } from '../lib/kursbuch/index.js';
 
-const ICONO_TEMA = { auto: '🌗', claro: '☀️', oscuro: '🌙' };
+const ICONO_TEMA = { auto: '🌗', claro: '☀', oscuro: '🌙' };
 const NOMBRE_TEMA = {
   auto: ['Automático', 'Automatic'],
   claro: ['Claro', 'Light'],
@@ -223,7 +223,7 @@ export default function Settings({ onBack }) {
       </div>
 
       <div className="panel">
-        <h2>⌨️ {pick('Atajos de teclado', 'Keyboard shortcuts')}</h2>
+        <h2>⌨ {pick('Atajos de teclado', 'Keyboard shortcuts')}</h2>
         <p className="muted" style={{ fontSize: '0.9rem', marginBottom: 12 }}>
           {pick(
             'Muestra u oculta las etiquetas visuales con los números y letras en las opciones de los ejercicios. Aunque estén ocultas, podrás seguir usando las teclas físicas para responder.',

@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import { aplicarTema, escucharSistema } from './lib/tema.js';
+import './iconos-emoji.css';
 import './index.css';
 
 // El tema, antes de montar nada. El script de index.html ya lo ha puesto para

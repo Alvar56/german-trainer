@@ -97,7 +97,7 @@ export default function ExamSprechen({ typ, onBack }) {
       <div className="reading stack">
         <button className="link-btn" style={{ padding: 0, alignSelf: 'flex-start' }} onClick={onBack}><span className="fl-atras">←</span> Prüfung</button>
         <Cargando
-          icono="🗣️"
+          icono="🗣"
           titulo={t('wait.exTitle')}
           pasos={[t('wait.ex1'), t('wait.ex2'), t('wait.ex3'), t('wait.ex4')]}
         />

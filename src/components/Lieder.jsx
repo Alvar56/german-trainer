@@ -253,7 +253,7 @@ export default function Lieder() {
 
           {song.kontext && (
             <div className="card">
-              <div className="lk-block-title">🕰️ {t('lieder.kontext')}</div>
+              <div className="lk-block-title">🕰 {t('lieder.kontext')}</div>
               <p className="lk-expl" style={{ marginBottom: 0 }}>{song.kontext}</p>
             </div>
           )}
@@ -264,7 +264,7 @@ export default function Lieder() {
               cantado por un nativo, en ningún otro sitio. */}
           {song.aussprache && (
             <div className="card">
-              <div className="lk-block-title">🗣️ {t('lieder.aussprache')}</div>
+              <div className="lk-block-title">🗣 {t('lieder.aussprache')}</div>
               {song.aussprache.acento && (
                 <p className="lk-expl">{song.aussprache.acento}</p>
               )}

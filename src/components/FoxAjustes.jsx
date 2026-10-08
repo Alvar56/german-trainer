@@ -34,7 +34,7 @@ const RANURAS = [
   { id: 'pies', de: 'An den Füßen', ico: '👟' },
   { id: 'objeto', de: 'Gegenstände', ico: '🎒' },
   { id: 'particulas', de: 'Effekte', ico: '✨' },
-  { id: 'fondo', de: 'Hintergrund', ico: '🏞️' }
+  { id: 'fondo', de: 'Hintergrund', ico: '🏞' }
 ];
 
 // El Felix grande de la tienda, con su propia cara cambiante. Va aparte para
@@ -147,7 +147,7 @@ const Bloque = memo(function Bloque({ ranura, puestaId, titulo, ico, cosas, esPu
     <div className={'fox-bloque' + (abierto ? ' abierto' : '')}>
       <button className="fox-tirador" onClick={() => (ranura ? onAbrir(ranura) : onAbrir())} aria-expanded={abierto}>
         <span className="fox-tirador-izq">
-          <span className="fox-ico" aria-hidden="true">{ico}</span>
+          <span className="fox-ico" data-e={ico} aria-hidden="true">{ico}</span>
           <span className="fox-titulo">{titulo}</span>
         </span>
         <span className="fox-tirador-der">

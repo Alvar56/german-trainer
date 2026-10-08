@@ -303,7 +303,7 @@ export default function ExamLesenHoeren({ teil, typ, onBack }) {
                     </p>
                   )}
                   {a.warum && <p className="fb-warum">{a.warum}</p>}
-                  {a.falle && <p className="fb-falle">⚠️ {a.falle}</p>}
+                  {a.falle && <p className="fb-falle">⚠ {a.falle}</p>}
                 </div>
               )}
             </div>

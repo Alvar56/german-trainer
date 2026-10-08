@@ -276,7 +276,7 @@ export default function FoxChat({ abrirCon = null, onClose }) {
 
               {m.uebung && (
                 <div className="fm-uebung">
-                  <div className="lk-block-title">✏️ {t('fox.exercise')}</div>
+                  <div className="lk-block-title">✏ {t('fox.exercise')}</div>
                   <p className="news-de" style={{ marginTop: 4 }}>{m.uebung.frage}</p>
                   {m.uebung.tipp && <p className="muted" style={{ fontSize: '0.78rem' }}>💡 {m.uebung.tipp}</p>}
                   <details className="fm-solucion">

@@ -147,7 +147,7 @@ export default function FotosVocab({ ownerId, nombre = '' }) {
           accept="image/*"
           style={{ display: 'none' }}
         />
-        <div className="foto-pegador-icono">📋 🖼️</div>
+        <div className="foto-pegador-icono">📋 🖼</div>
         <div className="foto-pegador-txt">
           <strong>{pick('Pega una imagen con Ctrl + V', 'Paste an image with Ctrl + V')}</strong>
           <span>{pick('o haz clic aquí para elegir una foto de tu ordenador', 'or click here to select a photo from your computer')}</span>
@@ -208,7 +208,7 @@ export default function FotosVocab({ ownerId, nombre = '' }) {
                       onClick={() => handleBorrar(f.id)}
                       title="Eliminar foto"
                     >
-                      🗑️ {pick('Eliminar', 'Delete')}
+                      🗑 {pick('Eliminar', 'Delete')}
                     </button>
                   </div>
                 </div>
@@ -219,7 +219,7 @@ export default function FotosVocab({ ownerId, nombre = '' }) {
                     <img src={url} alt={f.titulo || 'Foto de vocabulario'} className="foto-grande-img" />
                   ) : isError ? (
                     <div className="foto-cargando-placeholder" style={{ color: 'var(--bad)' }}>
-                      ⚠️ {pick('No se pudo recuperar la imagen guardada. Puedes eliminarla y volver a pegarla.', 'Could not load the saved image. You can delete and re-paste it.')}
+                      ⚠ {pick('No se pudo recuperar la imagen guardada. Puedes eliminarla y volver a pegarla.', 'Could not load the saved image. You can delete and re-paste it.')}
                     </div>
                   ) : (
                     <div className="foto-cargando-placeholder">

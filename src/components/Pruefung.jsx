@@ -176,7 +176,7 @@ export default function Pruefung({ onStart }) {
               {ENLACES[teil.id] && (
                 <div className="audios">
                   <div className="lk-block-title" style={{ marginTop: 14 }}>
-                    {teil.id === 'hoeren' ? '🎧 ' : '🗣️ '}
+                    {teil.id === 'hoeren' ? '🎧 ' : '🗣 '}
                     {t(teil.id === 'hoeren' ? 'pf.realAudio' : 'pf.realSpeech')}
                   </div>
                   <p className="muted" style={{ fontSize: '0.82rem', margin: '0 0 10px' }}>

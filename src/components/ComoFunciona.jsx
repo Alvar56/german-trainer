@@ -53,7 +53,7 @@ export default function ComoFunciona() {
             entero se esconde por css, que enseñar teclas a quien no las tiene
             es ruido. */}
         <div className="cf-solo-teclado">
-          <Bloque titulo={pick('⌨️ Atajos de teclado', '⌨️ Keyboard shortcuts')}>
+          <Bloque titulo={pick('⌨ Atajos de teclado', '⌨ Keyboard shortcuts')}>
             <p>
               {pick(
                 'En los ejercicios no hace falta el ratón. Los números salen pintados en los propios botones.',
@@ -172,7 +172,7 @@ export default function ComoFunciona() {
                 <td>{pick('Elegir la opción correcta entre cuatro para aplicar la regla gramatical.', 'Pick the correct option among four to apply the grammar rule.')}</td>
               </tr>
               <tr>
-                <td>⌨️ {pick('Escribir', 'Type it')} <b>1–4</b></td>
+                <td>⌨ {pick('Escribir', 'Type it')} <b>1–4</b></td>
                 <td>{pick('Completar el hueco de la frase escribiendo la palabra de memoria, con pistas de letras.', 'Fill in the sentence blank by typing the word from memory, with letter hints.')}</td>
               </tr>
               <tr>
@@ -180,7 +180,7 @@ export default function ComoFunciona() {
                 <td>{pick('Ordenar los bloques de palabras para construir la frase con la sintaxis correcta (posición del verbo).', 'Order the word tiles into proper German syntax and verb placement.')}</td>
               </tr>
               <tr>
-                <td>⚖️ {pick('¿Correcto o no?', 'Correct or not?')} <b>1</b></td>
+                <td>⚖ {pick('¿Correcto o no?', 'Correct or not?')} <b>1</b></td>
                 <td>{pick('Detectar si la frase alemana mostrada es correcta o contiene algún fallo gramatical.', 'Judge whether the given German sentence is correct or has a grammatical mistake.')}</td>
               </tr>
               <tr>
@@ -206,7 +206,7 @@ export default function ComoFunciona() {
                 <td>{pick('Elegir la traducción correcta entre cuatro opciones.', 'Pick the correct translation among four options.')}</td>
               </tr>
               <tr>
-                <td>⌨️ {pick('Escribir', 'Type it')} <b>1–4</b></td>
+                <td>⌨ {pick('Escribir', 'Type it')} <b>1–4</b></td>
                 <td>{pick('Teclear la palabra alemana completa de memoria, con pistas de letras si las necesitas.', 'Type the full German word from memory, with letter hints if needed.')}</td>
               </tr>
               <tr>
@@ -240,7 +240,7 @@ export default function ComoFunciona() {
                 <td>{pick('Traducir frases completas en ambas direcciones con tres pistas y teclado especial.', 'Translate full sentences in both directions with three hints and special characters.')}</td>
               </tr>
               <tr>
-                <td>🗣️ {pick('Elegir la frase', 'Pick the phrase')} <b>1</b></td>
+                <td>🗣 {pick('Elegir la frase', 'Pick the phrase')} <b>1</b></td>
                 <td>{pick('Elegir entre varias opciones cómo formularías una idea o afirmación en alemán según la situación.', 'Pick how to formulate a given idea or statement in German from multiple choices.')}</td>
               </tr>
               <tr>
@@ -274,7 +274,7 @@ export default function ComoFunciona() {
                 <td>{pick('Simulacro oficial de 4 destrezas (Lesen, Hören, Schreiben, Sprechen) en formato estándar ÖSD / Goethe / telc.', 'Official 4-skill mock exam (Reading, Listening, Writing, Speaking) standard ÖSD / Goethe / telc format.')}</td>
               </tr>
               <tr>
-                <td>🗣️ {pick('Sprechen con Felix', 'Speaking with Felix')} <b>2–10</b></td>
+                <td>🗣 {pick('Sprechen con Felix', 'Speaking with Felix')} <b>2–10</b></td>
                 <td>{pick('Práctica oral en 3 partes: presentación personal, conversación sobre un tema cotidiano y planificación conjunta.', 'Oral practice in 3 parts: self-introduction, discussion on a daily topic, and joint planning.')}</td>
               </tr>
               <tr>
@@ -359,7 +359,7 @@ export default function ComoFunciona() {
               )}
             </li>
             <li>
-              <strong>🏞️ {pick('Fondos y escenarios', 'Backgrounds & scenes')}:</strong>{' '}
+              <strong>🏞 {pick('Fondos y escenarios', 'Backgrounds & scenes')}:</strong>{' '}
               {pick(
                 'Los fondos disponibles (Pradera, Playa, Desierto, Hielo y nieve, Clase y Espacio) se compran con monedas. Al elegir uno, su degradado de color aparece en Felix y en las pantallas de ejercicios.',
                 'Available backgrounds (Meadow, Beach, Desert, Ice and snow, Classroom, and Space) are purchased with coins. Choosing one applies its colour gradient to Felix and the exercise screens.'
@@ -373,7 +373,7 @@ export default function ComoFunciona() {
               )}
             </li>
             <li>
-              <strong>🏷️ {pick('Nombre de Felix', 'Felix’s name')}:</strong>{' '}
+              <strong>🏷 {pick('Nombre de Felix', 'Felix’s name')}:</strong>{' '}
               {pick(
                 'Puedes cambiar el nombre de tu mascota desde su panel por 1000 monedas; se paga una sola vez.',
                 'You can rename your pet from its panel for 1000 coins; this is a one-time purchase.'
@@ -564,8 +564,8 @@ export default function ComoFunciona() {
         <Bloque titulo={pick('⭐ La racha y los congeladores', '⭐ The streak and the freezes')}>
           <p>
             {pick(
-              'La racha cuenta días seguidos con al menos un ejercicio. Empiezas con dos congeladores ❄️.',
-              'The streak counts days in a row with at least one exercise. You start with two freezes ❄️.'
+              'La racha cuenta días seguidos con al menos un ejercicio. Empiezas con dos congeladores ❄.',
+              'The streak counts days in a row with at least one exercise. You start with two freezes ❄.'
             )}
           </p>
           <ul className="cf-lista">

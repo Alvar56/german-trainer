@@ -250,7 +250,7 @@ function LektionVocab({ lektionId, tab = 'teoria', onTab, onStart, onReto, onBac
         <div className="min0">
           <h1><button type="button" className="titulo-volver" onClick={onBack}>{lektionLabel(lektion)}</button></h1>
           <p className="muted" style={{ marginTop: 4, fontSize: '0.9rem' }}>
-            {lektion.bandName} · {total} {t('words')} · {st.known}/{total} {t('voc.known')} ({st.pct}%)
+            {lektion.bandName} · {total} {t('words')} · {st.known}/{total} {t('voc.known')}
           </p>
         </div>
         <button className="link-btn" onClick={onBack} style={{ flexShrink: 0 }}><span className="fl-atras">◂</span> Wortschatz</button>

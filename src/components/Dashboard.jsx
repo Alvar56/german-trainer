@@ -75,16 +75,16 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
         </div>
         <div className="card statcard">
           <div className="n">
-            {s.current} {s.current > 0 ? '⭐' : ''}
+            {s.current} {s.current > 0 ? <span className="ico-estrella">⭐</span> : ''}
           </div>
           <div>
             <div className="l">{t('home.streak')}</div>
-            <div className="sub">{t('home.record')}: {s.longest} · ❄️ {s.freezes}</div>
+            <div className="sub">{t('home.record')}: {s.longest} · ❄ {s.freezes}</div>
           </div>
         </div>
         <div className="card statcard">
           <div className="n">
-            {recordSeguidas || '—'} {recordSeguidas >= 5 ? '🔥' : recordSeguidas >= 2 ? '⚡' : ''}
+            {recordSeguidas || '—'} {recordSeguidas >= 5 ? <span className="ico-fuego">🔥</span> : recordSeguidas >= 2 ? <span className="ico-rayo">⚡</span> : ''}
           </div>
           <div>
             <div className="l">{t('home.bestRun')}</div>
@@ -155,7 +155,7 @@ export default function Dashboard({ onStart, onNavigate, onFox, onFlashcards, on
               como esta. */}
           {PORTABLE ? (
             <button className="btn-ghost btn-sm home-ai-repaso home-diary-new" onClick={() => onDiaryNew?.()}>
-              <IconoJuego e="✍️" />
+              <IconoJuego e="✍" />
               <span className="gt-txt">{t('home.newDiaryEntry')}</span>
             </button>
           ) : aiOn && (

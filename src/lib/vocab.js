@@ -16,7 +16,7 @@ const BUILTIN = [
   {
     id: 'alltag',
     name: 'Día a día',
-    emoji: '☀️',
+    emoji: '☀',
     builtin: true,
     cards: [
       { de: 'aufstehen', es: 'levantarse', ex: 'Ich stehe unter der Woche um sieben auf.', exEs: 'Entre semana me levanto a las siete.' },
@@ -60,7 +60,7 @@ const BUILTIN = [
   {
     id: 'restaurant',
     name: 'En el restaurante',
-    emoji: '🍽️',
+    emoji: '🍽',
     builtin: true,
     cards: [
       { de: 'einen Tisch reservieren', es: 'reservar mesa', ex: 'Ich möchte einen Tisch für zwei Personen reservieren.', exEs: 'Quería reservar una mesa para dos.' },
@@ -492,7 +492,7 @@ const NEW_DECKS = [
   {
     id: 'gegensaetze',
     name: 'Contrarios',
-    emoji: '↔️',
+    emoji: '↔',
     builtin: true,
     cards: [
       { de: 'billig ⇄ teuer', es: 'barato ⇄ caro', ex: 'Das Hotel war billig, aber das Essen teuer.', exEs: 'El hotel era barato, pero la comida cara.' },
@@ -863,7 +863,7 @@ const NEW_DECKS = [
   {
     id: 'stadt',
     name: 'En la calle y la ciudad',
-    emoji: '🏙️',
+    emoji: '🏙',
     builtin: true,
     cards: [
       { de: 'die Straße', es: 'la calle', ex: 'In welcher Straße wohnst du?', exEs: '¿En qué calle vives?' },
@@ -946,7 +946,7 @@ const NEW_DECKS = [
   {
     id: 'wetter',
     name: 'El tiempo (clima)',
-    emoji: '🌦️',
+    emoji: '🌦',
     builtin: true,
     cards: [
       { de: 'das Wetter', es: 'el tiempo (meteorológico)', ex: 'Wie wird das Wetter morgen?', exEs: '¿Qué tiempo hará mañana?' },
@@ -1202,7 +1202,7 @@ export function saveUserDeck(deck) {
   const clean = {
     id,
     name: deck.name || 'Mazo sin nombre',
-    emoji: deck.emoji || '🗂️',
+    emoji: deck.emoji || '🗂',
     source: deck.source || 'custom',
     text: deck.text || null,
     textEs: deck.textEs || null,
@@ -1617,7 +1617,7 @@ export function vocabModes() {
     { id: 'blitz', emoji: '⚡', label: 'Blitz', hint: t('vm.blitzHint') },
     { id: 'wortsalat', emoji: '🔤', label: 'Wortsalat', hint: t('vm.wortsalatHint') },
     { id: 'hangman', emoji: '🪢', label: t('vm.hangman'), hint: t('vm.hangmanHint') },
-    { id: 'write', emoji: '⌨️', label: t('vm.write'), hint: t('vm.writeHint') }
+    { id: 'write', emoji: '⌨', label: t('vm.write'), hint: t('vm.writeHint') }
   ];
 }
 

@@ -242,7 +242,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
           <h1><button type="button" className="titulo-volver" onClick={onBack}>{topic.emoji && <span style={{ marginRight: 8 }}>{topic.emoji}</span>}{pick(topic.nameEs, topic.nameEn || topic.name)}</button></h1>
           <p className="muted" style={{ marginTop: 4, fontSize: '0.9rem' }}>
             {topic.lektionId
-              ? <>{pick(topic.blurb, topic.blurbEn || tc(topic.blurb))} · {m.practiced}/{m.total} {pick('practicadas', 'practised')} ({m.pct}%)</>
+              ? <>{pick(topic.blurb, topic.blurbEn || tc(topic.blurb))} · {m.practiced}/{m.total} {pick('practicadas', 'practised')}</>
               : <>{topic.name} · {pick(topic.blurb, topic.blurbEn || tc(topic.blurb))}</>}
             {topic.custom && <span className="pill" style={{ marginLeft: 8, fontSize: '0.75rem' }}>✨ {pick('Creado con IA', 'Created with AI')}</span>}
           </p>
@@ -260,7 +260,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
               }}
               title={pick('Eliminar este tema creado con IA', 'Delete this AI-generated topic')}
             >
-              🗑️ {pick('Eliminar tema', 'Delete topic')}
+              🗑 {pick('Eliminar tema', 'Delete topic')}
             </button>
           )}
           <button className="link-btn" onClick={onBack}>
@@ -422,7 +422,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                   </span>
                 </button>
                 <button className="gametype" onClick={() => onStart(topic.id, 'mixed', 'judge')}>
-                  <IconoJuego e="⚖️" />
+                  <IconoJuego e="⚖" />
                   <span className="gt-txt">
                     <span>{t('home.gJudge')}</span>
                     <small>{t('home.gJudgeSub')}</small>
@@ -453,7 +453,7 @@ export default function TopicDetail({ topic, tab = 'teoria', onTab, onStart, onB
                   </span>
                 </button>
                 <button className="gametype" onClick={() => onStart(topic.id, 'mixed', 'write')}>
-                  <IconoJuego e="⌨️" />
+                  <IconoJuego e="⌨" />
                   <span className="gt-txt">
                     <span>{t('gr.gWrite')}</span>
                     <small>{t('gr.gWriteSub')}</small>

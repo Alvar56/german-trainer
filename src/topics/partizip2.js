@@ -266,7 +266,7 @@ export default {
   id: 'partizip2',
   name: 'Partizip II / Perfekt',
   nameEs: 'Participio 2 y Perfekt',
-  emoji: '🕰️',
+  emoji: '🕰',
   blurb: 'Partizip II (débil/fuerte/-ieren/prefijos), haben vs sein y el orden en la subordinada',
   theory,
   concepts: [

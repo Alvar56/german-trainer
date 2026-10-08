@@ -134,7 +134,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Iconos Felix', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -3543,7 +3543,7 @@ input.ask-input,
 .ueb-pista { display: flex; gap: 9px; align-items: baseline; font-size: 0.85rem; animation: pista-revelada-entra 0.34s ease both; }
 .ueb-pista-accion { width: max-content; }
 .up-et { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
-.up-tx { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); font-weight: 600; }
+.up-tx { font-family: 'Iconos Felix', ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent); font-weight: 600; }
 .ueb-caja {
   width: 100%; padding: 13px 15px; border-radius: 12px; font-size: 1.05rem;
   border: 1.5px solid var(--border-strong); background: var(--surface); resize: vertical;
@@ -6551,7 +6551,7 @@ input.vs-respuesta { max-width: 620px; width: 100%; }
 .pl-pista-slot { flex: 0 0 auto; }
 .pl-esqueleto-revelado { animation: pista-revelada-entra 0.34s ease both; }
 .pl-esqueleto {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: 'Iconos Felix', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 1.05rem; letter-spacing: 0.16em; color: var(--text-2);
   background: var(--surface-2); border-radius: 8px; padding: 6px 12px;
   white-space: pre-wrap; overflow-wrap: anywhere;
@@ -6573,7 +6573,7 @@ input.vs-respuesta { max-width: 620px; width: 100%; }
 .lpf-de { font-weight: 700; }
 .lpf-flecha { color: var(--muted); }
 .lpf-suena {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: 'Iconos Felix', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   color: var(--accent); background: var(--accent-soft);
   border-radius: 6px; padding: 1px 8px; font-size: 0.94em;
 }
@@ -6794,7 +6794,7 @@ input.vs-respuesta { max-width: 620px; width: 100%; }
 .set-watermark .sw-email {
   color: var(--accent);
   text-decoration: none;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'Iconos Felix', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .set-watermark .sw-email:hover {
@@ -8213,3 +8213,36 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
 .sim-voz-texto { margin-right: 0.4em; }
 .say-btn, .fm-voz { color: var(--accent); }
 .say-btn .sim-voz { width: 1.2em; height: 1.2em; }
+
+
+/* «Personalizar a Felix ▸ 🎁 1» en una sola linea: el regalo bajaba solo a
+   la de abajo en el movil. */
+.fox-card-pie .link-btn { white-space: nowrap; }
+.link-btn .fox-nuevo { margin-left: 5px; }
+
+/* Los iconos de la fuente salen en el color del texto. Los que significan algo
+   por su color (la estrella de la racha, el fuego del record, la corona)
+   llevan el suyo. */
+.ico-estrella { color: #f5b301; }
+.ico-fuego { color: #f97316; }
+.ico-rayo { color: #eab308; }
+.lk-corona { color: #e0a100; }
+
+/* Los iconos de la tienda de Felix, como los del menu: simbolo oscuro sobre
+   un circulo pastel, uno por apartado. */
+.fox-ico {
+  width: 30px; height: 30px; border-radius: 50%; border: none;
+  font-size: 1.05rem; background: var(--ico-bg, #e3e3e3); color: var(--ico-fg, #3c3c3c);
+}
+.fox-bloque.abierto .fox-ico { box-shadow: 0 0 0 2px var(--accent); }
+.fox-ico[data-e="🦊"] { --ico-bg: #ffdbc8; --ico-fg: #6b2a00; }
+.fox-ico[data-e="🎨"] { --ico-bg: #fbd9f3; --ico-fg: #6d1b5c; }
+.fox-ico[data-e="🧢"] { --ico-bg: #c2e7ff; --ico-fg: #004a77; }
+.fox-ico[data-e="👓"] { --ico-bg: #e8def8; --ico-fg: #4a2a8a; }
+.fox-ico[data-e="🧣"] { --ico-bg: #ffd8e4; --ico-fg: #7d1d4a; }
+.fox-ico[data-e="👕"] { --ico-bg: #d3e3fd; --ico-fg: #0842a0; }
+.fox-ico[data-e="👟"] { --ico-bg: #d7e3ec; --ico-fg: #1f3a4d; }
+.fox-ico[data-e="🎒"] { --ico-bg: #ffe08a; --ico-fg: #5c4300; }
+.fox-ico[data-e="✨"] { --ico-bg: #fff0b3; --ico-fg: #6b4e00; }
+.fox-ico[data-e="🏞"] { --ico-bg: #c4eed0; --ico-fg: #0d5226; }
+[data-theme='dark'] .fox-ico { background: color-mix(in srgb, var(--ico-fg) 55%, #111); color: var(--ico-bg); }
