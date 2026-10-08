@@ -161,7 +161,17 @@ const Bloque = memo(function Bloque({ ranura, puestaId, titulo, ico, cosas, esPu
         </span>
       </button>
       <Desplegable abierto={abierto}>
-        {abierto && pinta(cosas)}
+        {abierto && (
+          partir ? (
+            <>
+              {pinta(comprables)}
+              <div className="fox-subtitulo">Zu verdienen</div>
+              {pinta(ganables)}
+            </>
+          ) : (
+            pinta(cosas)
+          )
+        )}
       </Desplegable>
     </div>
   );
