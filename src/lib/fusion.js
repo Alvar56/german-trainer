@@ -1,3 +1,4 @@
+import { recalcular, FREEZES_INICIALES } from './rachaCuenta.js';
 // Como se junta lo de ESTE aparato con lo del servidor, clave por clave.
 //
 // Antes se reemplazaba la clave entera: o la tuya o la del servidor. Y en esta
@@ -255,17 +256,21 @@ const porIdSinFecha = (a, b) => porId(a, b, () => 0);
 function juntarRacha(a, b) {
   if (!a || typeof a !== 'object') return b;
   if (!b || typeof b !== 'object') return a;
-  return ordenado({
+  // La racha y los congeladores se vuelven a contar con el historial ya
+  // junto. Antes los congeladores se quedaban con el mas bajo de los dos (para
+  // no regalarlos), pero asi el aparato que iba por detras se comia los que el
+  // otro ya habia ganado: cada 5 dias caia uno y al sincronizar desaparecia.
+  // Contados desde el historial, los dos aparatos llegan al mismo numero.
+  const junto = {
     ...elMismoSiempre(a, b),
     history: porClave(a.history, b.history, mayor),
     current: mayor(a.current, b.current),
     longest: mayor(a.longest, b.longest),
     totalXp: mayor(a.totalXp, b.totalXp),
-    // Congeladores: el mas bajo. Son lo unico que se GASTA, y quedarse con el
-    // numero alto seria regalarlos cada vez que sincronizas.
-    freezes: Math.min(a.freezes ?? 2, b.freezes ?? 2),
+    freezes: Math.min(a.freezes ?? FREEZES_INICIALES, b.freezes ?? FREEZES_INICIALES),
     lastDay: (a.lastDay || '') >= (b.lastDay || '') ? a.lastDay : b.lastDay
-  });
+  };
+  return ordenado(recalcular(junto));
 }
 
 // El progreso de gramatica: tres diccionarios y un contador, dentro de la

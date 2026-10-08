@@ -267,7 +267,16 @@ grupo('Sincronizar entre dos aparatos no pierde nada');
   const r = fusionarClave('streak', rachaA, rachaB);
   comprobar('el historial de dias se junta', Object.keys(r.history).length === 2);
   comprobar('el record se queda con el mas alto', r.longest === 8);
-  comprobar('los congeladores se quedan con el mas bajo (se gastan)', r.freezes === 1);
+  // Los congeladores se cuentan con el historial ya junto: antes se quedaban
+  // con el mas bajo y el aparato atrasado se comia los ya ganados.
+  comprobar('la racha se cuenta con el historial junto', r.current === 2 && r.freezes === 2, `racha ${r.current}, congeladores ${r.freezes}`);
+  const diez = {};
+  for (let d = 1; d <= 10; d++) diez[`2026-09-${String(d).padStart(2, '0')}`] = 30;
+  const seis = Object.fromEntries(Object.entries(diez).slice(0, 6));
+  const alDia = { current: 10, longest: 10, freezes: 3, totalXp: 300, lastDay: '2026-09-10', history: diez };
+  const atrasado = { current: 6, longest: 6, freezes: 1, totalXp: 180, lastDay: '2026-09-06', history: seis };
+  const rr = fusionarClave('streak', alDia, atrasado);
+  comprobar('el aparato atrasado no se come los congeladores ganados', rr.freezes === 3 && rr.current === 10, `racha ${rr.current}, congeladores ${rr.freezes}`);
 
   const crucigramasA = {
     'a11-l1': { updatedAt: 100, signature: 'tema-1', puzzles: [{ entries: ['HAUS'] }] },

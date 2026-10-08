@@ -5,8 +5,8 @@
 import { storage, KEYS } from './storage.js';
 import { ganar } from './monedas.js';
 import { localeFecha } from './i18n.js';
+import { MAX_FREEZES, DIAS_POR_FREEZE, FREEZES_INICIALES, dayDiff, avanzarDia, recuperarCongelador, recalcular } from './rachaCuenta.js';
 
-const DAY = 86400000;
 // Lo que paga sumar un dia mas de racha.
 export const MONEDAS_POR_DIA = 10;
 // Subir de nivel paga, lo mismo que sumar un dia de racha. Con 5 se quedaba
@@ -15,11 +15,7 @@ export const MONEDAS_POR_DIA = 10;
 export const MONEDAS_POR_NIVEL = 20;
 // Un día solo cuenta como practicado cuando una sesión supera este tiempo.
 export const MIN_ACTIVITY_MS = 10_000;
-// Cuántos congeladores caben en el bolsillo y cada cuántos días seguidos cae
-// uno nuevo. Estaban a pelo en medio del código (el `% 5` y el `< 3`), así
-// que la pantalla de "cómo funciona" decía una cosa y el código otra.
-export const MAX_FREEZES = 3;
-export const DIAS_POR_FREEZE = 5;
+export { MAX_FREEZES, DIAS_POR_FREEZE };
 
 function todayKey(d = new Date()) {
   // Fecha local en formato YYYY-MM-DD
@@ -28,92 +24,17 @@ function todayKey(d = new Date()) {
   ).padStart(2, '0')}`;
 }
 
-function dayDiff(aKey, bKey) {
-  const a = new Date(aKey + 'T00:00:00');
-  const b = new Date(bKey + 'T00:00:00');
-  return Math.round((b - a) / DAY);
-}
-
 const DEFAULT = {
   current: 0,
   longest: 0,
   lastDay: null,
-  freezes: 2,
+  freezes: FREEZES_INICIALES,
   history: {}, // { 'YYYY-MM-DD': xpDelDia }
   totalXp: 0
 };
 
-// Un congelador por día perdido. Antes solo se perdonaba UN día (gap === 2)
-// aunque tuvieras los tres congeladores guardados: faltar dos días seguidos
-// rompía una racha de quince con el bolsillo lleno, y entonces el congelador
-// no servía para lo único para lo que lo quieres, que es irte un fin de
-// semana. Devuelve el evento que toque.
-function avanzarDia(s, gap, events) {
-  // Con el reloj del aparato hacia atrás (un viaje, cambiar la fecha a mano)
-  // el hueco sale negativo. Ni suma ni rompe: ese día no ha pasado.
-  if (gap < 1) return;
-  const perdidos = gap - 1;
-  if (perdidos === 0) {
-    s.current += 1;
-    events.push({ type: 'up', value: s.current });
-    return;
-  }
-  if (perdidos <= s.freezes) {
-    s.freezes -= perdidos;
-    s.current += 1;
-    events.push({ type: 'freeze-used', usados: perdidos, remaining: s.freezes });
-    return;
-  }
-  if (s.current > 0) events.push({ type: 'lost', was: s.current });
-  s.current = 1;
-}
-
-// Cada 5 días seguidos, un congelador nuevo, hasta tres.
-function recuperarCongelador(s, events) {
-  if (s.current <= 0) return;
-  if (s.current % DIAS_POR_FREEZE !== 0) return;
-  if (s.freezes >= MAX_FREEZES) return;
-  s.freezes += 1;
-  events.push({ type: 'freeze-earned', remaining: s.freezes });
-}
-
-// Rehacer la cuenta desde el historial.
-//
-// El historial es lo que de verdad pasó —qué días practicaste—; current,
-// longest y freezes son solo la cuenta de eso. Al cambiar la regla, la cuenta
-// guardada se queda con rachas rotas que con la regla nueva no se habrían
-// roto, y no hay forma de arreglarlas mirando solo el número. Así que se
-// vuelve a contar, una vez, día por día.
-//
-// El récord nunca baja: lo que ya conseguiste, conseguido está.
-function recalcular(s) {
-  const dias = Object.keys(s.history || {})
-    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d) && s.history[d] > 0)
-    .sort();
-  if (dias.length === 0) return s;
-
-  const cuenta = { current: 0, freezes: DEFAULT.freezes };
-  let longest = 0;
-  let anterior = null;
-  for (const dia of dias) {
-    if (anterior == null) cuenta.current = 1;
-    else avanzarDia(cuenta, dayDiff(anterior, dia), []);
-    recuperarCongelador(cuenta, []);
-    longest = Math.max(longest, cuenta.current);
-    anterior = dia;
-  }
-
-  return {
-    ...s,
-    current: cuenta.current,
-    freezes: cuenta.freezes,
-    longest: Math.max(longest, s.longest || 0),
-    lastDay: anterior
-  };
-}
-
 // La versión de la cuenta. Sube cuando cambia una regla y obliga a rehacerla.
-const VERSION = 2;
+const VERSION = 3;
 
 export function getStreak() {
   const s = { ...DEFAULT, ...storage.get(KEYS.streak, DEFAULT) };
