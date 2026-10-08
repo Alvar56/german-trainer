@@ -37,7 +37,7 @@ export const TABLA_PRAEPOSITIONEN = {
 export const TABLA_GENUS = {
   id: 'genus',
   pestana: 'Genus',
-  titulo: '🔵 der · 🔴 die · 🟢 das',
+  titulo: '🔤 Der, die oder das?',
   subtitulo: 'So erkennst du das Genus eines Nomens',
   archivo: 'Genus der Nomen',
   Contenido: GenusTabla
