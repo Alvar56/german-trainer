@@ -8146,9 +8146,9 @@ body:has(.fox-modal) #root * { animation-play-state: paused !important; }
 .tc-col { border-radius: 12px; padding: 12px 14px; border: 1.5px solid var(--c-borde); background: var(--c-fondo); min-width: 0; }
 .tc-titulo { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 1.5rem; font-weight: 800; color: var(--c-fuerte); line-height: 1.15; margin-bottom: 4px; }
 .tc-sub { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
-.tc-apartado { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 10px 0 6px; }
-.tc-preg { text-transform: none; letter-spacing: 0; font-weight: 500; margin-left: 4px; }
-.tc-etiqueta { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 999px; border: 1px solid var(--c-borde); background: var(--surface); color: var(--c-fuerte); font-size: 0.66rem; letter-spacing: 0; text-transform: none; }
+.tc-apartado { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 12px 0 8px; }
+.tc-preg { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.tc-etiqueta { display: inline-block; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--c-borde); background: var(--surface); color: var(--c-fuerte); font-size: 0.66rem; letter-spacing: 0; text-transform: none; }
 .tc-ojo { background: var(--c-borde); color: var(--text); border-color: transparent; }
 .tc-igual .tc-formas { opacity: 0.55; }
 .tc-formas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
