@@ -9,7 +9,7 @@ const listeners = new Set();
 let current = storage.get(KEY, null) || detect();
 
 function detect() {
-  const n = (navigator.language || 'es').toLowerCase();
+  const n = ((typeof navigator !== 'undefined' && navigator.language) || 'es').toLowerCase();
   return n.startsWith('en') ? 'en' : 'es';
 }
 
